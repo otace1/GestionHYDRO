@@ -114,7 +114,7 @@ class LaboratoireReception(tables.Table):
             "id": "example1"
         }
         row_attrs = {
-            "id": lambda record: record.pk
+            "id": lambda record: record.pk if not isinstance(record, dict) else record.get('pk', record.get('id'))
         }
         # template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon
@@ -430,11 +430,13 @@ class AffichageDetailResultat(tables.Table):
 
     class Meta:
         row_attrs = {
-            'id':lambda record:record.etatValeur,
+            'id': lambda record: record.get('etatValeur') if isinstance(record, dict) else getattr(record, 'etatValeur', None),
+            'data-status': lambda record: record.get('etatValeur') if isinstance(record, dict) else getattr(record, 'etatValeur', None),
+            'class': 'result-row'
         }
         attrs = {
-            "class": "table table-bordered table-striped",
-            "id": "example1"
+            "class": "table table-hover result-details-table",
+            "id": "details-table"
         }
 
 

@@ -3,20 +3,24 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.GestionLaboratoire.affichageenchantillon, name='labo'),
+    path('', views.affichageenchantillon, name='labo'),
     path('refaireAffichage/', views.affichageAnalyseRefaire, name='affichageAnalyseRefaire'),
     path('refaireAffichageResponse/', views.affichageAnalyseRefaireResponse, name='affichageAnalyseRefaireResponse'),
-    path('echantillon/', views.GestionLaboratoire.affichageenchantillonResponse, name='affichageenchantillonResponse'),
+    path('echantillon/', views.affichageenchantillonResponse, name='affichageenchantillonResponse'),
     path('receptionRapports/', views.receptionRapports, name='receptionRapports'),
     path('receptionRapportsGenerate/', views.receptionRapportsGenerate, name='receptionRapportsGenerate'),
     path('receptionRapports/response/', views.receptionRapportsResponse, name='receptionRapportsResponse'),
     path('receptionRapports/response/export/', views.receptionRapportsResponse, name='receptionRapportsResponseExport'),
+    # Async Excel export (Celery) for Reception Rapports
+    path('receptionRapports/export/start/', views.receptionRapportsExportStart, name='receptionRapportsExportStart'),
+    path('receptionRapports/export/status/<str:task_id>/', views.receptionRapportsExportStatus, name='receptionRapportsExportStatus'),
+    path('receptionRapports/export/download/<str:task_id>/', views.receptionRapportsExportDownload, name='receptionRapportsExportDownload'),
     path('receptionRapports/filtres/', views.receptionRapportsResponseFiltres, name='receptionRapportsResponseFiltres'),
     path('receptionRapports/filtres/export/', views.receptionRapportsResponseFiltres, name='receptionRapportsResponseFiltresExport'),
-    path('reception/', views.GestionLaboratoire.receptionechantillon, name='reception'),
-    path('modification/', views.GestionLaboratoire.modification, name='modification'),
-    path('rechercheqr/', views.GestionLaboratoire.rechercheqrcode, name='rechercheqr'),
-    path('recherchecode/', views.GestionLaboratoire.recherchecode, name='recherchecode'),
+    path('reception/', views.receptionechantillon, name='reception'),
+    path('modification/', views.modification, name='modification'),
+    path('rechercheqr/', views.rechercheqrcode, name='rechercheqr'),
+    path('recherchecode/', views.recherchecode, name='recherchecode'),
     path('analyse/', views.GestionAnalyse.affichageanalyse, name='analyse'),
     path('analyse/response/', views.responseAffichageanalyse, name='responseAffichageanalyse'), #Ajax
 
@@ -29,6 +33,7 @@ urlpatterns = [
 
     path('impression/', views.GestionImpressionLabo.affichagetableauimpression, name='impression'),
     path('impression/response/', views.responseAffichagetableauimpression, name='responseAffichagetableauimpression'),
+    path('archives/response/', views.responseArchivesTableau, name='responseArchivesTableau'),
     # path('impression/<int:pk>', views.GestionImpressionLabo.impressioncertificat, name='print'),
     path('impression/cq/', views.impressioncertificat, name='print'),
     path('reimpression/<int:pk>', views.GestionImpressionLabo.reimpressioncertificat, name='reprint'),
@@ -83,6 +88,10 @@ urlpatterns = [
     path('affichageDetailsResultatsGauche/<int:pk>', views.affichageDetailsResultats, name='affichageDetailsResultats'),
     path('affichageDetailsResultatsDroite/<int:pk>', views.affichageDetailsResultatsDroite, name='affichageDetailsResultatsDroite'),
 
+
+    # KPI for validation
+    path('validationKPIs/', views.laboValidationKPIs, name='laboValidationKPIs'),
+    path('impressionKPIs/', views.laboImpressionKPIs, name='laboImpressionKPIs'),
 
     ###Second way of validation from the Chef Sce
     path('conformeM2/', views.conformeAjx, name='conformeAjx'),

@@ -1,98 +1,613 @@
-{% extends 'BaseLaboReceptionRapports.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
+{% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
-{% block extrahead %}
-    {{ form.media }}
-    <!-- Include the DataTables Date Range Filter plugin CSS and JS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+{% block extra_css %}
+  {{ form.media }}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+  <style>
+    :root{
+      --tf-primary:#0d6efd;
+      --tf-success:#198754;
+      --tf-info:#0dcaf0;
+      --tf-warning:#ffc107;
+      --tf-danger:#dc3545;
+      --tf-ink:#111827;
+      --tf-muted:#6b7280;
+      --tf-bd:rgba(0,0,0,.08);
+      --tf-shadow:0 10px 30px rgba(0,0,0,.08);
+      --tf-shadow2:0 14px 60px rgba(0,0,0,.18);
+    }
+
+    /* Header mini-hero */
+    .tf-hero{
+      border:1px solid var(--tf-bd);
+      border-radius:14px;
+      background:linear-gradient(135deg, rgba(13,110,253,.12), rgba(25,135,84,.10));
+      box-shadow: var(--tf-shadow);
+      padding:14px 16px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tf-title{
+      margin:0;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:var(--tf-ink);
+      line-height:1.1;
+      font-size:1.35rem;
+    }
+    .tf-sub{ color:var(--tf-muted); margin-top:4px; font-size:.92rem; }
+
+    .btn-pill{
+      border-radius:999px !important;
+      font-weight:800;
+      letter-spacing:.2px;
+      padding:.45rem .9rem;
+    }
+
+    /* Card wrapper */
+    .tf-card{
+      border:1px solid var(--tf-bd);
+      border-radius:14px;
+      background:#fff;
+      box-shadow: var(--tf-shadow);
+      overflow:hidden;
+    }
+    .tf-card-header{
+      padding:14px 16px;
+      border-bottom:1px solid var(--tf-bd);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      background:#fff;
+    }
+    .tf-card-left{
+      display:flex; align-items:center; gap:10px; min-width:0;
+    }
+    .tf-icon{
+      width:42px; height:42px; border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(13,110,253,.10);
+      color:var(--tf-primary);
+      flex:0 0 auto;
+    }
+    .tf-card-titles h3{
+      margin:0;
+      font-weight:900;
+      color:var(--tf-ink);
+      font-size:1.05rem;
+    }
+    .tf-hint{
+      margin-top:3px;
+      color:var(--tf-muted);
+      font-size:.85rem;
+      max-width:70vw;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Loadbar */
+    .table-wrap{ position:relative; }
+    .loadbar{
+      display:none; position:absolute; left:0; right:0; top:0; height:3px;
+      background:rgba(13,110,253,.15);
+      overflow:hidden; z-index:10;
+    }
+    .loadbar:before{
+      content:""; position:absolute; left:-35%; width:35%; top:0; bottom:0;
+      background:linear-gradient(90deg, transparent, rgba(13,110,253,.55), transparent);
+      animation: loadbar 1.05s ease-in-out infinite;
+    }
+    @keyframes loadbar{ 0%{ transform:translateX(0);} 100%{ transform:translateX(400%);} }
+
+    table.dataTable thead th{
+      white-space:nowrap; font-weight:900; letter-spacing:.3px; font-size:.82rem;
+    }
+    table.dataTable tbody td{ vertical-align:middle; }
+
+    .empty-state{
+      padding: 22px 16px;
+      text-align:center;
+      color: var(--tf-muted);
+      border-top:1px solid var(--tf-bd);
+      background:#fff;
+    }
+    .empty-state .t{ font-weight:900; color:var(--tf-ink); margin-top:6px; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.35rem .65rem;
+      border-radius:999px;
+      background:rgba(17,24,39,.04);
+      border:1px solid rgba(17,24,39,.10);
+      color:var(--tf-ink);
+      font-weight:800;
+      font-size:.82rem;
+      margin-right:.35rem;
+      margin-top:.35rem;
+      white-space:nowrap;
+    }
+    .pill i{ opacity:.75; }
+
+    .modal-content{
+      border:0;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow: var(--tf-shadow2);
+    }
+    .modal-header{
+      border-bottom:1px solid rgba(0,0,0,.06);
+      background: linear-gradient(135deg, rgba(13,110,253,.10), rgba(25,135,84,.08));
+    }
+    .modal-title{ font-weight:900; color:var(--tf-ink); }
+    .modal-body{ background:#fff; }
+    .modal-footer{ border-top:1px solid rgba(0,0,0,.06); background:#fff; }
+
+    .f-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:10px; }
+    .f-col{ grid-column: span 6; }
+    .f-col-12{ grid-column: span 12; }
+    @media (max-width: 576px){ .f-col{ grid-column: span 12; } }
+
+    .f-label{ font-size:.78rem; font-weight:800; color:var(--tf-muted); margin-bottom:6px; }
+    .f-input{
+      border-radius:12px !important;
+      border:1px solid rgba(17,24,39,.14) !important;
+      box-shadow:none !important;
+    }
+
+    .warn{
+      display:none;
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(220,53,69,.08);
+      border:1px solid rgba(220,53,69,.18);
+      color:#b02a37;
+      font-weight:800;
+      font-size:.9rem;
+    }
+  </style>
 {% endblock %}
 
-
-
 {% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div class="d-flex align-items-center" style="gap:15px;">
+        <a href="{% url 'labo' %}" class="btn btn-outline-secondary btn-pill" title="Retour">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="tf-title">Rapports de réception</h1>
+          <div class="tf-sub">Laboratoire • Historique des échantillons réceptionnés</div>
+        </div>
+      </div>
 
-     <div id="data-table-wrapper" style="position: relative;">
-        <div class="loading-spinner"></div>
-          <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-              <tr>
-                <th>NUM.HYDRO</th>
-                <th>NUM.RE</th>
-                <th>CODE LABO</th>
-                <th>DATE ECHANT.</th>
-                <th>DATE RECEP.</th>
-                <th>ENTREPOT</th>
-                <th>FOURNISSEUR</th>
-                <th>IMMATRICULATION</th>
-                <th>PRODUIT</th>
-              </tr>
-            </thead>
-          </table>
+      <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+        <ol class="breadcrumb mb-0" style="background:transparent; padding:0;">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Rapports</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon"><i class="fas fa-clipboard-list"></i></div>
+          <div class="tf-card-titles">
+            <h3>Liste des réceptions</h3>
+            <div class="tf-hint" id="hint-text">Aucune donnée ne se charge tant que vous n’avez pas appliqué un filtre.</div>
+            <div id="filter-summary" class="mt-1" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="d-flex" style="gap:.5rem; flex-wrap:wrap; align-items:center;">
+          <button type="button" class="btn btn-outline-primary btn-pill" id="btn-open-filters">
+            <i class="fas fa-filter mr-1"></i> Filtres
+          </button>
+
+          <button type="button" class="btn btn-success btn-pill" id="btn-export-excel" disabled>
+            <i class="fas fa-file-excel mr-1"></i> Export Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <div class="loadbar" id="loadbar"></div>
+
+          <div class="table-responsive">
+            <table id="data-table" class="table table-bordered table-striped mb-0" style="width:100%">
+              <thead>
+                <tr>
+                  <th>NUM.HYDRO</th>
+                  <th>NUM.RE</th>
+                  <th>CODE LABO</th>
+                  <th>DATE ECHANT.</th>
+                  <th>DATE RECEP.</th>
+                  <th>ENTREPOT</th>
+                  <th>FOURNISSEUR</th>
+                  <th>IMMATRICULATION</th>
+                  <th>PRODUIT</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="empty-state">
+            <i class="fas fa-filter fa-2x" style="opacity:.25;"></i>
+            <div class="t">Aucune donnée chargée</div>
+            <div>Cliquez sur <b>Filtres</b>, sélectionnez une période, puis <b>Rechercher</b>.</div>
+          </div>
+
+        </div>
+      </div>
     </div>
 
+  </div>
+</section>
 
-    {#<!-- Include FileSaver.js library for saving the Excel file -->#}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<!-- FILTER MODAL -->
+<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
 
-<script>
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-filter mr-2"></i>Filtres</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Fermer" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
 
+      <div class="modal-body">
+        <div class="f-grid">
+          <div class="f-col">
+            <div class="f-label"><i class="far fa-calendar-alt mr-1"></i> Type de date</div>
+            <select id="f-date-type" class="form-control f-input">
+              <option value="reception" selected>Date réception</option>
+              <option value="echantillon">Date échantillonnage</option>
+            </select>
+          </div>
 
-const csrfToken = '{{ csrf_token }}';
-let dataTable;
+          <div class="f-col">
+            <div class="f-label"><i class="far fa-calendar-alt mr-1"></i> Période (obligatoire)</div>
+            <input type="text" id="f-date-range" class="form-control f-input" placeholder="YYYY-MM-DD - YYYY-MM-DD">
+          </div>
 
-$(document).ready(function () {
-    dataTable = $('#data-table').DataTable({
-    lengthChange: false, // Display the length change dropdown
-    processing: true,
-    serverSide: true,
-    responsive: true,
-    ajax: {
-        url: '{% url 'receptionRapportsResponse' %}',
-        type: 'GET',
-        beforeSend: function() {
-          $('#data-table-wrapper .loading-spinner').show();
+          <div class="f-col">
+            <div class="f-label"><i class="fas fa-warehouse mr-1"></i> Entrepôt</div>
+            <input type="text" id="f-entrepot" class="form-control f-input" placeholder="Nom entrepôt...">
+          </div>
+
+          <div class="f-col">
+            <div class="f-label"><i class="fas fa-hashtag mr-1"></i> Num. RE</div>
+            <input type="text" id="f-numre" class="form-control f-input" placeholder="RE-...">
+          </div>
+
+          <div class="f-col">
+            <div class="f-label"><i class="fas fa-truck mr-1"></i> Immatriculation</div>
+            <input type="text" id="f-immat" class="form-control f-input" placeholder="1234AB...">
+          </div>
+
+          <div class="f-col">
+            <div class="f-label"><i class="fas fa-barcode mr-1"></i> Code labo</div>
+            <input type="text" id="f-codelabo" class="form-control f-input" placeholder="LAB-...">
+          </div>
+
+          <div class="f-col-12">
+            <div class="warn" id="filter-warn">
+              Veuillez sélectionner une période (date range) avant de rechercher.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-pill" id="btn-reset-filters">
+          <i class="fas fa-eraser mr-1"></i> Réinitialiser
+        </button>
+
+        <button type="button" class="btn btn-primary btn-pill" id="btn-apply-filters">
+          <i class="fas fa-search mr-1"></i> Rechercher
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+  <script>
+    let dataTable;
+    let hasSearched = false;
+
+    function showLoadbar(){ $('#loadbar').show(); }
+    function hideLoadbar(){ $('#loadbar').hide(); }
+
+    function cleanupModalArtifacts(){
+      // remove stuck backdrop + restore body state (safe to call anytime)
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open');
+      $('body').css('padding-right','');
+      // also make sure modal is not half-open
+      $('#filtersModal').removeClass('show').attr('aria-hidden','true');
+    }
+
+    function getFilters(){
+      return {
+        date_type: ($('#f-date-type').val() || 'reception').trim(),
+        date_range: ($('#f-date-range').val() || '').trim(),
+        entrepot: ($('#f-entrepot').val() || '').trim(),
+        num_re: ($('#f-numre').val() || '').trim(),
+        immatriculation: ($('#f-immat').val() || '').trim(),
+        code_labo: ($('#f-codelabo').val() || '').trim(),
+      };
+    }
+
+    function hasRequiredFilters(){
+      return !!getFilters().date_range;
+    }
+
+    function renderFilterSummary(){
+      const f = getFilters();
+      const $s = $('#filter-summary');
+      $s.empty();
+
+      if(!hasSearched){ $s.hide(); return; }
+
+      const pills = [];
+      if(f.date_range) pills.push(`<span class="pill"><i class="far fa-calendar-alt"></i>${f.date_type === 'reception' ? 'Réception' : 'Échant.'}: ${f.date_range}</span>`);
+      if(f.entrepot) pills.push(`<span class="pill"><i class="fas fa-warehouse"></i>${f.entrepot}</span>`);
+      if(f.num_re) pills.push(`<span class="pill"><i class="fas fa-hashtag"></i>${f.num_re}</span>`);
+      if(f.immatriculation) pills.push(`<span class="pill"><i class="fas fa-truck"></i>${f.immatriculation}</span>`);
+      if(f.code_labo) pills.push(`<span class="pill"><i class="fas fa-barcode"></i>${f.code_labo}</span>`);
+
+      $s.html(pills.join(' '));
+      $s.toggle(pills.length > 0);
+    }
+
+    $(document).ready(function(){
+
+      // daterangepicker
+      $('#f-date-range').daterangepicker({
+        autoUpdateInput: false,
+        locale: { cancelLabel: 'Effacer', applyLabel: 'Appliquer', format: 'YYYY-MM-DD' }
+      });
+
+      $('#f-date-range').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+        $('#filter-warn').hide();
+      });
+
+      $('#f-date-range').on('cancel.daterangepicker', function() {
+        $(this).val('');
+      });
+
+      // SAFE OPEN: always cleanup first
+      $('#btn-open-filters').on('click', function(){
+        cleanupModalArtifacts();
+        $('#filtersModal').modal({ backdrop: true, keyboard: true, show: true });
+      });
+
+      // DataTable init (no data until searched)
+      dataTable = $('#data-table').DataTable({
+        lengthChange: false,
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        pageLength: 25,
+
+        ajax: function(dtParams, callback){
+          if(!hasSearched){
+            return callback({ draw: dtParams.draw, data: [], recordsTotal: 0, recordsFiltered: 0 });
+          }
+
+          const f = getFilters();
+          showLoadbar();
+
+          $.ajax({
+            url: '{% url "receptionRapportsResponse" %}',
+            type: 'POST', // your POST-only view
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            data: { ...dtParams, ...f },
+            success: function(resp){ callback(resp); },
+            error: function(){
+              callback({ draw: dtParams.draw, data: [], recordsTotal: 0, recordsFiltered: 0 });
+            },
+            complete: function(){ hideLoadbar(); }
+          });
         },
-        // Hide the loading spinner after DataTable processing
-        complete: function() {
-          $('#data-table-wrapper .loading-spinner').hide();
+
+        columns: [
+          { data: 'numdos' },
+          { data: 'entrepot_echantillon__numrappechauto' },
+          { data: 'entrepot_echantillon__laboreception__codelabo' },
+          { data: 'entrepot_echantillon__dateechantillonage__date' },
+          { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
+          { data: 'entrepot__nomentrepot' },
+          { data: 'importateur__nomimportateur' },
+          { data: 'immatriculation' },
+          { data: 'produit__nomproduit' },
+        ],
+
+        dom: '<"row px-3 pt-3"<"col-md-6"f><"col-md-6 text-md-right"p>>t<"row px-3 pb-3"<"col-md-6"i><"col-md-6 text-md-right"p>>',
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' }
+      });
+
+      // APPLY FILTERS (IMPORTANT: reload after modal is fully hidden)
+      $('#btn-apply-filters').on('click', function(){
+        if(!hasRequiredFilters()){
+          $('#filter-warn').show();
+          return;
         }
-    },
-    columns: [
-        { data: 'numdos' }, // Use array index to access 'dateheurecargaison__date'
-        { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'frontiere__nomville'
-        { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'importateur__nomimportateur'
-        { data: 'entrepot_echantillon__dateechantillonage__date' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'entrepot__nomentrepot' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'importateur__nomimportateur' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'immatriculation' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
-    ],
-        // Optional: Add buttons for exporting to Excel
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'excelHtml5',
-                    text: 'Export to Excel',
-                    filename: 'rapport_brut',
-                    exportOptions: {
-                        modifier: {
-                            search: 'none'
-                        }
-                    },
-                    action: function (e, dt, node, config) {
-                        // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'receptionRapportsResponseExport' %}?export=excel';
-                    }
-                }
-            ],
-});
-});
-</script>
+        $('#filter-warn').hide();
 
+        hasSearched = true;
+        $('#empty-state').hide();
+        $('#btn-export-excel').prop('disabled', false);
 
+        const $m = $('#filtersModal');
 
+        $m.off('hidden.bs.modal.apply').on('hidden.bs.modal.apply', function(){
+          cleanupModalArtifacts();              // <-- prevents stuck overlay
+          renderFilterSummary();
+          dataTable.ajax.reload(null, true);    // reload after close, reset paging
+        });
 
+        $m.modal('hide'); // ONLY Bootstrap hide (no manual .hide() / removeClass)
+      });
+
+      // RESET FILTERS
+      $('#btn-reset-filters').on('click', function(){
+        $('#f-date-type').val('reception');
+        $('#f-date-range,#f-entrepot,#f-numre,#f-immat,#f-codelabo').val('');
+        $('#filter-warn').hide();
+
+        hasSearched = false;
+        $('#btn-export-excel').prop('disabled', true);
+
+        dataTable.clear().draw();
+        $('#empty-state').show();
+        renderFilterSummary();
+      });
+
+      // EXTRA SAFETY: whenever modal hides, cleanup leftovers
+      $('#filtersModal').on('hidden.bs.modal', function(){
+        cleanupModalArtifacts();
+      });
+
+      // ---------------- Excel Export via Celery (async) ----------------
+      const exportStartUrl = '{% url "receptionRapportsExportStart" %}';
+      const statusUrlTemplate = '{% url "receptionRapportsExportStatus" task_id="TASK_ID_PLACEHOLDER" %}';
+
+      function createOrGetToast(){
+        let $toast = $('#export-toast');
+        if($toast.length) return $toast;
+        const html = `
+          <div id="export-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"
+               data-autohide="false" style="position: fixed; top: 20px; right: 20px; z-index: 2000; min-width: 260px;">
+            <div class="toast-header">
+              <i class="fas fa-file-excel mr-2 text-success"></i>
+              <strong class="mr-auto">Export Excel</strong>
+              <small class="text-muted" id="toast-progress-label">0%</small>
+              <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="toast-body">
+              <div class="d-flex align-items-center" style="gap:.5rem;">
+                <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                <div id="toast-text">Génération en cours…</div>
+              </div>
+              <div class="progress mt-2" style="height:6px;">
+                <div id="toast-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>`;
+        $('body').append(html);
+        $toast = $('#export-toast');
+        $toast.toast('show');
+        return $toast;
+      }
+
+      function updateToast(pct, text){
+        $('#toast-progress').css('width', `${pct}%`);
+        $('#toast-progress-label').text(`${pct}%`);
+        if(text){ $('#toast-text').text(text); }
+      }
+
+      function finishToast(success, message){
+        const $toast = $('#export-toast');
+        if(!$toast.length) return;
+        const icon = success ? 'fas fa-check text-success' : 'fas fa-triangle-exclamation text-danger';
+        $('#toast-text').html(message || (success ? 'Export terminé.' : 'Erreur lors de l\'export.'));
+        $toast.find('.spinner-border').replaceWith(`<i class="${icon}"></i>`);
+        updateToast(100);
+        // Auto hide after a short delay
+        setTimeout(() => { $toast.toast('hide'); $toast.remove(); }, 3000);
+      }
+
+      async function startExport(filters){
+        // POST start
+        const res = await $.ajax({
+          url: exportStartUrl,
+          type: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+          data: filters
+        });
+        return res.task_id;
+      }
+
+      async function pollStatus(taskId){
+        const url = statusUrlTemplate.replace('TASK_ID_PLACEHOLDER', taskId);
+        const res = await $.getJSON(url);
+        return res;
+      }
+
+      $('#btn-export-excel').on('click', async function(){
+        // Require a prior search so filters exist
+        if(!hasSearched || !hasRequiredFilters()){
+          // prompt user to set filters
+          $('#btn-open-filters').trigger('click');
+          return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        const $toast = createOrGetToast();
+        updateToast(1, 'Démarrage de l\'export…');
+
+        try{
+          const filters = getFilters();
+          const taskId = await startExport(filters);
+
+          // Poll every 1200ms
+          let done = false;
+          while(!done){
+            const st = await pollStatus(taskId);
+            const pct = Number(st.progress || 0);
+            updateToast(pct || 5);
+
+            if(st.ready && st.download_url){
+              updateToast(100, 'Préparation du téléchargement…');
+              // trigger download
+              window.location.href = st.download_url;
+              finishToast(true, 'Le fichier est prêt. Téléchargement…');
+              done = true;
+              break;
+            }
+            if(st.state === 'FAILURE' || st.error){
+              throw new Error(st.error || 'Échec de l\'export.');
+            }
+            await new Promise(r => setTimeout(r, 1200));
+          }
+        }catch(err){
+          console.error(err);
+          finishToast(false, (err && err.message) ? err.message : 'Erreur inconnue.');
+        }finally{
+          btn.disabled = false;
+        }
+      });
+
+    });
+  </script>
 {% endblock %}

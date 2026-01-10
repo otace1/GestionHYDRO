@@ -1,26 +1,124 @@
 {% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
-{% load crispy_forms_tags %}
 
+<div class="result-details-container animate__animated animate__fadeInUp">
+    <div class="table-responsive">
+        {% render_table table %}
+    </div>
+</div>
 
-{% block content %}
-    {% render_table table %}
-{% endblock %}
+<style>
+    .result-details-container {
+        padding: 10px;
+        background: #fff;
+        border-radius: 8px;
+    }
 
+    .result-details-table {
+        border-collapse: separate;
+        border-spacing: 0 8px;
+        width: 100%;
+        margin-bottom: 0 !important;
+        border: none !important;
+    }
 
-{% block javascript %}
-    <script>
-            $(document).ready(function(){
-              $('table td').each(
-                function(){
-                  var td_value = $(this).text();
-                  if (td_value == "Hors norme" ) {
-                    $(this).css('background', 'red');
-                  }
+    .result-details-table thead th {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border: none;
+        padding: 12px 15px;
+    }
+
+    .result-row {
+        transition: all 0.2s ease;
+        background-color: #ffffff;
+    }
+
+    .result-row:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        background-color: #f8fafc !important;
+    }
+
+    .result-row td {
+        padding: 15px;
+        vertical-align: middle;
+        border-top: 1px solid #f1f5f9 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+    /* First and last td border radius for the row effect */
+    .result-row td:first-child {
+        border-left: 1px solid #f1f5f9 !important;
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+    }
+    .result-row td:last-child {
+        border-right: 1px solid #f1f5f9 !important;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    /* Status-based coloring */
+    .result-row[data-status="Conforme"] {
+        border-left: 4px solid #22c55e !important;
+    }
+
+    .result-row[data-status="Hors norme"] {
+        border-left: 4px solid #ef4444 !important;
+        background-color: #fffafb !important;
+    }
+    
+    .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+    }
+
+    /* Animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 20px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+    .animate__fadeInUp {
+        animation: fadeInUp 0.4s ease-out;
+    }
+</style>
+
+<script>
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(function(){
+            $('.result-row').each(function(){
+                var status = $(this).attr('data-status');
+                var statusCell = $(this).find('td:last-child');
+                var icon = '';
+                var colorClass = '';
+                
+                if (status === "Conforme") {
+                    icon = '<i class="fas fa-check-circle"></i>';
+                    colorClass = 'text-success';
+                } else if (status === "Hors norme") {
+                    icon = '<i class="fas fa-exclamation-triangle"></i>';
+                    colorClass = 'text-danger';
+                } else {
+                    icon = '<i class="fas fa-clock"></i>';
+                    colorClass = 'text-muted';
                 }
-              );
+                
+                statusCell.html('<span class="status-badge ' + colorClass + '">' + icon + ' ' + statusCell.text() + '</span>');
             });
-    </script>
-{% endblock %}
-
-
+        });
+    }
+</script>

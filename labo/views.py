@@ -1,15 +1,22 @@
 import base64
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q, F, Case, When, Value, CharField
-from django.db.models.functions import ExtractMonth, ExtractYear
+from django.db import transaction
+from django.db.models import Q, F, Case, When, Value, CharField, Count, Subquery, OuterRef, Exists
+from django.db.models.functions import ExtractMonth, ExtractYear, Coalesce
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.utils import timezone
+from django.conf import settings
+import boto3
+from django.core.files.storage import default_storage
+from django.views.decorators.http import require_POST
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from django_tables2.paginators import LazyPaginator
@@ -18,265 +25,412 @@ from openpyxl import Workbook
 from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser, UserActivityLog
 from enreg.models import *
 from hydrocarbures.celery import app
+from celery.result import AsyncResult
 from labo.utils import render_to_pdf
 from .codeLabo import generate_labo_code
 from .forms import *
 from .numCq import numCq
 from .tables import *
+from .tasks import export_reception_rapports_to_xlsx
+import os
 
 
-#Sending email
+# Sending email
 
 # from django.core.mail import send_mail #Sending Email
 #
 
 # Class de gestion pouir le laboratoire
-class GestionLaboratoire():
-    # Methode d'affichage des echantillons a la reception
-    @login_required(login_url='login')
-    def affichageenchantillon(request):
-        template = 'labo.html'
-        context={}
-        return render(request,template,context)
+# Methode d'affichage des echantillons a la reception
+@login_required(login_url='login')
+def affichageenchantillon(request):
+    template = 'labo.html'
+    # Build Entrepôt choices filtered by user's ville affectations
+    user = request.user
+    try:
+        # User's allowed villes via AffectationVille
+        user_ville_ids = list(
+            AffectationVille.objects.filter(username_id=user.id).values_list('ville_id', flat=True)
+        )
+    except Exception:
+        user_ville_ids = []
+
+    # Import Entrepot model from enreg app if not already
+    try:
+        from enreg.models import Entrepot
+    except Exception:
+        Entrepot = None
+
+    entrepots_qs = []
+    if Entrepot:
+        entrepots_qs = Entrepot.objects.filter(ville_id__in=user_ville_ids).order_by('nomentrepot')
+
+    selected_entrepot_id = request.GET.get('entrepot_id', 'all')
+
+    # Determine if any filter has been applied to control table visibility
+    has_filters_applied = False
+    if (
+            selected_entrepot_id not in (None, '', 'all') or
+            (request.GET.get('num_dossier') or '').strip() or
+            (request.GET.get('num_re') or '').strip() or
+            (request.GET.get('immatriculation') or '').strip()
+    ):
+        has_filters_applied = True
+
+    context = {
+        "entrepots": entrepots_qs,
+        "selected_entrepot_id": selected_entrepot_id,
+        "has_filters_applied": has_filters_applied,
+    }
+    return render(request, template, context)
 
 
-    @login_required(login_url='login')
-    def affichageenchantillonResponse(request):
+# If you use these exceptions elsewhere; otherwise remove try/except blocks
+# from django.core.paginator import EmptyPage, PageNotAnInteger
+
+
+@login_required(login_url="login")
+@require_POST
+def affichageenchantillonResponse(request):
+    user = request.user
+    user_id = user.id
+    role = getattr(user, "role_id", None)
+
+    # Only allowed roles
+    if role not in (1, 4):
+        return JsonResponse({"success": False, "error": "Forbidden"}, status=403)
+
+    # ---------------------------
+    # Read POST payload safely
+    # ---------------------------
+    def get_payload():
+        ct = (request.headers.get("Content-Type") or "").lower()
+        if "application/json" in ct:
+            try:
+                return json.loads(request.body.decode("utf-8") or "{}") or {}
+            except Exception:
+                return {}
+        # regular form POST
+        return request.POST
+
+    params = get_payload()
+
+    def _s(key, default=""):
+        v = params.get(key, default)
+        if v is None:
+            return default
+        return str(v).strip()
+
+    def _i(key, default=0):
+        try:
+            return int(str(params.get(key, default)).strip())
+        except Exception:
+            return default
+
+    # ---------------------------
+    # Base scope (security)
+    # ---------------------------
+    base_scope = (
+        Cargaison.objects
+        .filter(
+            etat="Echantillonner",
+            entrepot__ville__affectationville__username_id=user_id
+        )
+    )
+
+    qs = base_scope
+
+    # ---------------------------
+    # Filters (POST only)
+    # ---------------------------
+    # Accept both new keys and legacy keys (so frontend variations still work)
+    entrepot_name = _s("entrepot")  # legacy text
+    num_dossier = _s("num_dossier")
+    num_re = _s("num_re")
+    immat = _s("immatriculation")
+
+    entrepot_id_param = _s("entrepot_id")
+    try:
+        entrepot_id_selected = int(entrepot_id_param) if entrepot_id_param not in ("", "all", "0") else 0
+    except Exception:
+        entrepot_id_selected = 0
+
+    if entrepot_name:
+        qs = qs.filter(nom_entrepot__icontains=entrepot_name)
+    if num_dossier:
+        qs = qs.filter(numdos__icontains=num_dossier)
+    if num_re:
+        qs = qs.filter(entrepot_echantillon__numrappechauto__icontains=num_re)
+    if immat:
+        qs = qs.filter(immatriculation__icontains=immat)
+    if entrepot_id_selected > 0:
+        qs = qs.filter(entrepot_id=entrepot_id_selected)
+
+    # Optional: generic search text (POST key = search)
+    search_value = _s("search") or _s("search[value]")
+    if search_value:
+        qs = qs.filter(
+            Q(nom_entrepot__icontains=search_value) |
+            Q(immatriculation__icontains=search_value) |
+            Q(numdos__icontains=search_value) |
+            Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+            Q(qrcode__icontains=search_value)
+        )
+
+    # ---------------------------
+    # Ordering (whitelist)
+    # ---------------------------
+    # Accept either:
+    # - DataTables keys: order[0][column], order[0][dir]
+    # - Simple keys: sort, dir
+    order_col = _s("order[0][column]") or _s("sort")
+    order_dir = (_s("order[0][dir]") or _s("dir", "desc")).lower()
+
+    ordering_map = {
+        "0": "dateheurecargaison",
+        "1": "date_echantillon",
+        "2": "nom_entrepot",
+        "3": "nom_produit",
+        "4": "immatriculation",
+        "5": "numdos",
+        "6": "entrepot_echantillon__numrappechauto",
+
+        # also allow named sort keys (if frontend sends sort=entrepot etc.)
+        "date_entree": "dateheurecargaison",
+        "date_echant": "date_echantillon",
+        "entrepot": "nom_entrepot",
+        "produit": "nom_produit",
+        "immat": "immatriculation",
+        "dossier": "numdos",
+        "re": "entrepot_echantillon__numrappechauto",
+    }
+
+    order_field = ordering_map.get(order_col, "date_echantillon")
+    if order_dir == "desc":
+        order_field = f"-{order_field}"
+
+    qs = qs.order_by(order_field)
+
+    # ---------------------------
+    # Pagination (POST only)
+    # ---------------------------
+    # Accept both:
+    # - DataTables: start/length
+    # - Page style: page/page_size
+    start = max(_i("start", 0), 0)
+    length = _i("length", 15)
+
+    if "page" in params or "page_size" in params:
+        page = max(_i("page", 1), 1)
+        length = _i("page_size", 15)
+        start = (page - 1) * length
+
+    if length <= 0:
+        length = 15
+    length = min(length, 200)  # hard cap for safety
+
+    # ---------------------------
+    # Build response (fast)
+    # ---------------------------
+    total = base_scope.count()
+    filtered = qs.count()
+
+    rows = list(
+        qs.values(
+            "idcargaison",
+            "dateheurecargaison__date",
+            "date_echantillon__date",
+            "nom_entrepot",
+            "nom_produit",
+            "immatriculation",
+            "numdos",
+            "entrepot_echantillon__numrappechauto",
+        )[start:start + length]
+    )
+
+    # Rename keys for frontend compatibility
+    for r in rows:
+        r["entrepot_echantillon__dateechantillonage__date"] = r.pop("date_echantillon__date", None)
+        r["entrepot__nomentrepot"] = r.pop("nom_entrepot", None)
+        r["produit__nomproduit"] = r.pop("nom_produit", None)
+
+    return JsonResponse({
+        "success": True,
+        "recordsTotal": total,
+        "recordsFiltered": filtered,
+        "data": rows,
+    })
+
+
+@login_required(login_url='login')
+def receptionechantillon(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        pk = data.get('idcargaison')
+
+        if pk is None:
+            response_data = {
+                'success': False,
+                'error': 'Missing primary key (pk)',
+            }
+            return JsonResponse(response_data, status=400)
+
         user = request.user
         id = user.id
+
+        # Get Town du point de dechargement pour l'attribution automatique des numeros
+
+        c = Cargaison.objects.get(idcargaison=pk)
+        c = c.entrepot_id
+        c = Entrepot.objects.get(identrepot=c)
+        v = c.ville_id
+
         role = user.role_id
         if role == 4 or role == 1:
-            qs = Cargaison.objects.filter(
-                etat="Echantillonner",
-                entrepot__ville__affectationville__username_id=id
-                ).values(
-                'idcargaison',
-                'dateheurecargaison__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot__nomentrepot',
-                'produit__nomproduit',
-                'immatriculation',
-                'numdos',
-                'entrepot_echantillon__numrappechauto',
-                ).order_by('-entrepot_echantillon__dateechantillonage__date')
+            # Getting current Year & Month
+            now = datetime.now()
 
-            # Get the search value from the request's GET parameters
-            search_value = request.GET.get('search[value]', '')
+            numcertificatqualite = numCq(v)
 
-            # Apply search filter to the QuerySet
-            if search_value:
-                qs = qs.filter(
-                    Q(entrepot__nomentrepot__icontains=search_value) |
-                    Q(immatriculation__icontains=search_value) |
-                    Q(numdos__icontains=search_value) |
-                    Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-                    Q(qrcode__icontains=search_value)
-                )
+            # Changement de l'etat de la cargaison
+            d = Cargaison.objects.get(idcargaison=pk)
+            d.etat = "Analyse Labo en cours"
+            d.save(update_fields=['etat'])
 
-            # Number of items to show per page
-            items_per_page = 10
+            # Sauvegarde de l'instruction dans la Table LaboReception
+            codelabo = generate_labo_code(v)
 
-            # Initialize the Paginator with the QuerySet and the number of items per page
-            paginator = Paginator(qs, items_per_page)
+            p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
+                              numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
+            p.save()
 
-            # Get the current page number from the request's GET parameters
-            draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-            start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-            length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+            UserActivityLog.objects.create(
+                user=user,
+                action="Sample receiving acknowledgement",
+                description=f"User has confirm reception of the sample of the record {d.idcargaison}",
+            )
 
-            # Calculate the current page number based on start and length
-            current_page = (start // length) + 1
-
-            try:
-                # Get the current page from the Paginator
-                page = paginator.page(current_page)
-            except PageNotAnInteger:
-                # If page is not an integer, deliver the first page.
-                page = paginator.page(1)
-            except EmptyPage:
-                # If page is out of range (e.g. 9999), return an empty JSON response.
-                return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
-
-            # Convert the page object to a list of dictionaries
-            data = list(page)
-
-            # Return JSON response with the data
-            return JsonResponse({
-                'data': data,
-                'draw': draw,
-                'recordsTotal': paginator.count,
-                'recordsFiltered': paginator.count,
-            })
-
-
-
-    @login_required(login_url='login')
-    def receptionechantillon(request):
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            pk = data.get('idcargaison')
-
-            if pk is None:
-                response_data = {
-                    'success': False,
-                    'error': 'Missing primary key (pk)',
-                }
-                return JsonResponse(response_data, status=400)
-
-            user = request.user
-            id = user.id
-
-            # Get Town du point de dechargement pour l'attribution automatique des numeros
-
-            c = Cargaison.objects.get(idcargaison=pk)
-            c = c.entrepot_id
-            c = Entrepot.objects.get(identrepot=c)
-            v = c.ville_id
-
-            role = user.role_id
-            if role == 4 or role == 1:
-                # Getting current Year & Month
-                now = datetime.now()
-
-                numcertificatqualite = numCq(v)
-
-                # Changement de l'etat de la cargaison
-                d = Cargaison.objects.get(idcargaison=pk)
-                d.etat = "Analyse Labo en cours"
-                d.save(update_fields=['etat'])
-
-                # Sauvegarde de l'instruction dans la Table LaboReception
-                codelabo = generate_labo_code(v)
-
-
-                p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
-                                  numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
-                p.save()
-
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Sample receiving acknowledgement",
-                    description=f"User has confirm reception of the sample of the record {d.idcargaison}",
-                )
-
-                # Prepare the JSON response
-                response_data = {
-                    'success': True,
-                    'codeLabo': codelabo,
-                }
-                return JsonResponse(response_data)
-            else:
-                response_data = {
-                    'success': False,
-                    'error': 'Unauthorized',
-                }
-                return JsonResponse(response_data, status=401)
+            # Prepare the JSON response
+            response_data = {
+                'success': True,
+                'codeLabo': codelabo,
+            }
+            return JsonResponse(response_data)
         else:
             response_data = {
                 'success': False,
-                'error': 'Invalid request method',
+                'error': 'Unauthorized',
             }
-            return JsonResponse(response_data, status=405)
+            return JsonResponse(response_data, status=401)
+    else:
+        response_data = {
+            'success': False,
+            'error': 'Invalid request method',
+        }
+        return JsonResponse(response_data, status=405)
 
-    # Modification echantillone receptionner
-    @login_required(login_url='login')
-    def modification(request):
-        user = request.user
-        id = user.id
-        role = user.role_id
-        if role == 1 or role == 4:
-            if request.method == 'POST':
-                pk = request.POST['pk']
-                c = LaboReception.objects.get(idcargaison=pk)
-                e = Entrepot_echantillon.objects.get(idcargaison=pk)
-                codelabo = request.POST['codelabo']
-                datereceptionlabo = request.POST['datereception']
-                dateprelevement = request.POST['dateprelevement']
-                c.codelabo = codelabo
-                c.datereceptionlabo = datereceptionlabo
-                c.save(update_fields=['codelabo', 'datereceptionlabo'])
-                e.dateechantillonage = dateprelevement
-                e.save(update_fields=['dateechantillonage'])
-                response = {'valid': True}
-                return JsonResponse(response, status=200)
-        else:
-            return redirect('logout')
 
-    # Methode de recherche par qrcode avec scanner
-    @login_required(login_url='login')
-    def rechercheqrcode(request):
-        user = request.user
-        id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
-        role = user.role_id
-        form = ReceptionEchantillon()
-        form1 = ModificationEchantillon()
-        if role == 4 or role == 1:
-            q = request.GET.get('q')
-            if q == "":
-                return redirect('labo')
-            else:
-                a = '%' + q + '%'
-                qs1 = Entrepot_echantillon.objects.filter(idcargaison__qrcode=q, idcargaison__etat="Echantillonner",
-                                                          idcargaison__entrepot__ville=ville)
-                table = LaboratoireReception(qs1, prefix='1_')
+# Modification echantillone receptionner
+@login_required(login_url='login')
+def modification(request):
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if role == 1 or role == 4:
+        if request.method == 'POST':
+            pk = request.POST['pk']
+            c = LaboReception.objects.get(idcargaison=pk)
+            e = Entrepot_echantillon.objects.get(idcargaison=pk)
+            codelabo = request.POST['codelabo']
+            datereceptionlabo = request.POST['datereception']
+            dateprelevement = request.POST['dateprelevement']
+            c.codelabo = codelabo
+            c.datereceptionlabo = datereceptionlabo
+            c.save(update_fields=['codelabo', 'datereceptionlabo'])
+            e.dateechantillonage = dateprelevement
+            e.save(update_fields=['dateechantillonage'])
+            response = {'valid': True}
+            return JsonResponse(response, status=200)
+    else:
+        return redirect('logout')
 
-                qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-                                                  idcargaison__idcargaison__entrepot__ville=ville).order_by(
-                    '-datereceptionlabo')
-                table1 = TableauEchantillonRecu(qs, prefix='2_')
 
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
-
-                return render(request, 'labo.html', {
-                    'labo': table,
-                    'labo1': table1,
-                    'form': form,
-                    'form1': form1,
-                })
+# Methode de recherche par qrcode avec scanner
+@login_required(login_url='login')
+def rechercheqrcode(request):
+    user = request.user
+    id = user.id
+    ville = AffectationVille.objects.get(username_id=id)
+    ville = ville.ville_id
+    role = user.role_id
+    form = ReceptionEchantillon()
+    form1 = ModificationEchantillon()
+    if role == 4 or role == 1:
+        q = request.GET.get('q')
+        if q == "":
             return redirect('labo')
         else:
-            return redirect('logout')
+            a = '%' + q + '%'
+            qs1 = Entrepot_echantillon.objects.filter(idcargaison__qrcode=q, idcargaison__etat="Echantillonner",
+                                                      idcargaison__entrepot__ville=ville)
+            table = LaboratoireReception(qs1, prefix='1_')
 
-    # #Recherche du code Labo
-    @login_required(login_url='login')
-    def recherchecode(request):
-        user = request.user
-        id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
-        role = user.role_id
-        form1 = ModificationEchantillon()
-        form = ReceptionEchantillon()
-        if role == 4 or role == 1:
-            q = request.GET.get('q')
-            if q == "":
-                return redirect('labo')
-            else:
-                qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
-                                                         idcargaison__entrepot__ville=ville).order_by(
-                    '-dateechantillonage')
-                table = LaboratoireReception(qs)
+            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                              idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                '-datereceptionlabo')
+            table1 = TableauEchantillonRecu(qs, prefix='2_')
 
-                qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-                                                   idcargaison__idcargaison__entrepot__ville=ville,
-                                                   codelabo=q).order_by(
-                    '-datereceptionlabo')
-                table1 = TableauEchantillonRecu(qs1, prefix='2_')
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
 
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
-                return render(request, 'labo.html', {
-                    'labo': table,
-                    'labo1': table1,
-                    'form': form,
-                    'form1': form1,
-                })
+            return render(request, 'labo.html', {
+                'labo': table,
+                'labo1': table1,
+                'form': form,
+                'form1': form1,
+            })
+        return redirect('labo')
+    else:
+        return redirect('logout')
+
+
+# #Recherche du code Labo
+@login_required(login_url='login')
+def recherchecode(request):
+    user = request.user
+    id = user.id
+    ville = AffectationVille.objects.get(username_id=id)
+    ville = ville.ville_id
+    role = user.role_id
+    form1 = ModificationEchantillon()
+    form = ReceptionEchantillon()
+    if role == 4 or role == 1:
+        q = request.GET.get('q')
+        if q == "":
             return redirect('labo')
         else:
-            return redirect('logout')
+            qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
+                                                     idcargaison__entrepot__ville=ville).order_by(
+                '-dateechantillonage')
+            table = LaboratoireReception(qs)
+
+            qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                               idcargaison__idcargaison__entrepot__ville=ville,
+                                               codelabo=q).order_by(
+                '-datereceptionlabo')
+            table1 = TableauEchantillonRecu(qs1, prefix='2_')
+
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
+            return render(request, 'labo.html', {
+                'labo': table,
+                'labo1': table1,
+                'form': form,
+                'form1': form1,
+            })
+        return redirect('labo')
+    else:
+        return redirect('logout')
 
 
 # Class de gestion des analyses au Laboratoire
@@ -289,18 +443,17 @@ class GestionAnalyse():
         if role == 5 or role == 1:
             form = CorrectionProduit()
             count = Cargaison.objects.filter(
-                        etat='Refaire',
-                        entrepot__ville__affectationville__username_id=user.id
-                    ).count()
+                etat='Refaire',
+                entrepot__ville__affectationville__username_id=user.id
+            ).count()
             # print(count)
-            context={
-                'count':count,
-                'form':form
+            context = {
+                'count': count,
+                'form': form
             }
             return render(request, 'labo_analyse.html', context)
         else:
             return redirect('logout')
-
 
     # Fonction de recherche pour encodage résultat
     @login_required(login_url='login')
@@ -518,7 +671,7 @@ class GestionAnalyse():
                                  dateimpression=dateimpression)
                     p.save()
 
-                    #Getting Parameters ID
+                    # Getting Parameters ID
                     #
                     #
                     #
@@ -1098,24 +1251,26 @@ class GestionValidation():
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
             # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',idcargaison__entrepot__ville__affectationville__username_id=id).count()
-            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__idcargaison__etat='Validation en cours 2').count()
-            certImprimer = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,isPrinted=1).count()
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',
+                                                                idcargaison__entrepot__ville__affectationville__username_id=id).count()
+            enanalyse = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Validation en cours 2').count()
+            certImprimer = ImpressionResultat.objects.filter(
+                idcargaison__entrepot__ville__affectationville__username_id=id, isPrinted=1).count()
 
             return render(request, 'labo_validation1.html', {
-                                                             'form': form,
-                                                             'laboreception': laboreception,
-                                                             'enanalyse': enanalyse,
-                                                             'enattente': enattente,
-                                                            'certImprimer':certImprimer,
-                                                             })
+                'form': form,
+                'laboreception': laboreception,
+                'enanalyse': enanalyse,
+                'enattente': enattente,
+                'certImprimer': certImprimer,
+            })
         else:
             return redirect('logout')
-
-
 
     # Fonction encodage du code Labo
     @login_required(login_url='login')
@@ -1159,12 +1314,14 @@ class GestionValidation():
 
         if role == 5 or role == 1 or role == 6 or role == "v2":
             # Récuperation des dates
-            d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-                                        FROM hydro_occ.enreg_laboreception \
-                                        WHERE idcargaison_id = %s', [pk, ])
-            for obj in d:
-                mois = obj.mois
-                annee = obj.annee
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            if cargaison.date_reception_labo:
+                mois = cargaison.date_reception_labo.month
+                annee = cargaison.date_reception_labo.year
+            else:
+                # Fallback to current date or handle missing date
+                mois = datetime.today().month
+                annee = datetime.today().year
 
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
@@ -1512,29 +1669,51 @@ class GestionValidation():
     @login_required(login_url='login')
     def validationv1(request, pk):
         user = request.user
-        id = user.id
         role = user.role_id
 
-        if role == 6 or role == 1:
-            c = Cargaison.objects.get(idcargaison=pk)
-            c.etat = "En attente validation 2"
-            c.save(update_fields=['etat'])
-            return redirect('validation1')
+        if role in (1, 6):
+            try:
+                with transaction.atomic():
+                    c = Cargaison.objects.select_for_update().get(idcargaison=pk)
+                    c.etat = "En attente validation 2"
+                    c.save(update_fields=['etat'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Validation 1: Transmission",
+                        description=f"Cargaison {pk}: Dossier transmis pour validation Niveau 2.",
+                    )
+                return redirect('validation1')
+            except Cargaison.DoesNotExist:
+                return redirect('validation1')
         else:
             return redirect('logout')
 
     @login_required(login_url='login')
     def refaire(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        url = request.session['url']
-        pk = request.session['pk']
-        if role == 6 or role == 1:
-            c = Cargaison.objects.get(idcargaison=pk)
-            c.etat = "Refaire"
-            c.save(update_fields=['etat'])
+        url = request.session.get('url', 'validation1')
+        pk = request.session.get('pk')
+
+        if not pk:
             return redirect(url)
+
+        if role in (1, 6, 10):
+            try:
+                with transaction.atomic():
+                    c = Cargaison.objects.select_for_update().get(idcargaison=pk)
+                    c.etat = "Refaire"
+                    c.save(update_fields=['etat'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Validation: Request Re-analysis",
+                        description=f"Cargaison {pk}: User requested re-analysis via legacy view.",
+                    )
+                return redirect(url)
+            except Cargaison.DoesNotExist:
+                return redirect(url)
         else:
             return redirect('logout')
 
@@ -1542,96 +1721,149 @@ class GestionValidation():
     @login_required(login_url='login')
     def conforme(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        url = request.session['url']
-        pk = request.session['pk']
+        url = request.session.get('url', 'validation1')
+        pk = request.session.get('pk')
 
-        if role == "v2" or role == 1 or role == 6:
-            c = Cargaison.objects.get(idcargaison=pk)
-            c.etat = "Validation en cours 2"
-            c.conformite = "Conforme aux exigences"
-            c.impression = "0"
-            c.save(update_fields=['etat', 'conformite', 'impression'])
-
-            # i = ImpressionResultat.objects.get(idcargaison_id=c.idcargaison)
-            # i.isConforme = True
-            # i.isPrinted = False
-            # i.save(update_fields=['isConforme','isPrinted'])
-
+        if not pk:
             return redirect(url)
+
+        # Accommodate both string 'v2' and integer role IDs (1, 6)
+        if role == "v2" or role in (1, 6):
+            try:
+                with transaction.atomic():
+                    c = Cargaison.objects.select_for_update().get(idcargaison=pk)
+                    c.etat = "Validation en cours 2"
+                    c.conformite = "Conforme aux exigences"
+                    c.impression = "0"
+                    c.save(update_fields=['etat', 'conformite', 'impression'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Validation 1: CONFORME",
+                        description=f"Cargaison {pk}: First validation set to CONFORME via legacy view.",
+                    )
+                return redirect(url)
+            except Cargaison.DoesNotExist:
+                return redirect(url)
         else:
             return redirect('logout')
 
     @login_required(login_url='login')
     def nonconforme(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        url = request.session['url']
-        pk = request.session['pk']
-        if role == "v2" or role == 1 or role == 6:
-            c = Cargaison.objects.get(idcargaison=pk)
-            c.etat = "Validation en cours 2"
-            c.conformite = "Non conforme aux exigences"
-            c.impression = "0"
-            c.save(update_fields=['etat', 'conformite', 'impression'])
+        url = request.session.get('url', 'validation1')
+        pk = request.session.get('pk')
+
+        if not pk:
             return redirect(url)
+
+        if role == "v2" or role in (1, 6):
+            try:
+                with transaction.atomic():
+                    c = Cargaison.objects.select_for_update().get(idcargaison=pk)
+                    c.etat = "Validation en cours 2"
+                    c.conformite = "Non conforme aux exigences"
+                    c.impression = "0"
+                    c.save(update_fields=['etat', 'conformite', 'impression'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Validation 1: NON CONFORME",
+                        description=f"Cargaison {pk}: First validation set to NON CONFORME via legacy view.",
+                    )
+                return redirect(url)
+            except Cargaison.DoesNotExist:
+                return redirect(url)
         else:
             return redirect('logout')
-
 
     @login_required(login_url='login')
     def conforme2(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        pk = request.session['pk']
+        pk = request.session.get('pk')
 
-        if role == 1 or role == 10:
-            c = Cargaison.objects.get(idcargaison=pk)
-
-            # Check if ImpressionResultat exists for the Cargaison
-            if not ImpressionResultat.objects.filter(idcargaison=c).exists():
-                # Create and save ImpressionResultat
-                i = ImpressionResultat(printDate=datetime.now(), isConforme=1, isPrinted=0, idcargaison=c)
-                i.save()
-
-                # Update Cargaison fields
-                c.etat = "Conforme aux exigences"
-                c.conformite = "Conforme aux exigences"
-                c.impression = "0"
-                c.dateHeureAnalyseLabo = datetime.now()
-                c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
-                return redirect('validation2')
+        if not pk:
             return redirect('validation2')
+
+        if role in (1, 10):
+            try:
+                now = timezone.now()
+                with transaction.atomic():
+                    c = Cargaison.objects.select_for_update().get(idcargaison=pk)
+
+                    # Check if ImpressionResultat exists for the Cargaison
+                    if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                        # Create and save ImpressionResultat
+                        ImpressionResultat.objects.create(
+                            printDate=now.date(),
+                            isConforme=True,
+                            isPrinted=False,
+                            idcargaison=c
+                        )
+
+                        # Update Cargaison fields
+                        c.etat = "Conforme aux exigences"
+                        c.conformite = "Conforme aux exigences"
+                        c.impression = "0"
+                        c.dateHeureAnalyseLabo = now
+                        c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+
+                        UserActivityLog.objects.create(
+                            user=user,
+                            action="Validation 2: CONFORME",
+                            description=f"Cargaison {pk}: Final validation set to CONFORME via legacy view.",
+                        )
+
+                return redirect('validation2')
+            except Cargaison.DoesNotExist:
+                return redirect('validation2')
         else:
             return redirect('logout')
-
 
     @login_required(login_url='login')
     def nonconforme2(request):
         user = request.user
-        pk = request.session['pk']
-        id = user.id
+        pk = request.session.get('pk')
         role = user.role_id
-        if role == 1 or role == 10:
-            c = Cargaison.objects.get(idcargaison=pk)
-            a = LaboReception.objects.get(idcargaison=pk)
 
-            #Updated Method
-            i=ImpressionResultat(printDate=datetime.now,isConforme=0,isPrinted=0,idcargaison=c)
-            i.save()
-
-            c.etat = "Non conforme aux exigences"
-            c.impression = "0"
-            c.dateHeureAnalyseLabo = datetime.now()
-            c.save(update_fields=['etat', 'impression','dateHeureAnalyseLabo'])
+        if not pk:
             return redirect('validation2')
+
+        if role in (1, 10):
+            try:
+                now = timezone.now()
+                with transaction.atomic():
+                    c = Cargaison.objects.select_for_update().get(idcargaison=pk)
+
+                    if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                        # Create and save ImpressionResultat
+                        ImpressionResultat.objects.create(
+                            printDate=now.date(),
+                            isConforme=False,
+                            isPrinted=False,
+                            idcargaison=c
+                        )
+
+                        c.etat = "Non conforme aux exigences"
+                        c.conformite = "Non conforme aux exigences"
+                        c.impression = "0"
+                        c.dateHeureAnalyseLabo = now
+                        c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+
+                        UserActivityLog.objects.create(
+                            user=user,
+                            action="Validation 2: NON CONFORME",
+                            description=f"Cargaison {pk}: Final validation set to NON CONFORME via legacy view.",
+                        )
+
+                return redirect('validation2')
+            except Cargaison.DoesNotExist:
+                return redirect('validation2')
         else:
             return redirect('logout')
-
-
 
     # Fonction affichage des resultats sur Validation 1
     @login_required(login_url='login')
@@ -1641,20 +1873,24 @@ class GestionValidation():
         role = user.role_id
         if role == 5 or role == 1 or role == 6 or role == 10:
             template = 'labo_validation2.html'
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',idcargaison__entrepot__ville__affectationville__username_id=id).count()
-            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__idcargaison__etat='Validation en cours 2').count()
-            certImprimer = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,isPrinted=1).count()
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',
+                                                                idcargaison__entrepot__ville__affectationville__username_id=id).count()
+            enanalyse = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Validation en cours 2').count()
+            certImprimer = ImpressionResultat.objects.filter(
+                idcargaison__entrepot__ville__affectationville__username_id=id, isPrinted=1).count()
 
             context = {
-                'laboreception':laboreception,
-                'enanalyse':enanalyse,
-                'enattente':enattente,
-                'certImprimer':certImprimer,
+                'laboreception': laboreception,
+                'enanalyse': enanalyse,
+                'enattente': enattente,
+                'certImprimer': certImprimer,
             }
-            return render(request,template,context)
+            return render(request, template, context)
         else:
             return redirect('logout')
 
@@ -1666,22 +1902,37 @@ class GestionImpressionLabo():
     @login_required(login_url='login')
     def affichagetableauimpression(request):
         user = request.user
+        id = user.id
         role = user.role_id
-        ville = AffectationVille.objects.get(username_id=user.id)
-        ville = ville.ville_id
+
+        if role not in (1, 5):
+            return redirect('logout')
+
+        # Leverage denormalized scoping
+        allowed_entrepot_ids = Entrepot.objects.filter(
+            ville__affectationville__username_id=id
+        ).values_list('identrepot', flat=True)
+
+        base_qs = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids,
+            etat="Conforme aux exigences"
+        )
+
+        # Robust printed status control using Exists
+        printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
+        base_qs = base_qs.annotate(has_been_printed=Exists(printed_exists))
+
+        cqNotPrinted = base_qs.filter(has_been_printed=False).count()
+        cqPrinted = base_qs.filter(has_been_printed=True).count()
+
         request.session['url'] = request.get_full_path()
         template = 'labo_impression.html'
-        if role == 5 or role == 1:
-            # calcul pr affichages des pastilles
-            cqNotPrinted = ImpressionResultat.objects.filter(isPrinted=False,idcargaison__entrepot__ville=ville).count()
-            cqPrinted = ImpressionResultat.objects.filter(isPrinted=True, idcargaison__entrepot__ville=ville).count()
-            context = {
-                        'cqNotPrinted': cqNotPrinted,
-                        'cqPrinted': cqPrinted,
-                        }
-            return render(request,template,context)
-        else:
-            return redirect('logout')
+
+        context = {
+            'cqNotPrinted': cqNotPrinted,
+            'cqPrinted': cqPrinted,
+        }
+        return render(request, template, context)
 
     # Fonction de recherche des certificat à imprimer
     @login_required(login_url='login')
@@ -1691,26 +1942,27 @@ class GestionImpressionLabo():
         ville = AffectationVille.objects.get(username_id=user.id)
         ville = ville.ville_id
         request.session['url'] = request.get_full_path()
-        template='labo_impression.html'
+        template = 'labo_impression.html'
         if role == 5 or role == 1 or role == 6 or role == "v2":
             numcode = request.GET.get('codelabo')
             if numcode != "":
-                qs = Cargaison.objects.raw('SELECT ec.idcargaison, ei.idImpression, el.numcertificatqualite, el.codelabo, ep.nomproduit, i.nomimportateur, ee.nomentrepot \
-                        FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_laboreception el, enreg_produit ep, enreg_importateur i, enreg_entrepot ee, enreg_ville ev \
-                        WHERE ei.idcargaison_id = ec.idcargaison \
-                        AND ec.idcargaison = el.idcargaison_id \
-                        AND ec.produit_id = ep.idproduit \
-                        AND ec.importateur_id = i.idimportateur \
-                        AND ec.entrepot_id = ee.identrepot \
-                        AND ee.ville_id = ev.idville \
-                        AND ev.idville = %s \
-                        AND el.codelabo = %s \
-                        AND ei.isPrinted = 0', [ville,numcode, ])
+                qs = Cargaison.objects.filter(
+                    entrepot__ville_id=ville,
+                    code_labo=numcode,
+                    impressionresultat__isPrinted=0
+                ).annotate(
+                    idImpression=F('impressionresultat__idImpression'),
+                    numcertificatqualite=F('num_certificat_qualite'),
+                    codelabo=F('code_labo'),
+                    nomproduit=F('nom_produit'),
+                    nomimportateur=F('nom_importateur'),
+                    nomentrepot=F('nom_entrepot')
+                )
 
                 table = AffichageTableauImpression(qs, prefix='2_')
                 RequestConfig(request, paginate={"per_page": 10}).configure(table)
-                context = {'labo':table}
-                return render(request,template,context)
+                context = {'labo': table}
+                return render(request, template, context)
             else:
                 return redirect('impression')
         else:
@@ -1728,17 +1980,18 @@ class GestionImpressionLabo():
         if role == 5 or role == 1 or role == "v1" or role == "v2":
             numcode = request.GET.get('codelabo')
             if numcode != "":
-                qs = Cargaison.objects.raw('SELECT ec.idcargaison, ei.idImpression, el.numcertificatqualite, el.codelabo, ep.nomproduit, i.nomimportateur, ee.nomentrepot \
-                        FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_laboreception el, enreg_produit ep, enreg_importateur i, enreg_entrepot ee, enreg_ville ev \
-                        WHERE ei.idcargaison_id = ec.idcargaison \
-                        AND ec.idcargaison = el.idcargaison_id \
-                        AND ec.produit_id = ep.idproduit \
-                        AND ec.importateur_id = i.idimportateur \
-                        AND ec.entrepot_id = ee.identrepot \
-                        AND ee.ville_id = ev.idville \
-                        AND ev.idville = %s \
-                        AND el.codelabo = %s \
-                        AND ei.isPrinted = 1', [ville,numcode, ])
+                qs = Cargaison.objects.filter(
+                    entrepot__ville_id=ville,
+                    code_labo=numcode,
+                    impressionresultat__isPrinted=1
+                ).annotate(
+                    idImpression=F('impressionresultat__idImpression'),
+                    numcertificatqualite=F('num_certificat_qualite'),
+                    codelabo=F('code_labo'),
+                    nomproduit=F('nom_produit'),
+                    nomimportateur=F('nom_importateur'),
+                    nomentrepot=F('nom_entrepot')
+                )
 
                 table = AffichageTableauImpression(qs)
 
@@ -1753,750 +2006,7 @@ class GestionImpressionLabo():
         else:
             return redirect('logout')
 
-    # # Fonction pour impression Certificat
-    # @login_required(login_url='login')
-    # def impressioncertificat(request, pk):
-    #     user = request.user
-    #     id = user.id
-    #     name = user.last_name + ' ' + user.first_name
-    #     poste = user.poste
-    #     ville = AffectationVille.objects.get(username_id=id)
-    #     ville = ville.ville_id
-    #     province = Ville.objects.get(idville=ville)
-    #     province = province.province
-    #     province = province.upper()
-    #     role = user.role_id
-    #     url = request.session['url']
-    #
-    #     #Recuperation des donnees liees aux signataires
-    #     affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
-    #     affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
-    #     signDroite = MyUser.objects.get(username=affect1.userId)
-    #     signGauche = MyUser.objects.get(username=affect2.userId)
-    #
-    #     #Recuperation du Laboratoire asssocie a la ville
-    #     laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
-    #
-    #     #Recuperation des donnees liees a l'Impression
-    #     print(pk)
-    #     impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
-    #
-    #     print(signGauche)
-    #     print(signDroite)
-    #
-    #     d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
-    #         mois=ExtractMonth('datereceptionlabo'),
-    #         annee=ExtractYear('datereceptionlabo')
-    #     ).values('idcargaison_id', 'mois', 'annee')
-    #
-    #
-    #     for entry in d:
-    #         mois = entry['mois']
-    #         annee = entry['annee']
-    #
-    #     print(mois)
-    #     print(annee)
-    #
-    #
-    #     if role == 5 or role == 1 :
-    #         td = datetime.today()
-    #         # today = td.date()
-    #
-    #         # Récuperation des dates
-    #         # d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-    #         #                                        FROM hydro_occ.enreg_laboreception \
-    #         #                                        WHERE idcargaison_id = %s', [pk, ])
-    #         # for obj in d:
-    #         #     mois = obj.mois
-    #         #     annee = obj.annee
-    #
-    #         # Recuperation du produit de la cargaison
-    #         p = Produit.objects.get(cargaison=pk)
-    #         produit = p.nomproduit
-    #
-    #         # Fecthing object with pk corresponding into database
-    #         cargaison = Cargaison.objects.get(idcargaison=pk)
-    #         echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
-    #         laboratoire = LaboReception.objects.get(idcargaison=pk)
-    #
-    #         printed = ImpressionResultat.objects.get(idcargaison=pk)
-    #         printed.isPrinted = 1
-    #         printed.save(update_fields=['isPrinted'])
-    #
-    #
-    #
-    #         # Test pour afficher les differents rapports
-    #         if produit == 'GASOIL':
-    #             template = 'report/Report1/gasoilreport.html'
-    #
-    #             # Resultat Gasoil Fetching data into Database
-    #             try:
-    #                 couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-    #             except:
-    #                 couleurastm = ''
-    #             try:
-    #                 aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
-    #             except:
-    #                 aciditetotal= ''
-    #             try:
-    #                 soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-    #             except:
-    #                 soufre = ''
-    #             try:
-    #                 massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=21)[0].valeurResultat
-    #             except:
-    #                 massevolumique = ''
-    #             try:
-    #                 massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=20)[0].valeurResultat
-    #             except:
-    #                 massevolumique15 = ''
-    #             try:
-    #                 distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-    #             except:
-    #                 distillation = ''
-    #             try:
-    #                 distillation10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-    #             except:
-    #                 distillation10 = ''
-    #             try:
-    #                 distillation20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-    #             except:
-    #                 distillation20 = ''
-    #             try:
-    #                 distillation50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-    #             except:
-    #                 distillation50 = ''
-    #             try:
-    #                 distillation90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-    #             except:
-    #                 distillation90 = ''
-    #             try:
-    #                 pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[0].valeurResultat
-    #             except:
-    #                 pointinitial = ''
-    #             try:
-    #                 pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-    #             except:
-    #                 pointfinal = ''
-    #             try:
-    #                 pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[0].valeurResultat
-    #             except:
-    #                 pointeclair = ''
-    #             try:
-    #                 viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=38)[0].valeurResultat
-    #             except:
-    #                 viscosite = ''
-    #             try:
-    #                 pointecoulement = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[0].valeurResultat
-    #             except:
-    #                 pointecoulement = ''
-    #             try:
-    #                 teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[0].valeurResultat
-    #             except:
-    #                 teneureau = ''
-    #             try:
-    #                 sediment = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=32)[0].valeurResultat
-    #             except:
-    #                 sediment = ''
-    #             try:
-    #                 corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
-    #                 corrosion = int(corrosion_str)
-    #             except:
-    #                 corrosion = ''
-    #             try:
-    #                 indicecetane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[0].valeurResultat
-    #             except:
-    #                 indicecetane = ''
-    #             # try:
-    #             #     densite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=49)[0].valeurResultat
-    #             # except:
-    #             #     densite = ''
-    #             try:
-    #                 recuperation362 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
-    #             except:
-    #                 recuperation362 = ''
-    #             try:
-    #                 cendre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[0].valeurResultat
-    #             except:
-    #                 cendre = ''
-    #
-    #             data = {
-    #                 'laboratoire': laboratoire,
-    #                 'cargaison': cargaison,
-    #                 'echantillon': echantillon,
-    #                 'annee': annee,
-    #                 'mois': mois,
-    #                 'province': province,
-    #                 'couleurastm': couleurastm,
-    #                 'aciditetotal': aciditetotal,
-    #                 'soufre': soufre,
-    #                 'massevolumique': massevolumique,
-    #                 'distillation': distillation,
-    #                 'distillation10': distillation10,
-    #                 'distillation20': distillation20,
-    #                 'distillation50': distillation50,
-    #                 'distillation90': distillation90,
-    #                 'pointfinal': pointfinal,
-    #                 'pointeclair': pointeclair,
-    #                 'pointinitial': pointinitial,
-    #                 'viscosite': viscosite,
-    #                 'pointecoulement': pointecoulement,
-    #                 'teneureau': teneureau,
-    #                 'sediment': sediment,
-    #                 'corrosion': corrosion,
-    #                 'indicecetane': indicecetane,
-    #                 # 'densite': densite,
-    #                 'recuperation362': recuperation362,
-    #                 'cendre': cendre,
-    #                 'massevolumique15': massevolumique15,
-    #                 'signGauche': signGauche,
-    #                 'signDroite': signDroite,
-    #                 'impressionData': impressionData,
-    #                 'laboratoireData':laboratoireData,
-    #             }
-    #
-    #             # Rendered PDF report
-    #             pdf = render_to_pdf(template, data)
-    #             return HttpResponse(pdf, content_type='application/pdf')
-    #
-    #         else:
-    #             if produit == 'MOGAS':
-    #                 template = 'report/Report1/mogasreport.html'
-    #                 # Resultat Gasoil Fetching data into Database
-    #                 try:
-    #                     aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
-    #                 except:
-    #                     aspect=''
-    #                 try:
-    #                     odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
-    #                 except:
-    #                     odeur=''
-    #                 try:
-    #                     couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-    #                 except:
-    #                     couleursaybolt=''
-    #                 try:
-    #                     soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-    #                 except:
-    #                     soufre=''
-    #                 try:
-    #                     distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-    #                 except:
-    #                     distillation=''
-    #                 try:
-    #                     pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-    #                 except:
-    #                     pointfinal=''
-    #                 try:
-    #                     residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
-    #                 except:
-    #                     residu=''
-    #                 try:
-    #                     corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
-    #                     corrosion = int(corrosion_str)
-    #                 except:
-    #                     corrosion=''
-    #                 try:
-    #                     pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-    #                 except:
-    #                     pourcent10=''
-    #                 try:
-    #                     pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-    #                 except:
-    #                     pourcent20=''
-    #                 try:
-    #                     pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-    #                 except:
-    #                     pourcent50=''
-    #                 try:
-    #                     pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
-    #                 except:
-    #                     pourcent70=''
-    #                 try:
-    #                     pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-    #                 except:
-    #                     pourcent90=''
-    #                 try:
-    #                     tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
-    #                 except:
-    #                     tensionvapeur=''
-    #                 try:
-    #                     difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
-    #                 except:
-    #                     difftemperature=''
-    #                 try:
-    #                     plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
-    #                 except:
-    #                     plomb=''
-    #                 try:
-    #                     indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
-    #                 except:
-    #                     indiceoctane=''
-    #                 try:
-    #                     massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-    #                 except:
-    #                     massevolumique15=''
-    #
-    #                 data = {
-    #                     'laboratoire': laboratoire,
-    #                     'cargaison': cargaison,
-    #                     'echantillon': echantillon,
-    #                     'annee': annee,
-    #                     'mois': mois,
-    #                     'province': province,
-    #                     'aspect': aspect,
-    #                     'odeur': odeur,
-    #                     'couleursaybolt': couleursaybolt,
-    #                     'soufre': soufre,
-    #                     'distillation': distillation,
-    #                     'pointfinal': pointfinal,
-    #                     'residu': residu,
-    #                     'corrosion': corrosion,
-    #                     'pourcent10': pourcent10,
-    #                     'pourcent20': pourcent20,
-    #                     'pourcent50': pourcent50,
-    #                     'pourcent70': pourcent70,
-    #                     'pourcent90': pourcent90,
-    #                     'tensionvapeur': tensionvapeur,
-    #                     'difftemperature': difftemperature,
-    #                     'plomb': plomb,
-    #                     'indiceoctane': indiceoctane,
-    #                     'massevolumique15': massevolumique15,
-    #                     'signGauche': signGauche,
-    #                 'signDroite': signDroite,
-    #                 'impressionData': impressionData,
-    #                 'laboratoireData':laboratoireData,
-    #                 }
-    #
-    #                 # Rendered PDF report
-    #                 pdf = render_to_pdf(template, data)
-    #                 return HttpResponse(pdf, content_type='application/pdf')
-    #             else:
-    #                 if produit == 'JET A1':
-    #                     template = 'report/Report1/jeta1report.html'
-    #
-    #                     # Resultat Gasoil Fetching data into Database
-    #                     try:
-    #                         aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
-    #                             0].valeurResultatChar
-    #                     except:
-    #                         aspect=''
-    #                     try:
-    #                         couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-    #                             0].valeurResultatChar
-    #                     except:
-    #                         couleursaybolt=''
-    #                     try:
-    #                         aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         aciditetotal=''
-    #                     try:
-    #                         soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         soufre=''
-    #                     try:
-    #                         soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         soufremercaptan=''
-    #                     try:
-    #                         docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         docteurtest=''
-    #                     try:
-    #                         distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         distillation=''
-    #                     try:
-    #                         pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         pointinitial=''
-    #                     try:
-    #                         pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         pointfinal=''
-    #
-    #                     try:
-    #                         pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         pointfumee=''
-    #
-    #                     try:
-    #                         pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         pointeclair=''
-    #
-    #                     try:
-    #                         freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         freezingpoint=''
-    #
-    #                     try:
-    #                         residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         residu=''
-    #
-    #                     try:
-    #                         perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         perte=''
-    #
-    #                     try:
-    #                         massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         massevolumique15=''
-    #
-    #                     try:
-    #                         viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         viscosite=''
-    #
-    #                     try:
-    #                         pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         pointinflammabilite=''
-    #
-    #                     try:
-    #                         teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         teneureau=''
-    #
-    #                     try:
-    #                         corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-    #                             0].valeurResultat
-    #                         corrosion = int(corrosion_str)
-    #                     except:
-    #                         corrosion=''
-    #
-    #                     try:
-    #                         conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         conductivite=''
-    #
-    #                     try:
-    #                         vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol10=''
-    #
-    #                     try:
-    #                         vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol20=''
-    #                     try:
-    #                         vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol30=''
-    #                     try:
-    #                         vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol40=''
-    #                     try:
-    #                         vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol50=''
-    #                     try:
-    #                         vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol60=''
-    #                     try:
-    #                         vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol70=''
-    #                     try:
-    #                         vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol80=''
-    #                     try:
-    #                         vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
-    #                             0].valeurResultat
-    #                     except:
-    #                         vol90=''
-    #
-    #                     data = {
-    #                         'laboratoire': laboratoire,
-    #                         'cargaison': cargaison,
-    #                         'echantillon': echantillon,
-    #                         'annee': annee,
-    #                         'mois': mois,
-    #                         'province': province,
-    #                         'aspect': aspect,
-    #                         'couleursaybolt': couleursaybolt,
-    #                         'aciditetotal': aciditetotal,
-    #                         'soufre': soufre,
-    #                         'soufremercaptan': soufremercaptan,
-    #                         'docteurtest': docteurtest,
-    #                         'distillation': distillation,
-    #                         'pointinitial': pointinitial,
-    #                         'pointfinal': pointfinal,
-    #                         'pointfumee': pointfumee,
-    #                         'freezingpoint': freezingpoint,
-    #                         'residu': residu,
-    #                         'perte': perte,
-    #                         'pointeclair': pointeclair,
-    #                         'massevolumique15': massevolumique15,
-    #                         'viscosite': viscosite,
-    #                         'pointinflammabilite': pointinflammabilite,
-    #                         'teneureau': teneureau,
-    #                         'corrosion': corrosion,
-    #                         'conductivite': conductivite,
-    #                         'vol10': vol10,
-    #                         'vol20': vol20,
-    #                         'vol30': vol30,
-    #                         'vol40': vol40,
-    #                         'vol50': vol50,
-    #                         'vol60': vol60,
-    #                         'vol70': vol70,
-    #                         'vol80': vol80,
-    #                         'vol90': vol90,
-    #                         'signGauche': signGauche,
-    #                         'signDroite': signDroite,
-    #                         'impressionData': impressionData,
-    #                         'laboratoireData':laboratoireData,
-    #                     }
-    #                     # Rendered PDF report
-    #                     pdf = render_to_pdf(template, data)
-    #                     return HttpResponse(pdf, content_type='application/pdf')
-    #
-    #                 else:
-    #                     if produit == 'PETROLE LAMPANT':
-    #                         template = 'report/Report1/petrolereport.html'
-    #
-    #                         # Resultat Gasoil Fetching data into Database
-    #                         try:
-    #                             aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-    #                                 0].valeurResultatChar
-    #                         except:
-    #                             aspect = ''
-    #                         try:
-    #                             couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[
-    #                                 0].valeurResultatChar
-    #                         except:
-    #                             couleursaybolt = ''
-    #                         try:
-    #                             aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             aciditetotal = ''
-    #                         try:
-    #                             soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             soufre = ''
-    #                         try:
-    #                             soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             soufremercaptan = ''
-    #                         try:
-    #                             docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             docteurtest = ''
-    #                         try:
-    #                             distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             distillation = ''
-    #                         try:
-    #                             pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             pointinitial = ''
-    #                         try:
-    #                             pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             pointfinal = ''
-    #
-    #                         try:
-    #                             pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             pointfumee = ''
-    #
-    #                         try:
-    #                             pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             pointeclair = ''
-    #
-    #                         try:
-    #                             freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             freezingpoint = ''
-    #
-    #                         try:
-    #                             residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             residu = ''
-    #
-    #                         try:
-    #                             perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             perte = ''
-    #
-    #                         try:
-    #                             massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=52)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             massevolumique15 = ''
-    #
-    #                         try:
-    #                             viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             viscosite = ''
-    #
-    #                         try:
-    #                             pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             pointinflammabilite = ''
-    #
-    #                         try:
-    #                             teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             teneureau = ''
-    #
-    #                         try:
-    #                             corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-    #                                 0].valeurResultat
-    #                             corrosion = int(corrosion_str)
-    #
-    #                         except:
-    #                             corrosion = ''
-    #
-    #                         try:
-    #                             conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             conductivite = ''
-    #
-    #                         try:
-    #                             vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=39)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol10 = ''
-    #
-    #                         try:
-    #                             vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=40)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol20 = ''
-    #                         try:
-    #                             vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=41)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol30 = ''
-    #                         try:
-    #                             vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=42)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol40 = ''
-    #                         try:
-    #                             vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=43)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol50 = ''
-    #                         try:
-    #                             vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol60 = ''
-    #                         try:
-    #                             vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=45)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol70 = ''
-    #                         try:
-    #                             vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=46)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol80 = ''
-    #                         try:
-    #                             vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=47)[
-    #                                 0].valeurResultat
-    #                         except:
-    #                             vol90 = ''
-    #
-    #                         data = {
-    #                             'laboratoire': laboratoire,
-    #                             'cargaison': cargaison,
-    #                             'echantillon': echantillon,
-    #                             'annee': annee,
-    #                             'mois': mois,
-    #                             'province': province,
-    #                             'aspect': aspect,
-    #                             'couleursaybolt': couleursaybolt,
-    #                             'aciditetotal': aciditetotal,
-    #                             'soufre': soufre,
-    #                             'soufremercaptan': soufremercaptan,
-    #                             'docteurtest': docteurtest,
-    #                             'distillation': distillation,
-    #                             'pointinitial': pointinitial,
-    #                             'pointfinal': pointfinal,
-    #                             'pointfumee': pointfumee,
-    #                             'freezingpoint': freezingpoint,
-    #                             'residu': residu,
-    #                             'perte': perte,
-    #                             'pointeclair': pointeclair,
-    #                             'massevolumique15': massevolumique15,
-    #                             'viscosite': viscosite,
-    #                             'pointinflammabilite': pointinflammabilite,
-    #                             'teneureau': teneureau,
-    #                             'corrosion': corrosion,
-    #                             'conductivite': conductivite,
-    #                             'vol10': vol10,
-    #                             'vol20': vol20,
-    #                             'vol30': vol30,
-    #                             'vol40': vol40,
-    #                             'vol50': vol50,
-    #                             'vol60': vol60,
-    #                             'vol70': vol70,
-    #                             'vol80': vol80,
-    #                             'vol90': vol90,
-    #                             'signGauche': signGauche,
-    #                 'signDroite': signDroite,
-    #                 'impressionData': impressionData,
-    #                 'laboratoireData':laboratoireData,
-    #                         }
-    #
-    #                         # Rendered PDF report
-    #                         pdf = render_to_pdf(template, data)
-    #                         return HttpResponse(pdf, content_type='application/pdf')
-    #                 return redirect('logout')
-    #     else:
-    #         return redirect('logout')
 
-    # Fonction pour impression Certificat
     @login_required(login_url='login')
     def reimpressioncertificat(request, pk):
         user = request.user
@@ -2508,13 +2018,13 @@ class GestionImpressionLabo():
             today = td.date()
 
             # Récuperation des dates
-            d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-                                                   FROM hydro_occ.enreg_laboreception \
-                                                   WHERE idcargaison_id = %s', [pk, ])
-
-            for obj in d:
-                mois = obj.mois
-                annee = obj.annee
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            if cargaison.date_reception_labo:
+                mois = cargaison.date_reception_labo.month
+                annee = cargaison.date_reception_labo.year
+            else:
+                mois = datetime.today().month
+                annee = datetime.today().year
 
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
@@ -2877,13 +2387,13 @@ class GestionImpressionLabo():
         if role == 5 or role == 1 or role == 6 or role == "v2":
 
             # Récuperation des dates
-            d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-                                                              FROM hydro_occ.enreg_laboreception \
-                                                              WHERE idcargaison_id = %s', [pk, ])
-
-            for obj in d:
-                mois = obj.mois
-                annee = obj.annee
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            if cargaison.date_reception_labo:
+                mois = cargaison.date_reception_labo.month
+                annee = cargaison.date_reception_labo.year
+            else:
+                mois = datetime.today().month
+                annee = datetime.today().year
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
             produit = p.nomproduit
@@ -3262,53 +2772,54 @@ def labdashboard(request):
 @login_required(login_url='login')
 def labdashboardrapport(request):
     user = request.user
-    role = user.role_id
     id = user.id
-    u = user.username
-    username = user.username
     ville = AffectationVille.objects.get(username=id)
-    ville = ville.ville_id
+    v_id = ville.ville_id
     template = 'labodashboardrapport.html'
+
     if request.method == 'POST':
         datedebut = request.POST['datedebut']
         datefin = request.POST['datefin']
         request.session['datedebut'] = datedebut
         request.session['datefin'] = datefin
-        table1 = RapportLaboTable(LaboReception.objects.raw('SELECT DISTINCT(l.idcargaison_id), e.dateechantillonage, l.datereceptionlabo, i.nomimportateur , ee.nomentrepot , c.immatriculation, c.numdossier, c.codecargaison, e.numrappech, l.codelabo, r.dateanalyse, r.dateimpression, l.numcertificatqualite \
-                                                                        FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.enreg_resultat r, hydro_occ.enreg_importateur i, hydro_occ.enreg_entrepot ee \
-                                                                        WHERE l.idcargaison_id = e.idcargaison_id \
-                                                                        AND e.idcargaison_id = c.idcargaison \
-                                                                        AND l.idcargaison_id = r.idcargaison_id \
-                                                                        AND i.idimportateur = c.importateur_id \
-                                                                        AND ee.identrepot = c.entrepot_id \
-                                                                        AND c.frontiere_id = %s \
-                                                                        AND l.datereceptionlabo BETWEEN %s AND %s \
-                                                                        ORDER BY DATE(l.datereceptionlabo) DESC',
-                                                            [ville, datedebut, datefin, ]), prefix='1_')
-        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                         "per_page": 20}).configure(table1)
-        return render(request, template, {'table': table1})
     else:
-        datedebut = request.session['datedebut']
-        datefin = request.session['datefin']
-        table1 = RapportLaboTable(LaboReception.objects.raw('SELECT DISTINCT(l.idcargaison_id), e.dateechantillonage, l.datereceptionlabo, i.nomimportateur , ee.nomentrepot , c.immatriculation, c.numdossier, c.codecargaison, e.numrappech, l.codelabo, r.dateanalyse, r.dateimpression, l.numcertificatqualite \
-                                                                                FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.enreg_resultat r, hydro_occ.enreg_importateur i, hydro_occ.enreg_entrepot ee \
-                                                                                WHERE l.idcargaison_id = e.idcargaison_id \
-                                                                                AND e.idcargaison_id = c.idcargaison \
-                                                                                AND l.idcargaison_id = r.idcargaison_id \
-                                                                                AND i.idimportateur = c.importateur_id \
-                                                                                AND ee.identrepot = c.entrepot_id \
-                                                                                AND c.frontiere_id = %s \
-                                                                                AND l.datereceptionlabo BETWEEN %s AND %s \
-                                                                                ORDER BY DATE(l.datereceptionlabo) DESC',
-                                                            [ville, datedebut, datefin, ]), prefix='1_')
-        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                         "per_page": 20}).configure(table1)
+        datedebut = request.session.get('datedebut')
+        datefin = request.session.get('datefin')
+
+    if not datedebut or not datefin:
+        # Fallback if no dates in session or post
+        return render(request, template, {'table': None})
+
+    # Use Cargaison with denormalized fields
+    qs = Cargaison.objects.filter(
+        entrepot__ville_id=v_id,
+        date_reception_labo__date__range=(datedebut, datefin)
+    ).only(
+        'idcargaison',
+        'date_echantillon',
+        'date_reception_labo',
+        'nom_importateur',
+        'nom_entrepot',
+        'immatriculation',
+        'numdossier',
+        'codecargaison',
+        'entrepot_echantillon__numrappech',
+        'code_labo',
+        'date_analyse',
+        'resultat__dateimpression',
+        'num_certificat_qualite'
+    ).order_by('-date_reception_labo')
+
+    table1 = RapportLaboTable(qs, prefix='1_')
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table1)
+
+    if request.method == 'GET':
         export_format = request.GET.get('_export', None)
         if TableExport.is_valid_format(export_format):
             exporter = TableExport(export_format, table1)
             return exporter.response('table.{}'.format(export_format))
-        return render(request, template, {'table': table1})
+
+    return render(request, template, {'table': table1})
 
 
 @login_required(login_url='login')
@@ -3365,7 +2876,7 @@ def natureProduitLabo(request, pk):
                     c = ControlNatureProduit.objects.get(idcargaison=pk)
                     c.natureProduitLabo = produit.nomproduit
                     c.userLabo = user
-                    c.save(update_fields=['natureProduitLabo','userLabo'])
+                    c.save(update_fields=['natureProduitLabo', 'userLabo'])
 
                     UserActivityLog.objects.create(
                         user=user,
@@ -3375,7 +2886,7 @@ def natureProduitLabo(request, pk):
 
                     return redirect('reception', pk=pk)
                 except:
-                    c = ControlNatureProduit(idcargaison=cargaison,natureProduitLabo=produit.nomproduit,userLabo=user)
+                    c = ControlNatureProduit(idcargaison=cargaison, natureProduitLabo=produit.nomproduit, userLabo=user)
                     c.save()
 
                     UserActivityLog.objects.create(
@@ -3390,9 +2901,9 @@ def natureProduitLabo(request, pk):
         return render(request, template, context)
 
 
-#Saisie saisieResultat
+# Saisie saisieResultat
 @login_required(login_url='login')
-def saisieResultat(request,pk):
+def saisieResultat(request, pk):
     template = 'labo_analyse_form.html'
     request.session['pk'] = pk
     e = Entrepot_echantillon.objects.get(idcargaison=pk)
@@ -3412,19 +2923,19 @@ def saisieResultat(request,pk):
             ON pp.idParametre = r.idParametre_id \
             AND r.idcargaison_id = c.idcargaison \
             WHERE c.idcargaison = %s \
-            ORDER BY a.id ASC' ,[pk,])
+            ORDER BY a.id ASC', [pk, ])
 
     table = SaisieResultat(qs)
     # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {
         'table': table,
-        'codeLabo':a,
+        'codeLabo': a,
     }
-    return render(request,template,context)
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
-def saisieResultatParametre(request,pk):
+def saisieResultatParametre(request, pk):
     user = request.user
     id = request.session['pk']
     cargaison = Cargaison.objects.get(idcargaison=id)
@@ -3433,7 +2944,7 @@ def saisieResultatParametre(request,pk):
         valeurResultat = request.POST['valeurResultat']
         if parametre.idParametre == 2 or parametre.idParametre == 8 or parametre.idParametre == 22:
             try:
-                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
+                r = ResultatAnalyse.objects.get(idParametre=parametre, idcargaison=cargaison)
                 r.valeurResultatChar = valeurResultat
                 r.save(update_fields=['valeurResultatChar'])
 
@@ -3453,10 +2964,10 @@ def saisieResultatParametre(request,pk):
                     description=f"User has input the test result for the record {cargaison.idcargaison}",
                 )
                 # print('OK')
-                return redirect('saisieResultat',id)
+                return redirect('saisieResultat', id)
         else:
             try:
-                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
+                r = ResultatAnalyse.objects.get(idParametre=parametre, idcargaison=cargaison)
                 r.valeurResultat = valeurResultat
                 r.save(update_fields=['valeurResultat'])
                 UserActivityLog.objects.create(
@@ -3475,9 +2986,9 @@ def saisieResultatParametre(request,pk):
                     description=f"User has input the test result for the record {cargaison.idcargaison}",
                 )
                 # print('OK')
-                return redirect('saisieResultat',id)
+                return redirect('saisieResultat', id)
     else:
-        return redirect('saisieResultat',id)
+        return redirect('saisieResultat', id)
 
 
 @login_required(login_url='login')
@@ -3496,190 +3007,622 @@ def validationResulat(request):
         )
 
         context = {
-            'status':'success'
+            'status': 'success'
         }
         return JsonResponse(context)
     else:
         return redirect('analyse')
 
 
+# KPI details (Dashboard modal, POST-only JSON)
 @login_required(login_url='login')
-def affichageDetailsResultats(request,pk):
-    user = request.user.id
-    cargaison = Cargaison.objects.get(idcargaison=pk)
-    request.session['pk'] = pk
+@require_POST
+def laboValidationKPIs(request):
+    user_id = request.user.id
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday = now - timedelta(days=1)
 
-    template = 'laboDetailsResultat.html'
+    # Leverage denormalized scoping
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
 
-    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre, a.valeurMin, a.valeurMax ,r.valeurResultatChar ,r.valeurResultat, \
-    	                IF (r.valeurResultat  > a.valeurMax , 'Non Conforme', IF (r.valeurResultat < a.valeurMin, 'Non Conforme','Conforme')) as etatValeur \
-                        FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
-                        WHERE c.idcargaison = r.idcargaison_id \
-    	                AND r.idParametre_id = p.idParametre \
-                        AND p.idParametre = a.idParametre_id \
-                        AND a.idproduit_id = ep.idproduit \
-                        AND ep.idproduit = c.produit_id \
-                        AND c.importateur_id = i.idimportateur \
-                        AND c.idcargaison = e.idcargaison_id \
-                        AND e.idcargaison_id = l.idcargaison_id \
-                        AND c.entrepot_id = ee.identrepot \
-                        AND ee.ville_id = ev.idville \
-                        AND ev.idville = aa.ville_id \
-                        AND aa.username_id = %s \
-                        AND c.idcargaison = %s \
-                        AND c.etat = 'Validation en cours 1'", [user,pk, ])
+    base_qs = Cargaison.objects.filter(entrepot_id__in=allowed_entrepot_ids)
 
-    table = AffichageDetailResultat(qs,prefix='_1')
-    RequestConfig(request, paginate={"per_page": 50}).configure(table)
-    context = {'table': table}
-    return render(request,template,context)
+    # Level 1 Stats (SCE Hydro)
+    lvl1_pending = base_qs.filter(etat="Validation en cours 1").count()
+    lvl1_late = base_qs.filter(etat="Validation en cours 1", date_reception_labo__lt=yesterday).count()
+    
+    # We can't filter Cargaison by UserActivityLog directly (no FK). 
+    # We count the logs for the current user today.
+    lvl1_done_today = UserActivityLog.objects.filter(
+        user_id=user_id,
+        action__icontains="Validation 1",
+        timestamp__gte=today_start
+    ).count()
 
+    # Level 2 Stats (Chef Labo)
+    lvl2_pending = base_qs.filter(etat="Validation en cours 2").count()
+    lvl2_done_today = base_qs.filter(
+        etat="Conforme aux exigences",
+        dateHeureAnalyseLabo__gte=today_start
+    ).count()
 
-
-@login_required(login_url='login')
-def affichageDetailsResultatsDroite(request,pk):
-    user = request.user.id
-    cargaison = Cargaison.objects.get(idcargaison=pk)
-    request.session['pk'] = pk
-
-    template = 'laboDetailsResultatDroite.html'
-
-    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
-    	                IF (r.valeurResultat  > a.valeurMax , 'Non Conforme', \
-    		            IF (r.valeurResultat < a.valeurMin, 'Non Conforme','Conforme')) as etatValeur \
-                        FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
-                        WHERE c.idcargaison = r.idcargaison_id \
-    	                AND r.idParametre_id = p.idParametre \
-                        AND p.idParametre = a.idParametre_id \
-                        AND a.idproduit_id = ep.idproduit \
-                        AND ep.idproduit = c.produit_id \
-                        AND c.importateur_id = i.idimportateur \
-                        AND c.idcargaison = e.idcargaison_id \
-                        AND e.idcargaison_id = l.idcargaison_id \
-                        AND c.entrepot_id = ee.identrepot \
-                        AND ee.ville_id = ev.idville \
-                        AND ev.idville = aa.ville_id \
-                        AND aa.username_id = %s \
-                        AND c.idcargaison = %s \
-                        AND c.etat = 'Validation en cours 2'", [user,pk, ])
-
-    table = AffichageDetailResultat(qs,prefix='_1')
-    RequestConfig(request, paginate={"per_page": 50}).configure(table)
-    context = {'table': table}
-    return render(request,template,context)
-
-
-@login_required(login_url='login')
-def receptionRapports(request):
-    template ='laboReceptionRapports.html'
-    form = FiltresDate()
-    context = {'form':form}
-    return render(request,template,context)
-
-
-@login_required(login_url='login')
-def receptionRapportsResponse(request):
-    user = request.user.id
-    qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__datereceptionlabo__isnull=False
-    ).values(
-        'numdos',
-        'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage__date',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
-        'immatriculation',
-        'produit__nomproduit',
-    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
-
-    # Number of items to show per page
-    items_per_page = 15
-
-    # Initialize the Paginator with the QuerySet and the number of items per page
-    paginator = Paginator(qs, items_per_page)
-
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-    # Calculate the current page number based on start and length
-    current_page = (start // length) + 1
-
-    try:
-        # Get the current page from the Paginator
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
-        page = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
-
-    # # Convert the page object to a list of dictionaries
-    # data = list(page)
-    # Convert the page object to a list of dictionaries
-    data = list(page)
-
-    export = request.GET.get('export', None)
-    if export == 'excel':
-        # Retrieve all data (no lazy pagination) and store it in a list
-        data = list(qs)
-
-        # Create a new Excel workbook
-        workbook = Workbook()
-        sheet = workbook.active
-
-        # Write headers to the Excel file
-        header_row = ['NUM.DOSS', 'NUM.RE', 'CODE LABO', 'DATE ECHANT.', 'DATE RECEP.', 'ENTREPOT',
-                      'FOURNISSEUR',
-                      'IMMATRICULATION','PRODUIT']
-
-        # Combine header and data rows using zip
-        all_rows = [header_row] + [
-            [
-                row['numdos'],
-                row['entrepot_echantillon__numrappechauto'],
-                row['entrepot_echantillon__laboreception__codelabo'],
-                row['entrepot_echantillon__dateechantillonage__date'],
-                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
-                row['entrepot__nomentrepot'],
-                row['importateur__nomimportateur'],
-                row['immatriculation'],
-                row['produit__nomproduit'],
-            ] for row in data
-        ]
-
-        # Write data rows to the Excel file
-        for row in all_rows:
-            sheet.append(row)
-
-        # Create an in-memory stream to hold the Excel file data
-        excel_stream = io.BytesIO()
-        workbook.save(excel_stream)
-        excel_stream.seek(0)
-
-        # Prepare the response to return the Excel file
-        response = HttpResponse(excel_stream,
-                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-        return response
-
-    # Return JSON response with the data
     return JsonResponse({
-        'data': data,
-        'draw': draw,
-        'recordsTotal': paginator.count,
-        'recordsFiltered': paginator.count,
+        'lvl1': {
+            'pending': lvl1_pending,
+            'late': lvl1_late,
+            'done_today': lvl1_done_today,
+        },
+        'lvl2': {
+            'pending': lvl2_pending,
+            'done_today': lvl2_done_today,
+        }
     })
 
 
 @login_required(login_url='login')
+@require_POST
+def laboImpressionKPIs(request):
+    user_id = request.user.id
+    
+    # Leverage denormalized scoping
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
+    base_qs = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids,
+        etat="Conforme aux exigences"
+    )
+
+    # Robust printed status control using Exists to handle ForeignKey relationship correctly
+    printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
+    base_qs = base_qs.annotate(has_been_printed=Exists(printed_exists))
+
+    not_printed = base_qs.filter(has_been_printed=False).count()
+    printed = base_qs.filter(has_been_printed=True).count()
+
+    return JsonResponse({
+        'not_printed': not_printed,
+        'printed': printed
+    })
+
+
+@login_required(login_url='login')
+def affichageDetailsResultats(request, pk):
+    try:
+        # Use only needed fields
+        cargaison = Cargaison.objects.only('idcargaison', 'produit_id', 'code_labo').get(idcargaison=pk)
+    except Cargaison.DoesNotExist:
+        return HttpResponse("Cargaison introuvable.", status=404)
+
+    # Fetch parameters linked to this product via AffectationParametre
+    params_qs = (
+        AffectationParametre.objects
+        .filter(idproduit=cargaison.produit_id)
+        .select_related('idParametre')
+        .order_by('id')
+    )
+
+    # Fetch results for this cargaison in a single query
+    results_dict = {
+        r.idParametre_id: r 
+        for r in ResultatAnalyse.objects.filter(idcargaison_id=pk)
+    }
+
+    data_list = []
+    for ap in params_qs:
+        param = ap.idParametre
+        res = results_dict.get(param.idParametre)
+
+        val_num = res.valeurResultat if res else None
+        val_char = res.valeurResultatChar if res else None
+
+        # Clean up based on parameter type (IDs 2, 8, 22 are Alpha)
+        is_alpha = param.idParametre in [2, 8, 22]
+        if is_alpha:
+            val_num = None
+        else:
+            val_char = None
+
+        # Conformance check logic
+        status = "En attente"
+        if val_num is not None:
+            is_out = False
+            if ap.valeurMax is not None and val_num > ap.valeurMax:
+                is_out = True
+            if ap.valeurMin is not None and val_num < ap.valeurMin:
+                is_out = True
+            
+            status = "Hors norme" if is_out else "Conforme"
+        elif val_char:
+            status = "Conforme"
+
+        data_list.append({
+            'codelabo': cargaison.code_labo,
+            'nomParametre': param.nomParametre,
+            'valeurMin': ap.valeurMin,
+            'valeurMax': ap.valeurMax,
+            'valeurResultatChar': val_char,
+            'valeurResultat': val_num,
+            'etatValeur': status
+        })
+
+    table = AffichageDetailResultat(data_list, prefix='_1')
+    # No pagination needed for a single analysis details modal usually, but keeping it if list is long
+    RequestConfig(request, paginate=False).configure(table)
+
+    return render(request, 'laboDetailsResultat.html', {'table': table})
+
+
+@login_required(login_url='login')
+def affichageDetailsResultatsDroite(request, pk):
+    # Same logic as above, can reuse if exactly identical, 
+    # but often specialized for different validation stages.
+    # For now, optimizing similarly.
+    try:
+        cargaison = Cargaison.objects.only('idcargaison', 'produit_id', 'code_labo').get(idcargaison=pk)
+    except Cargaison.DoesNotExist:
+        return HttpResponse("Cargaison introuvable.", status=404)
+
+    params_qs = (
+        AffectationParametre.objects
+        .filter(idproduit=cargaison.produit_id)
+        .select_related('idParametre')
+        .order_by('id')
+    )
+
+    results_dict = {
+        r.idParametre_id: r 
+        for r in ResultatAnalyse.objects.filter(idcargaison_id=pk)
+    }
+
+    data_list = []
+    for ap in params_qs:
+        param = ap.idParametre
+        res = results_dict.get(param.idParametre)
+
+        val_num = res.valeurResultat if res else None
+        val_char = res.valeurResultatChar if res else None
+
+        # Clean up based on parameter type (IDs 2, 8, 22 are Alpha)
+        is_alpha = param.idParametre in [2, 8, 22]
+        if is_alpha:
+            val_num = None
+        else:
+            val_char = None
+
+        status = "En attente"
+        if val_num is not None:
+            is_out = False
+            if ap.valeurMax is not None and val_num > ap.valeurMax:
+                is_out = True
+            if ap.valeurMin is not None and val_num < ap.valeurMin:
+                is_out = True
+            status = "Hors norme" if is_out else "Conforme"
+        elif val_char:
+            status = "Conforme"
+
+        data_list.append({
+            'codelabo': cargaison.code_labo,
+            'nomParametre': param.nomParametre,
+            'valeurMin': ap.valeurMin,
+            'valeurMax': ap.valeurMax,
+            'valeurResultatChar': val_char,
+            'valeurResultat': val_num,
+            'etatValeur': status
+        })
+
+    table = AffichageDetailResultat(data_list, prefix='_1')
+    RequestConfig(request, paginate=False).configure(table)
+
+    return render(request, 'laboDetailsResultatDroite.html', {'table': table})
+
+
+@login_required(login_url='login')
+def receptionRapports(request):
+    template = 'laboReceptionRapports.html'
+    form = FiltresDate()
+    context = {'form': form}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+@require_POST
+def receptionRapportsResponse(request):
+    user_id = request.user.id
+    params = request.POST
+
+    # ---------- Helpers ----------
+    def _s(key, default=""):
+        return (params.get(key) or default).strip()
+
+    def _i(key, default=0):
+        try:
+            return int(params.get(key, default))
+        except Exception:
+            return default
+
+    def _parse_date_range(value: str):
+        """
+        Expects: 'YYYY-MM-DD - YYYY-MM-DD'
+        Returns: (start_date, end_date) as date objects, or (None, None)
+        """
+        try:
+            if not value or " - " not in value:
+                return None, None
+            a, b = value.split(" - ", 1)
+            start = datetime.strptime(a.strip(), "%Y-%m-%d").date()
+            end = datetime.strptime(b.strip(), "%Y-%m-%d").date()
+            return start, end
+        except Exception:
+            return None, None
+
+    # ---------- Base scope ----------
+    # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
+    qs = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids,
+        date_reception_labo__isnull=False
+    )
+
+    # recordsTotal BEFORE filters/search
+    records_total = qs.count()
+
+    # ---------- Filters from modal ----------
+    date_type = _s("date_type", "reception")  # 'reception' | 'echantillon'
+    date_range = _s("date_range")  # 'YYYY-MM-DD - YYYY-MM-DD'
+    entrepot = _s("entrepot")
+    num_re = _s("num_re")
+    immat = _s("immatriculation")
+    code_labo_param = _s("code_labo")
+
+    # Date range filter (mandatory on frontend)
+    start_date, end_date = _parse_date_range(date_range)
+    if start_date and end_date:
+        if date_type == "echantillon":
+            # Using __date on DateTimeField triggers a join or DB-specific extraction.
+            # However, start_date/end_date are date objects, and date_echantillon is a DateTimeField.
+            # Using range with date objects on a DateTimeField works efficiently in Django.
+            qs = qs.filter(date_echantillon__date__range=(start_date, end_date))
+        else:
+            qs = qs.filter(date_reception_labo__date__range=(start_date, end_date))
+
+    # Other filters (leveraging denormalized fields)
+    if entrepot:
+        qs = qs.filter(nom_entrepot__icontains=entrepot)
+    if num_re:
+        # Check if we have a denormalized num_re? In models.py Entrepot_echantillon has numrappechauto.
+        # Cargaison doesn't seem to have numrappechauto denormalized yet, but it HAS it via Entrepot_echantillon (OneToOne).
+        # Wait, I should check models.py again.
+        qs = qs.filter(entrepot_echantillon__numrappechauto__icontains=num_re)
+    if immat:
+        qs = qs.filter(immatriculation__icontains=immat)
+    if code_labo_param:
+        qs = qs.filter(code_labo__icontains=code_labo_param)
+
+    # ---------- Global search (DataTables) ----------
+    search_value = _s("search[value]")
+    if search_value:
+        qs = qs.filter(
+            Q(numdos__icontains=search_value) |
+            Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+            Q(code_labo__icontains=search_value) |
+            Q(nom_entrepot__icontains=search_value) |
+            Q(nom_importateur__icontains=search_value) |
+            Q(immatriculation__icontains=search_value) |
+            Q(nom_produit__icontains=search_value)
+        )
+
+    # ---------- Ordering (DataTables) ----------
+    order_col = _s("order[0][column]")
+    order_dir = _s("order[0][dir]", "desc").lower()
+
+    ordering_map = {
+        "0": "numdos",
+        "1": "entrepot_echantillon__numrappechauto",
+        "2": "code_labo",
+        "3": "date_echantillon",
+        "4": "date_reception_labo",
+        "5": "nom_entrepot",
+        "6": "nom_importateur",
+        "7": "immatriculation",
+        "8": "nom_produit",
+    }
+
+    order_field = ordering_map.get(order_col, "date_reception_labo")
+    if order_dir == "desc":
+        order_field = f"-{order_field}"
+    qs = qs.order_by(order_field)
+
+    # ---------- Export (POST) ----------
+    export = _s("export")
+    if export == "excel":
+        rows = qs.values(
+            'numdos',
+            'entrepot_echantillon__numrappechauto',
+            'code_labo',
+            'date_echantillon',
+            'date_reception_labo',
+            'nom_entrepot',
+            'nom_importateur',
+            'immatriculation',
+            'nom_produit',
+        )
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Rapports"
+
+        header_row = [
+            'NUM.DOSS', 'NUM.RE', 'CODE LABO', 'DATE ECHANT.',
+            'DATE RECEP.', 'ENTREPOT', 'FOURNISSEUR',
+            'IMMATRICULATION', 'PRODUIT'
+        ]
+        sheet.append(header_row)
+
+        for r in rows:
+            sheet.append([
+                r['numdos'],
+                r['entrepot_echantillon__numrappechauto'],
+                r['code_labo'],
+                r['date_echantillon'].date() if r['date_echantillon'] else None,
+                r['date_reception_labo'].date() if r['date_reception_labo'] else None,
+                r['nom_entrepot'],
+                r['nom_importateur'],
+                r['immatriculation'],
+                r['nom_produit'],
+            ])
+
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        response = HttpResponse(
+            excel_stream.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="rapport_reception.xlsx"'
+        return response
+
+    # recordsFiltered AFTER filters/search (Moved after export check to avoid double count if exporting)
+    records_filtered = qs.count()
+
+    # Apply values BEFORE pagination to avoid AttributeError on sliced QuerySet
+    qs = qs.values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'code_labo',
+        'date_echantillon',
+        'date_reception_labo',
+        'nom_entrepot',
+        'nom_importateur',
+        'immatriculation',
+        'nom_produit',
+    )
+
+    # ---------- Pagination (server-side) ----------
+    draw = _i("draw", 1)
+    start = max(_i("start", 0), 0)
+    length = _i("length", 25)
+
+    if length <= 0:
+        return JsonResponse({
+            "data": [],
+            "draw": draw,
+            "recordsTotal": records_total,
+            "recordsFiltered": records_filtered,
+        })
+
+    length = min(length, 200)
+
+    # Use LazyPaginator
+    paginator = LazyPaginator(qs, length)
+    current_page = (start // length) + 1
+
+    try:
+        page = paginator.page(current_page)
+    except (PageNotAnInteger, EmptyPage):
+        page = paginator.page(1)
+
+    # Convert the page object to a list of dictionaries (already dicts because of .values())
+    data = list(page.object_list)
+
+    # Rename keys for frontend compatibility
+    for r in data:
+        r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
+
+        # Convert DateTime to Date for frontend
+        dt_echantillon = r.pop("date_echantillon", None)
+        r["entrepot_echantillon__dateechantillonage__date"] = dt_echantillon.date() if dt_echantillon else None
+
+        dt_reception = r.pop("date_reception_labo", None)
+        r[
+            "entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt_reception.date() if dt_reception else None
+
+        r["entrepot__nomentrepot"] = r.pop("nom_entrepot", None)
+        r["importateur__nomimportateur"] = r.pop("nom_importateur", None)
+        r["produit__nomproduit"] = r.pop("nom_produit", None)
+
+    return JsonResponse({
+        "data": data,
+        "draw": draw,
+        "recordsTotal": records_total,
+        "recordsFiltered": records_filtered,
+    })
+
+
+# ===================== Async Excel export endpoints for Reception Rapports =====================
+@login_required(login_url='login')
+@require_POST
+def receptionRapportsExportStart(request):
+    """Start Celery export task for Reception Rapports. Accepts same POST params as the data endpoint.
+    Returns { task_id } for polling.
+    """
+
+    # Accept both form and JSON
+    def get_payload():
+        ct = (request.headers.get("Content-Type") or "").lower()
+        if "application/json" in ct:
+            try:
+                return json.loads(request.body.decode("utf-8") or "{}") or {}
+            except Exception:
+                return {}
+        return request.POST
+
+    params = get_payload()
+
+    # Only pass the filters we support
+    filters = {
+        "date_type": (params.get("date_type") or "reception").strip(),
+        "date_range": (params.get("date_range") or "").strip(),
+        "entrepot": (params.get("entrepot") or "").strip(),
+        "num_re": (params.get("num_re") or "").strip(),
+        "immatriculation": (params.get("immatriculation") or "").strip(),
+        "code_labo": (params.get("code_labo") or "").strip(),
+        # optional global search
+        "search": (params.get("search[value]") or params.get("search") or "").strip(),
+    }
+
+    user_id = request.user.id
+    async_result = export_reception_rapports_to_xlsx.delay(user_id, filters)
+    return JsonResponse({"task_id": async_result.id})
+
+
+@login_required(login_url='login')
+def receptionRapportsExportStatus(request, task_id: str):
+    """Poll Celery task state and return progress. When finished, include a time-limited
+    pre-signed download URL to the XLSX stored in S3-compatible storage.
+    """
+    result = AsyncResult(task_id, app=app)
+    state = result.state
+    meta = result.info or {}
+    # Support both legacy "progress" (int) and new {percent, done, total}
+    percent = 0
+    if isinstance(meta, dict):
+        if 'percent' in meta:
+            try:
+                percent = float(meta.get('percent') or 0)
+            except Exception:
+                percent = 0
+        elif 'progress' in meta:
+            try:
+                percent = float(meta.get('progress') or 0)
+            except Exception:
+                percent = 0
+
+    payload = {
+        "state": state,
+        "progress": percent,
+        "ready": result.successful(),
+    }
+    # Optionally echo done/total if available
+    if isinstance(meta, dict):
+        if 'done' in meta: payload['done'] = meta.get('done')
+        if 'total' in meta: payload['total'] = meta.get('total')
+    if result.successful():
+        # Prefer storage_key for S3/Spaces
+        storage_key = None
+        file_url = None
+        if isinstance(meta, dict):
+            storage_key = meta.get("storage_key") or meta.get("key")
+            file_url = meta.get("file_url")
+        # Some Celery backends may store the return value separately
+        if not storage_key and hasattr(result, 'result') and isinstance(result.result, dict):
+            storage_key = result.result.get("storage_key")
+            if not file_url:
+                file_url = result.result.get("file_url")
+
+        # Try to provide a download URL
+        # 1. Use default_storage.url() - it handles prefixes and pre-signing automatically
+        if storage_key:
+            try:
+                payload["download_url"] = default_storage.url(storage_key)
+            except Exception as e:
+                print(f"default_storage.url failed: {storage_key}, error: {e}")
+
+        # 2. Try manual S3 presigned URL as a fallback or if default_storage.url() didn't work as expected
+        if not payload.get("download_url") and storage_key:
+            try:
+                import boto3
+                expires = 24 * 3600
+                bucket = getattr(settings, 'SPACE_NAME', getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None))
+                region = getattr(settings, 'SPACE_REGION', getattr(settings, 'AWS_S3_REGION_NAME', None))
+                endpoint = getattr(settings, 'AWS_S3_ENDPOINT_URL', None)
+                if not endpoint:
+                    space_endpoint = getattr(settings, 'SPACE_ENDPOINT', 'digitaloceanspaces.com')
+                    if region:
+                        endpoint = f"https://{region}.{space_endpoint}"
+
+                access_key = getattr(settings, 'AWS_ACCESS_KEY_ID', getattr(settings, 'SPACE_ACCESS_KEY', None))
+                secret_key = getattr(settings, 'AWS_SECRET_ACCESS_KEY', getattr(settings, 'SPACE_SECRET', None))
+
+                if access_key and secret_key and bucket:
+                    s3 = boto3.client(
+                        's3',
+                        endpoint_url=endpoint,
+                        aws_access_key_id=access_key,
+                        aws_secret_access_key=secret_key,
+                        region_name=region,
+                    )
+
+                    # Robust key handling for manual S3 presigning
+                    full_key = storage_key
+                    # Prepend 'media/' if using MediaRootS3BotoStorage and it's missing
+                    if not full_key.startswith("media/") and getattr(settings, 'DEFAULT_FILE_STORAGE', '').endswith(
+                            'MediaRootS3BotoStorage'):
+                        full_key = f"media/{full_key}"
+
+                    url = s3.generate_presigned_url(
+                        ClientMethod='get_object',
+                        Params={'Bucket': bucket, 'Key': full_key},
+                        ExpiresIn=expires,
+                    )
+                    payload["download_url"] = url
+            except Exception as e:
+                # Log but don't fail, we have other options
+                print(f"S3 presign failed: {e}")
+
+        # 2. Use file_url from task result if no download_url yet
+        if not payload.get("download_url") and file_url:
+            payload["download_url"] = file_url
+
+        # 3. Last resort: legacy fallback to local /tmp path served by Django
+        if not payload.get("download_url"):
+            download_url = request.build_absolute_uri(
+                reverse('receptionRapportsExportDownload', kwargs={"task_id": task_id})
+            )
+            payload["download_url"] = download_url
+    elif result.failed():
+        payload["error"] = str(meta.get("error", "Export failed")) if isinstance(meta, dict) else "Export failed"
+    return JsonResponse(payload)
+
+
+@login_required(login_url='login')
+def receptionRapportsExportDownload(request, task_id: str):
+    """Serve the generated XLSX for a completed export task if owned by the current user."""
+    user_id = request.user.id
+    # Our task saves file to /tmp with pattern rapport_reception_{user_id}_{task_id}.xlsx
+    fname = f"rapport_reception_{user_id}_{task_id}.xlsx"
+    fpath = os.path.join("/tmp", fname)
+    if not os.path.exists(fpath):
+        return JsonResponse({"error": "File not found or not ready yet"}, status=404)
+
+    with open(fpath, 'rb') as fh:
+        data = fh.read()
+    resp = HttpResponse(data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="rapport_reception.xlsx"'
+    return resp
+
+
+@login_required(login_url='login')
 def receptionRapportsGenerate(request):
-    template ='laboReceptionRapportsFiltres.html'
+    template = 'laboReceptionRapportsFiltres.html'
     # Get the search value from the request's GET parameters
     if request.method == 'POST':
         date_d = request.POST['date_d']
@@ -3689,8 +3632,8 @@ def receptionRapportsGenerate(request):
         request.session['date_f'] = date_f
 
         form = FiltresDate()
-        context = {'form':form}
-        return render(request,template,context)
+        context = {'form': form}
+        return render(request, template, context)
     else:
         return redirect('receptionRapports')
 
@@ -3704,13 +3647,13 @@ def receptionRapportsResponseFiltres(request):
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage__date',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
+        'code_labo',
+        'date_echantillon__date',
+        'date_reception_labo__date',
+        'nom_entrepot',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit',
+        'nom_produit',
     ).order_by('-dateheurecargaison')
 
     date_d = request.session['date_d']
@@ -3719,18 +3662,18 @@ def receptionRapportsResponseFiltres(request):
     # Apply search filter to the QuerySet
     if date_d and date_f:
         qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+            date_reception_labo__date__range=(date_d, date_f)
         )
 
     if date_d:
         qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
+            date_reception_labo__date=(date_d)
         )
         print(date_d)
 
     if date_f:
         qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
+            date_reception_labo__date=(date_f)
         )
 
     # Number of items to show per page
@@ -3779,13 +3722,13 @@ def receptionRapportsResponseFiltres(request):
             [
                 row['numdos'],
                 row['entrepot_echantillon__numrappechauto'],
-                row['entrepot_echantillon__laboreception__codelabo'],
-                row['entrepot_echantillon__dateechantillonage__date'],
-                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
-                row['entrepot__nomentrepot'],
-                row['importateur__nomimportateur'],
+                row['code_labo'],
+                row['date_echantillon__date'],
+                row['date_reception_labo__date'],
+                row['nom_entrepot'],
+                row['nom_importateur'],
                 row['immatriculation'],
-                row['produit__nomproduit'],
+                row['nom_produit'],
             ] for row in data
         ]
 
@@ -3813,58 +3756,53 @@ def receptionRapportsResponseFiltres(request):
     })
 
 
-
-
-
 ### Ajax Handlers
 @login_required(login_url='login')
+@require_POST
 def refaireAjx(request):
     user = request.user
     role = user.role_id
-    if role == 6 or role == 1 or role == 10:
-        if request.method == 'POST':
-            idcargaison = request.POST.get('idcargaison')
+    if role in (1, 6, 10):
+        idcargaison = request.POST.get('idcargaison')
+        if not idcargaison:
+            return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
 
-            try:
-                c = Cargaison.objects.get(idcargaison=idcargaison)
+        try:
+            with transaction.atomic():
+                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
                 c.etat = "Refaire"
                 c.save(update_fields=['etat'])
 
                 UserActivityLog.objects.create(
                     user=user,
-                    action="Request to re-do the Test",
-                    description=f"User has requested that the record  {c.idcargaison} test need to be done again",
+                    action="Validation: Request Re-analysis",
+                    description=f"Cargaison {c.idcargaison}: User requested re-analysis.",
                 )
 
-                response_data = {'status': 'success', 'message': 'Cargaison marked as REFAIRE'}
-                return JsonResponse(response_data)
-            except Cargaison.DoesNotExist:
-                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
-                return JsonResponse(response_data, status=404)  # 404 Not Found status code
-        else:
-            # Return a JSON response indicating unauthorized access
-            response_data = {'status': 'failure', 'message': 'Unauthorized'}
-            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
+            return JsonResponse({'status': 'success', 'message': 'Cargaison marked as REFAIRE'})
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
     else:
-        # Return a JSON response indicating bad request method (not POST)
-        response_data = {'status': 'failure', 'message': 'Invalid request method'}
-        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
-
-
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 # Validation du responsable Division LABO OCC
 @login_required(login_url='login')
+@require_POST
 def conformeAjx(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            idcargaison = request.POST.get('idcargaison')
+    if role in (1, 6):
+        idcargaison = request.POST.get('idcargaison')
+        if not idcargaison:
+            return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
 
-            try:
-                c = Cargaison.objects.get(idcargaison=idcargaison)
+        try:
+            with transaction.atomic():
+                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
 
                 c.etat = "Validation en cours 2"
                 c.conformite = "Conforme aux exigences"
@@ -3873,409 +3811,611 @@ def conformeAjx(request):
 
                 UserActivityLog.objects.create(
                     user=user,
-                    action="Test result first validation CONFORME",
-                    description=f"User has done the first validation for the results for the record {idcargaison}",
+                    action="Validation 1: CONFORME",
+                    description=f"Cargaison {idcargaison}: First validation set to CONFORME.",
                 )
 
-                response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
-                return JsonResponse(response_data)
-            except Cargaison.DoesNotExist:
-                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
-                return JsonResponse(response_data, status=404)  # 404 Not Found status code
-        else:
-            # Return a JSON response indicating unauthorized access
-            response_data = {'status': 'failure', 'message': 'Unauthorized'}
-            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
+                return JsonResponse({'status': 'success', 'message': 'Cargaison marked as CONFORME'})
+
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
     else:
-        # Return a JSON response indicating bad request method (not POST)
-        response_data = {'status': 'failure', 'message': 'Invalid request method'}
-        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def nonconformeAjx(request):
     user = request.user
     role = user.role_id
-    if role == "v2" or role == 1 or role == 6:
-        if request.method == 'POST':
-            idcargaison = request.POST.get('idcargaison')
-            # print(idcargaison)
-            try:
-                c = Cargaison.objects.get(idcargaison=idcargaison)
-                # print(c.idcargaison)
+    if role in (1, 6):
+        idcargaison = request.POST.get('idcargaison')
+        if not idcargaison:
+            return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
+
+        try:
+            with transaction.atomic():
+                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
                 c.etat = "Validation en cours 2"
-                # print(c.etat)
                 c.conformite = "Non conforme aux exigences"
                 c.impression = "0"
                 c.save(update_fields=['etat', 'conformite', 'impression'])
 
                 UserActivityLog.objects.create(
                     user=user,
-                    action="Test result first validation NON CONFORME",
-                    description=f"User has done the first validation for the results for the record {c.idcargaison}",
+                    action="Validation 1: NON CONFORME",
+                    description=f"Cargaison {c.idcargaison}: First validation set to NON CONFORME.",
                 )
 
-                response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
-                return JsonResponse(response_data)
-            except Cargaison.DoesNotExist:
-                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
-                return JsonResponse(response_data, status=404)  # 404 Not Found status code
-        else:
-            # Return a JSON response indicating unauthorized access
-            response_data = {'status': 'failure', 'message': 'Unauthorized'}
-            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
-    else:
-        # Return a JSON response indicating bad request method (not POST)
-        response_data = {'status': 'failure', 'message': 'Invalid request method'}
-        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+                return JsonResponse({'status': 'success', 'message': 'Cargaison marked as NON CONFORME'})
 
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def affichagetableauvalidation1Response(request):
     user = request.user
     id = user.id
     role = user.role_id
-    if role == 5 or role == 1 or role == 6:
+    if role in (5, 1, 6):
+        # ---------------------------
+        # Read POST payload safely
+        # ---------------------------
+        def get_payload():
+            ct = (request.headers.get("Content-Type") or "").lower()
+            if "application/json" in ct:
+                try:
+                    return json.loads(request.body.decode("utf-8") or "{}") or {}
+                except Exception:
+                    return {}
+            # regular form POST
+            return request.POST
+
+        params = get_payload()
+
+        # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+        allowed_entrepot_ids = Entrepot.objects.filter(
+            ville__affectationville__username_id=id
+        ).values_list('identrepot', flat=True)
+
         qs = Cargaison.objects.filter(
             etat="Validation en cours 1",
-            entrepot__ville__affectationville__username_id=id,
+            entrepot_id__in=allowed_entrepot_ids,
         ).values(
             'idcargaison',
-            'entrepot_echantillon__laboreception__datereceptionlabo__date',
-            'importateur__nomimportateur',
-            'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__codelabo',
-            'entrepot_echantillon__laboreception__numcertificatqualite',
-            'produit__nomproduit'
+            'date_reception_labo',
+            'nom_importateur',
+            'nom_entrepot',
+            'code_labo',
+            'num_certificat_qualite',
+            'nom_produit'
         ).order_by(
-            '-entrepot_echantillon__laboreception__datereceptionlabo'
+            '-date_reception_labo'
         )
 
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+        # Get the search value from the request's parameters
+        search_value = params.get('search[value]', '')
 
-        # Apply search filter to the QuerySet
+        # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__datereceptionlabo__icontains=search_value) |
-                Q(importateur__nomimportateur__icontains=search_value) |
-                Q(entrepot__nomentrepot__icontains=search_value) |
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
-                Q(entrepot_echantillon__laboreception__numcertificatqualite__icontains=search_value) |
-                Q(produit__nomproduit__icontains=search_value)
+                Q(code_labo__icontains=search_value) |
+                Q(nom_importateur__icontains=search_value) |
+                Q(nom_entrepot__icontains=search_value) |
+                Q(num_certificat_qualite__icontains=search_value) |
+                Q(nom_produit__icontains=search_value)
             )
 
-        # Number of items to show per page
-        items_per_page = 10
+        # Pagination parameters
+        draw = int(params.get('draw', 1))
+        start = int(params.get('start', 0))
+        length = int(params.get('length', 10))
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+        if length <= 0:
+            count = qs.count()
+            return JsonResponse({
+                'data': [],
+                'draw': draw,
+                'recordsTotal': count,
+                'recordsFiltered': count,
+            })
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-        # Calculate the current page number based on start and length
+        # Use LazyPaginator to satisfy "lazy pagination" requirement and performance
+        paginator = LazyPaginator(qs, length)
         current_page = (start // length) + 1
 
         try:
-            # Get the current page from the Paginator
             page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
+        except (PageNotAnInteger, EmptyPage):
             page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
         # Convert the page object to a list of dictionaries
-        data = list(page)
+        data = list(page.object_list)
+
+        # Rename keys for frontend compatibility
+        for r in data:
+            dt_reception = r.pop("date_reception_labo", None)
+            r[
+                "entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt_reception.date() if dt_reception else None
+            r["importateur__nomimportateur"] = r.pop("nom_importateur", None)
+            r["entrepot__nomentrepot"] = r.pop("nom_entrepot", None)
+            r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
+            r["entrepot_echantillon__laboreception__numcertificatqualite"] = r.pop("num_certificat_qualite", None)
+            r["produit__nomproduit"] = r.pop("nom_produit", None)
+
+        total_count = qs.count()
 
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
+            'recordsTotal': total_count,
+            'recordsFiltered': total_count,
         })
 
     else:
         return redirect('logout')
 
 
-
 @login_required(login_url='login')
+@require_POST
 def affichagetableauvalidation2Response(request):
     user = request.user
     id = user.id
     role = user.role_id
-    if role == 5 or role == 1 or role == 6 or role == 10:
+    if role in (5, 1, 6, 10):
+        # ---------------------------
+        # Read POST payload safely
+        # ---------------------------
+        def get_payload():
+            ct = (request.headers.get("Content-Type") or "").lower()
+            if "application/json" in ct:
+                try:
+                    return json.loads(request.body.decode("utf-8") or "{}") or {}
+                except Exception:
+                    return {}
+            # regular form POST
+            return request.POST
+
+        params = get_payload()
+
+        # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+        allowed_entrepot_ids = Entrepot.objects.filter(
+            ville__affectationville__username_id=id
+        ).values_list('identrepot', flat=True)
+
         qs = Cargaison.objects.filter(
             etat="Validation en cours 2",
-            entrepot__ville__affectationville__username_id=id,
+            entrepot_id__in=allowed_entrepot_ids,
         ).values(
             'idcargaison',
-            'entrepot_echantillon__laboreception__datereceptionlabo__date',
-            'importateur__nomimportateur',
-            'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__codelabo',
-            'entrepot_echantillon__laboreception__numcertificatqualite',
-            'produit__nomproduit'
+            'date_reception_labo',
+            'nom_importateur',
+            'nom_entrepot',
+            'code_labo',
+            'num_certificat_qualite',
+            'nom_produit'
         ).order_by(
-            '-entrepot_echantillon__laboreception__datereceptionlabo'
+            '-date_reception_labo'
         )
 
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+        # Get the search value from the request's parameters
+        search_value = params.get('search[value]', '')
 
-        # Apply search filter to the QuerySet
+        # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__datereceptionlabo__icontains=search_value) |
-                Q(importateur__nomimportateur__icontains=search_value) |
-                Q(entrepot__nomentrepot__icontains=search_value) |
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
-                Q(entrepot_echantillon__laboreception__numcertificatqualite__icontains=search_value) |
-                Q(produit__nomproduit__icontains=search_value)
+                Q(code_labo__icontains=search_value) |
+                Q(nom_importateur__icontains=search_value) |
+                Q(nom_entrepot__icontains=search_value) |
+                Q(num_certificat_qualite__icontains=search_value) |
+                Q(nom_produit__icontains=search_value)
             )
 
-        # Number of items to show per page
-        items_per_page = 10
+        # Pagination parameters
+        draw = int(params.get('draw', 1))
+        start = int(params.get('start', 0))
+        length = int(params.get('length', 10))
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+        if length <= 0:
+            count = qs.count()
+            return JsonResponse({
+                'data': [],
+                'draw': draw,
+                'recordsTotal': count,
+                'recordsFiltered': count,
+            })
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-        # Calculate the current page number based on start and length
+        # Use LazyPaginator to satisfy "lazy pagination" requirement and performance
+        paginator = LazyPaginator(qs, length)
         current_page = (start // length) + 1
 
         try:
-            # Get the current page from the Paginator
             page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
+        except (PageNotAnInteger, EmptyPage):
             page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
         # Convert the page object to a list of dictionaries
-        data = list(page)
+        data = list(page.object_list)
+
+        # Rename keys for frontend compatibility
+        for r in data:
+            dt_reception = r.pop("date_reception_labo", None)
+            r[
+                "entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt_reception.date() if dt_reception else None
+            r["importateur__nomimportateur"] = r.pop("nom_importateur", None)
+            r["entrepot__nomentrepot"] = r.pop("nom_entrepot", None)
+            r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
+            r["entrepot_echantillon__laboreception__numcertificatqualite"] = r.pop("num_certificat_qualite", None)
+            r["produit__nomproduit"] = r.pop("nom_produit", None)
+
+        total_count = qs.count()
 
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
+            'recordsTotal': total_count,
+            'recordsFiltered': total_count,
         })
 
     else:
         return redirect('logout')
 
 
-
 @login_required(login_url='login')
+@require_POST
 def conformeAjx2(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 10:
-        if request.method == 'POST':
-            idcargaison = request.POST.get('idcargaison')
-            # print(idcargaison)
-            try:
-                c = Cargaison.objects.get(idcargaison=idcargaison)
-                # print(c.idcargaison)
-                # Updated Method
+    if role in (1, 10):
+        idcargaison = request.POST.get('idcargaison')
+        if not idcargaison:
+            return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
+
+        try:
+            with transaction.atomic():
+                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
+
                 # Check if ImpressionResultat exists for the Cargaison
                 if not ImpressionResultat.objects.filter(idcargaison=c).exists():
-                    i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
-                    i.save()
+                    now = timezone.now()
+                    ImpressionResultat.objects.create(
+                        printDate=now.date(),
+                        isConforme=True,
+                        isPrinted=False,
+                        idcargaison=c
+                    )
 
-                    # A supprimer
                     c.etat = "Conforme aux exigences"
                     c.conformite = "Conforme aux exigences"
                     c.impression = "0"
-                    c.dateHeureAnalyseLabo = datetime.now()
+                    c.dateHeureAnalyseLabo = now
                     c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
 
                     UserActivityLog.objects.create(
                         user=user,
-                        action="Test result second validation CONFORME",
-                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                        action="Validation 2: CONFORME",
+                        description=f"Cargaison {c.idcargaison}: Final validation set to CONFORME.",
                     )
 
-                    response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
-                    return JsonResponse(response_data)
-                response_data = {}
-                return JsonResponse(response_data,status=400)
-            except Cargaison.DoesNotExist:
-                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
-                return JsonResponse(response_data, status=404)  # 404 Not Found status code
-        else:
-            # Return a JSON response indicating unauthorized access
-            response_data = {'status': 'failure', 'message': 'Unauthorized'}
-            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
+                    return JsonResponse({'status': 'success', 'message': 'Cargaison marked as CONFORME'})
+
+                return JsonResponse({'status': 'failure', 'message': 'Impression result already exists'}, status=400)
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
     else:
-        # Return a JSON response indicating bad request method (not POST)
-        response_data = {'status': 'failure', 'message': 'Invalid request method'}
-        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def nonconformeAjx2(request):
     user = request.user
     role = user.role_id
-    if role == 1 or role == 10:
-        if request.method == 'POST':
-            idcargaison = request.POST.get('idcargaison')
-            # print(idcargaison)
-            try:
-                c = Cargaison.objects.get(idcargaison=idcargaison)
-                # print(c.idcargaison)
+    if role in (1, 10):
+        idcargaison = request.POST.get('idcargaison')
+        if not idcargaison:
+            return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
+
+        try:
+            with transaction.atomic():
+                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
+
                 if not ImpressionResultat.objects.filter(idcargaison=c).exists():
-                    # Updated Method
-                    i = ImpressionResultat(printDate=datetime.now, isConforme=0, isPrinted=0, idcargaison=c)
-                    i.save()
+                    now = timezone.now()
+                    ImpressionResultat.objects.create(
+                        printDate=now.date(),
+                        isConforme=False,
+                        isPrinted=False,
+                        idcargaison=c
+                    )
 
                     c.etat = "Non conforme aux exigences"
+                    c.conformite = "Non conforme aux exigences"
                     c.impression = "0"
-                    c.dateHeureAnalyseLabo = datetime.now()
-                    c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
+                    c.dateHeureAnalyseLabo = now
+                    c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
 
                     UserActivityLog.objects.create(
                         user=user,
-                        action="Test result second validation NON CONFORME",
-                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                        action="Validation 2: NON CONFORME",
+                        description=f"Cargaison {c.idcargaison}: Final validation set to NON CONFORME.",
                     )
 
-                    response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
-                    return JsonResponse(response_data)
-                response_data = {}
-                return JsonResponse(response_data, status=400)
-            except Cargaison.DoesNotExist:
-                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
-                return JsonResponse(response_data, status=404)  # 404 Not Found status code
-        else:
-            # Return a JSON response indicating unauthorized access
-            response_data = {'status': 'failure', 'message': 'Unauthorized'}
-            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
-    else:
-        # Return a JSON response indicating bad request method (not POST)
-        response_data = {'status': 'failure', 'message': 'Invalid request method'}
-        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+                    return JsonResponse({'status': 'success', 'message': 'Cargaison marked as NON CONFORME'})
 
+                return JsonResponse({'status': 'failure', 'message': 'Impression result already exists'}, status=400)
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 # Fonction pour affichage tableu impression des certificats
 @login_required(login_url='login')
+@require_POST
 def responseAffichagetableauimpression(request):
     user = request.user
+    id = user.id
     role = user.role_id
-    ville = AffectationVille.objects.get(username_id=user.id)
-    ville = ville.ville_id
-    if role == 5 or role == 1:
 
-        qs = Cargaison.objects.filter(
-            impressionresultat__isPrinted=0,
-            entrepot__ville__idville=ville
-        ).annotate(
-            dateReceptionLabo=F('entrepot_echantillon__laboreception__datereceptionlabo__date'),
-            idImpression=F('impressionresultat__idImpression'),
-            numcertificatqualite=F('entrepot_echantillon__laboreception__numcertificatqualite'),
-            codelabo=F('entrepot_echantillon__laboreception__codelabo'),
-            nomproduit=F('produit__nomproduit'),
-            nomimportateur=F('importateur__nomimportateur'),
-            nomentrepot=F('entrepot__nomentrepot')
-        ).values(
-            'idcargaison',
-            'dateReceptionLabo',
-            'impressionresultat__printDate',
-            'idImpression',
-            'numcertificatqualite',
-            'codelabo',
-            'nomproduit',
-            'nomimportateur',
-            'nomentrepot'
+    if role not in (1, 5):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    # ---------------------------
+    # Read POST payload safely
+    # ---------------------------
+    def get_payload():
+        ct = (request.headers.get("Content-Type") or "").lower()
+        if "application/json" in ct:
+            try:
+                return json.loads(request.body.decode("utf-8") or "{}") or {}
+            except Exception:
+                return {}
+        # regular form POST
+        return request.POST
+
+    params = get_payload()
+
+    # Leverage denormalized scoping to avoid deep joins
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=id
+    ).values_list('identrepot', flat=True)
+
+    qs = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids,
+        etat="Conforme aux exigences"
+    )
+
+    # ---------- Filters from toolbar ----------
+    date_start = params.get('date_start')
+    date_end = params.get('date_end')
+    printed_status = params.get('printed_status', 'not_printed')
+
+    if date_start:
+        qs = qs.filter(date_reception_labo__date__gte=date_start)
+    if date_end:
+        qs = qs.filter(date_reception_labo__date__lte=date_end)
+
+    # Robust printed status control using Exists to handle ForeignKey relationship correctly
+    printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
+    qs = qs.annotate(has_been_printed=Exists(printed_exists))
+
+    if printed_status == 'not_printed':
+        qs = qs.filter(has_been_printed=False)
+    elif printed_status == 'printed':
+        qs = qs.filter(has_been_printed=True)
+
+    # ---------- Global search (DataTables or Quick Search) ----------
+    search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
+    search_value = search_value or params.get('q')
+    if search_value:
+        qs = qs.filter(
+            Q(code_labo__icontains=search_value) |
+            Q(num_certificat_qualite__icontains=search_value) |
+            Q(nom_importateur__icontains=search_value) |
+            Q(nom_entrepot__icontains=search_value) |
+            Q(nom_produit__icontains=search_value) |
+            Q(immatriculation__icontains=search_value)
         )
 
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+    # recordsTotal / recordsFiltered
+    total_count = qs.count()
 
-        # Apply search filter to the QuerySet
-        if search_value:
-            qs_search = Cargaison.objects.filter(
-            entrepot__ville__idville=ville,
-            ).annotate(
-                dateReceptionLabo=F('entrepot_echantillon__laboreception__datereceptionlabo__date'),
-                idImpression=F('impressionresultat__idImpression'),
-                numcertificatqualite=F('entrepot_echantillon__laboreception__numcertificatqualite'),
-                codelabo=F('entrepot_echantillon__laboreception__codelabo'),
-                nomproduit=F('produit__nomproduit'),
-                nomimportateur=F('importateur__nomimportateur'),
-                nomentrepot=F('entrepot__nomentrepot')
-            ).values(
-                'idcargaison',
-                'dateReceptionLabo',
-                'idImpression',
-                'impressionresultat__printDate',
-                'numcertificatqualite',
-                'codelabo',
-                'nomproduit',
-                'nomimportateur',
-                'nomentrepot'
-            )
-            qs = qs_search.filter(
-                Q(codelabo=search_value) |
-                Q(nomimportateur=search_value) |
-                Q(nomentrepot=search_value)
-            )
+    # Subquery for print date to avoid joins and duplicates
+    latest_print_date = ImpressionResultat.objects.filter(
+        idcargaison=OuterRef('pk')
+    ).order_by('-idImpression').values('printDate')[:1]
 
-        # Number of items to show per page
-        items_per_page = 10
+    qs = qs.annotate(print_date_val=Subquery(latest_print_date))
 
-        print(items_per_page)
+    qs = qs.values(
+        'idcargaison',
+        'date_reception_labo',
+        'print_date_val',
+        'num_certificat_qualite',
+        'code_labo',
+        'nom_produit',
+        'nom_importateur',
+        'nom_entrepot',
+        'immatriculation'
+    ).order_by('-date_reception_labo')
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+    # ---------- Pagination ----------
+    draw = int(params.get('draw', 1))
+    start = int(params.get('start', 0))
+    length = int(params.get('length', 10))
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-        # Calculate the current page number based on start and length
-        current_page = (start // length) + 1
-
-        try:
-            # Get the current page from the Paginator
-            page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
-            page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
-
-        # Convert the page object to a list of dictionaries
-        data = list(page)
-
-        # Return JSON response with the data
+    if length <= 0:
         return JsonResponse({
-            'data': data,
+            'data': [],
             'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
+            'recordsTotal': total_count,
+            'recordsFiltered': total_count,
         })
-    else:
-        return redirect('logout')
+
+    paginator = LazyPaginator(qs, length)
+    current_page = (start // length) + 1
+
+    try:
+        page = paginator.page(current_page)
+    except (PageNotAnInteger, EmptyPage):
+        page = paginator.page(1)
+
+    data = list(page.object_list)
+
+    # Rename keys for frontend compatibility
+    for r in data:
+        dt_reception = r.pop("date_reception_labo", None)
+        r["dateReceptionLabo"] = dt_reception.date() if dt_reception and hasattr(dt_reception, 'date') else dt_reception
+        
+        # Mapping print date back to expected key
+        pdate = r.pop("print_date_val", "—")
+        r["impressionresultat__printDate"] = pdate.strftime('%Y-%m-%d') if pdate and hasattr(pdate, 'strftime') else pdate
+        
+        # Mapping denormalized fields back to expected keys
+        r["codelabo"] = r.pop("code_labo", None)
+        r["numcertificatqualite"] = r.pop("num_certificat_qualite", None)
+        r["nomproduit"] = r.pop("nom_produit", None)
+        r["nomimportateur"] = r.pop("nom_importateur", None)
+        r["nomentrepot"] = r.pop("nom_entrepot", None)
+        r["immatriculation"] = r.pop("immatriculation", None)
+
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': total_count,
+        'recordsFiltered': total_count,
+    })
+
+
+@login_required(login_url='login')
+@require_POST
+def responseArchivesTableau(request):
+    user = request.user
+    id = user.id
+    role = user.role_id
+
+    if role not in (1, 5):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    def get_payload():
+        ct = (request.headers.get("Content-Type") or "").lower()
+        if "application/json" in ct:
+            try:
+                return json.loads(request.body.decode("utf-8") or "{}") or {}
+            except Exception:
+                return {}
+        return request.POST
+
+    params = get_payload()
+
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=id
+    ).values_list('identrepot', flat=True)
+
+    # Base Query: Only printed certificates
+    printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
+    qs = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids
+    ).annotate(has_been_printed=Exists(printed_exists)).filter(has_been_printed=True)
+
+    # Subquery for print date (also used for filtering)
+    latest_print_date = ImpressionResultat.objects.filter(
+        idcargaison=OuterRef('pk')
+    ).order_by('-idImpression').values('printDate')[:1]
+    qs = qs.annotate(print_date_val=Subquery(latest_print_date))
+
+    # ---------- Filters ----------
+    code_labo = params.get('code_labo')
+    num_certificat = params.get('num_certificat')
+    date_start = params.get('date_start')
+    date_end = params.get('date_end')
+
+    if code_labo:
+        qs = qs.filter(code_labo__icontains=code_labo)
+    if num_certificat:
+        qs = qs.filter(num_certificat_qualite__icontains=num_certificat)
+    if date_start:
+        qs = qs.filter(print_date_val__gte=date_start)
+    if date_end:
+        qs = qs.filter(print_date_val__lte=date_end)
+
+    # Global search
+    # DataTables sends search[value] in form-data, but if it's JSON it might be different
+    search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
+    if search_value:
+        qs = qs.filter(
+            Q(code_labo__icontains=search_value) |
+            Q(num_certificat_qualite__icontains=search_value) |
+            Q(nom_importateur__icontains=search_value) |
+            Q(nom_entrepot__icontains=search_value) |
+            Q(nom_produit__icontains=search_value) |
+            Q(immatriculation__icontains=search_value)
+        )
+
+    total_count = qs.count()
+
+    qs = qs.values(
+        'idcargaison',
+        'date_reception_labo',
+        'print_date_val',
+        'num_certificat_qualite',
+        'code_labo',
+        'nom_produit',
+        'nom_importateur',
+        'nom_entrepot',
+        'immatriculation'
+    ).order_by('-print_date_val')
+
+    # Pagination
+    draw = int(params.get('draw', 1))
+    start = int(params.get('start', 0))
+    length = int(params.get('length', 10))
+
+    paginator = LazyPaginator(qs, length)
+    current_page = (start // length) + 1
+    try:
+        page = paginator.page(current_page)
+    except (PageNotAnInteger, EmptyPage):
+        page = paginator.page(1)
+
+    data = list(page.object_list)
+    for r in data:
+        dt_reception = r.pop("date_reception_labo", None)
+        r["dateReceptionLabo"] = dt_reception.date() if dt_reception and hasattr(dt_reception, 'date') else dt_reception
+        
+        pdate = r.pop("print_date_val", "—")
+        r["impressionresultat__printDate"] = pdate.strftime('%Y-%m-%d') if pdate and hasattr(pdate, 'strftime') else pdate
+
+        r["codelabo"] = r.pop("code_labo", None)
+        r["numcertificatqualite"] = r.pop("num_certificat_qualite", None)
+        r["nomproduit"] = r.pop("nom_produit", None)
+        r["nomimportateur"] = r.pop("nom_importateur", None)
+        r["nomentrepot"] = r.pop("nom_entrepot", None)
+        r["immatriculation"] = r.pop("immatriculation", None)
+
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': total_count,
+        'recordsFiltered': total_count,
+    })
+
 
 
 # Fonction pour impression Certificat
@@ -4292,16 +4432,16 @@ def impressioncertificat(request):
     province = province.upper()
     role = user.role_id
 
-    #Recuperation des donnees liees aux signataires
+    # Recuperation des donnees liees aux signataires
     affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
     affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
     signDroite = MyUser.objects.get(username=affect1.userId)
     signGauche = MyUser.objects.get(username=affect2.userId)
 
-    #Recuperation du Laboratoire asssocie a la ville
+    # Recuperation du Laboratoire asssocie a la ville
     laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
 
-    #Recuperation des donnees liees a l'Impression
+    # Recuperation des donnees liees a l'Impression
     if request.method == 'POST':
         dataJson = json.loads(request.body)
         pk = dataJson.get('idcargaison')
@@ -4316,12 +4456,11 @@ def impressioncertificat(request):
             annee=ExtractYear('datereceptionlabo')
         ).values('idcargaison_id', 'mois', 'annee')
 
-
         for entry in d:
             mois = entry['mois']
             annee = entry['annee']
 
-        if role == 5 or role == 1 :
+        if role == 5 or role == 1:
             td = datetime.today()
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
@@ -4349,17 +4488,17 @@ def impressioncertificat(request):
                 try:
                     aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
                 except:
-                    aciditetotal= ''
+                    aciditetotal = ''
                 try:
                     soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
                 except:
                     soufre = ''
                 try:
-                    massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=21)[0].valeurResultat
+                    massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[0].valeurResultat
                 except:
                     massevolumique = ''
                 try:
-                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=20)[0].valeurResultat
+                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
                 except:
                     massevolumique15 = ''
                 try:
@@ -4464,7 +4603,7 @@ def impressioncertificat(request):
                     'signGauche': signGauche,
                     'signDroite': signDroite,
                     'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
+                    'laboratoireData': laboratoireData,
                 }
 
                 # Rendered PDF report
@@ -4479,76 +4618,76 @@ def impressioncertificat(request):
                 try:
                     aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
                 except:
-                    aspect=''
+                    aspect = ''
                 try:
                     odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
                 except:
-                    odeur=''
+                    odeur = ''
                 try:
                     couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
                 except:
-                    couleursaybolt=''
+                    couleursaybolt = ''
                 try:
                     soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
                 except:
-                    soufre=''
+                    soufre = ''
                 try:
                     distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
                 except:
-                    distillation=''
+                    distillation = ''
                 try:
                     pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
                 except:
-                    pointfinal=''
+                    pointfinal = ''
                 try:
                     residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
                 except:
-                    residu=''
+                    residu = ''
                 try:
                     corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
                     corrosion = int(corrosion_str)
                 except:
-                    corrosion=''
+                    corrosion = ''
                 try:
                     pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
                 except:
-                    pourcent10=''
+                    pourcent10 = ''
                 try:
                     pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
                 except:
-                    pourcent20=''
+                    pourcent20 = ''
                 try:
                     pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
                 except:
-                    pourcent50=''
+                    pourcent50 = ''
                 try:
                     pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
                 except:
-                    pourcent70=''
+                    pourcent70 = ''
                 try:
                     pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
                 except:
-                    pourcent90=''
+                    pourcent90 = ''
                 try:
                     tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
                 except:
-                    tensionvapeur=''
+                    tensionvapeur = ''
                 try:
                     difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
                 except:
-                    difftemperature=''
+                    difftemperature = ''
                 try:
                     plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
                 except:
-                    plomb=''
+                    plomb = ''
                 try:
                     indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
                 except:
-                    indiceoctane=''
+                    indiceoctane = ''
                 try:
                     massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
                 except:
-                    massevolumique15=''
+                    massevolumique15 = ''
 
                 data = {
                     'laboratoire': laboratoire,
@@ -4578,7 +4717,7 @@ def impressioncertificat(request):
                     'signGauche': signGauche,
                     'signDroite': signDroite,
                     'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
+                    'laboratoireData': laboratoireData,
                 }
 
                 # Rendered PDF report
@@ -4595,161 +4734,161 @@ def impressioncertificat(request):
                     aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
                         0].valeurResultatChar
                 except:
-                    aspect=''
+                    aspect = ''
                 try:
                     couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
                         0].valeurResultatChar
                 except:
-                    couleursaybolt=''
+                    couleursaybolt = ''
                 try:
                     aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
                         0].valeurResultat
                 except:
-                    aciditetotal=''
+                    aciditetotal = ''
                 try:
                     soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
                         0].valeurResultat
                 except:
-                    soufre=''
+                    soufre = ''
                 try:
                     soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
                         0].valeurResultat
                 except:
-                    soufremercaptan=''
+                    soufremercaptan = ''
                 try:
                     docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
                         0].valeurResultat
                 except:
-                    docteurtest=''
+                    docteurtest = ''
                 try:
                     distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
                         0].valeurResultat
                 except:
-                    distillation=''
+                    distillation = ''
                 try:
                     pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
                         0].valeurResultat
                 except:
-                    pointinitial=''
+                    pointinitial = ''
                 try:
                     pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
                         0].valeurResultat
                 except:
-                    pointfinal=''
+                    pointfinal = ''
 
                 try:
                     pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
                         0].valeurResultat
                 except:
-                    pointfumee=''
+                    pointfumee = ''
 
                 try:
                     pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
                         0].valeurResultat
                 except:
-                    pointeclair=''
+                    pointeclair = ''
 
                 try:
                     freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
                         0].valeurResultat
                 except:
-                    freezingpoint=''
+                    freezingpoint = ''
 
                 try:
                     residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
                         0].valeurResultat
                 except:
-                    residu=''
+                    residu = ''
 
                 try:
                     perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
                         0].valeurResultat
                 except:
-                    perte=''
+                    perte = ''
 
                 try:
                     massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
                         0].valeurResultat
                 except:
-                    massevolumique15=''
+                    massevolumique15 = ''
 
                 try:
                     viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
                         0].valeurResultat
                 except:
-                    viscosite=''
+                    viscosite = ''
 
                 try:
                     pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
                         0].valeurResultat
                 except:
-                    pointinflammabilite=''
+                    pointinflammabilite = ''
 
                 try:
                     teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
                         0].valeurResultat
                 except:
-                    teneureau=''
+                    teneureau = ''
 
                 try:
                     corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
                         0].valeurResultat
                     corrosion = int(corrosion_str)
                 except:
-                    corrosion=''
+                    corrosion = ''
 
                 try:
                     conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
                         0].valeurResultat
                 except:
-                    conductivite=''
+                    conductivite = ''
 
                 try:
                     vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
                         0].valeurResultat
                 except:
-                    vol10=''
+                    vol10 = ''
 
                 try:
                     vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
                         0].valeurResultat
                 except:
-                    vol20=''
+                    vol20 = ''
                 try:
                     vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
                         0].valeurResultat
                 except:
-                    vol30=''
+                    vol30 = ''
                 try:
                     vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
                         0].valeurResultat
                 except:
-                    vol40=''
+                    vol40 = ''
                 try:
                     vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
                         0].valeurResultat
                 except:
-                    vol50=''
+                    vol50 = ''
                 try:
                     vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
                         0].valeurResultat
                 except:
-                    vol60=''
+                    vol60 = ''
                 try:
                     vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
                         0].valeurResultat
                 except:
-                    vol70=''
+                    vol70 = ''
                 try:
                     vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
                         0].valeurResultat
                 except:
-                    vol80=''
+                    vol80 = ''
                 try:
                     vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
                         0].valeurResultat
                 except:
-                    vol90=''
+                    vol90 = ''
 
                 data = {
                     'laboratoire': laboratoire,
@@ -4790,7 +4929,7 @@ def impressioncertificat(request):
                     'signGauche': signGauche,
                     'signDroite': signDroite,
                     'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
+                    'laboratoireData': laboratoireData,
                 }
                 # Rendered PDF report
                 pdf = render_to_pdf(template, data)
@@ -5002,7 +5141,7 @@ def impressioncertificat(request):
                     'signGauche': signGauche,
                     'signDroite': signDroite,
                     'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
+                    'laboratoireData': laboratoireData,
                 }
 
                 # Rendered PDF report
@@ -5017,182 +5156,246 @@ def impressioncertificat(request):
         return redirect('logout')
 
 
-
-
-#Ajax response
+# Ajax response
 @login_required(login_url='login')
+@require_POST
 def responseAffichageanalyse(request):
     user = request.user
     id = user.id
     role = user.role_id
     if role == 5 or role == 1:
-        qs = Cargaison.objects.filter(etat='Analyse Labo en cours',
-                                      entrepot__ville__affectationville__username_id=id,
-                                     ).values(
-                                    'idcargaison',
-                                    'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                                    'entrepot_echantillon__laboreception__codelabo',
-                                    'entrepot_echantillon__numrappechauto',
-                                    'numdos',
-                                    'immatriculation',
-                                    'produit__nomproduit'
-                                    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+        # ---------------------------
+        # Read POST payload safely
+        # ---------------------------
+        def get_payload():
+            ct = (request.headers.get("Content-Type") or "").lower()
+            if "application/json" in ct:
+                try:
+                    return json.loads(request.body.decode("utf-8") or "{}") or {}
+                except Exception:
+                    return {}
+            # regular form POST
+            return request.POST
 
-        qs2 = Cargaison.objects.filter(etat='Refaire',
-                                      entrepot__ville__affectationville__username_id=id,
-                                      ).values(
-                                    'idcargaison',
-                                    'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                                    'entrepot_echantillon__laboreception__codelabo',
-                                    'entrepot_echantillon__numrappechauto',
-                                    'produit__nomproduit'
-                                    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+        params = get_payload()
+
+        # Get filter parameters
+        date_debut = params.get('date_debut')
+        date_fin = params.get('date_fin')
+        code_labo_filter = params.get('code_labo_filter')
+
+        # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+        allowed_entrepot_ids = Entrepot.objects.filter(
+            ville__affectationville__username_id=id
+        ).values_list('identrepot', flat=True)
+
+        # Subqueries to calculate completion percentage
+        total_params_sq = AffectationParametre.objects.filter(
+            idproduit=OuterRef('produit_id')
+        ).values('idproduit').annotate(count=Count('idParametre')).values('count')
+
+        done_params_sq = ResultatAnalyse.objects.filter(
+            idcargaison=OuterRef('pk')
+        ).values('idcargaison').annotate(count=Count('idParametre')).values('count')
+
+        qs = Cargaison.objects.filter(
+            etat='Analyse Labo en cours',
+            entrepot_id__in=allowed_entrepot_ids
+        ).annotate(
+            total_params=Coalesce(Subquery(total_params_sq), 0),
+            done_params=Coalesce(Subquery(done_params_sq), 0)
+        )
+
+        # Apply filters (leveraging denormalized fields)
+        has_filter = False
+        if date_debut:
+            qs = qs.filter(date_reception_labo__date__gte=date_debut)
+            has_filter = True
+        if date_fin:
+            qs = qs.filter(date_reception_labo__date__lte=date_fin)
+            has_filter = True
+        if code_labo_filter:
+            qs = qs.filter(code_labo__icontains=code_labo_filter)
+            has_filter = True
+
+        # If no filter is applied, return empty data (as requested "before display... a filter has to be applied")
+        if not has_filter and not params.get('search[value]'):
+            return JsonResponse({
+                'data': [],
+                'draw': int(params.get('draw', 1)),
+                'recordsTotal': 0,
+                'recordsFiltered': 0,
+            })
+
+        qs = qs.values(
+            'idcargaison',
+            'date_reception_labo',
+            'code_labo',
+            'entrepot_echantillon__numrappechauto',
+            'numdos',
+            'immatriculation',
+            'nom_produit',
+            'total_params',
+            'done_params'
+        ).order_by('-date_reception_labo')
 
         # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+        search_value = params.get('search[value]', '')
 
-        # Apply search filter to the QuerySet
+        # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__codelabo=search_value)
+                Q(code_labo__icontains=search_value) |
+                Q(numdos__icontains=search_value) |
+                Q(immatriculation__icontains=search_value)
             )
 
-        # Number of items to show per page
-        items_per_page = 13
+        # Pagination parameters
+        draw = int(params.get('draw', 1))
+        start = int(params.get('start', 0))
+        length = int(params.get('length', 13))
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+        if length <= 0:
+            count = qs.count()
+            return JsonResponse({
+                'data': [],
+                'draw': draw,
+                'recordsTotal': count,
+                'recordsFiltered': count,
+            })
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-        # Calculate the current page number based on start and length
+        # Use LazyPaginator to satisfy "lazy pagination" requirement and performance
+        paginator = LazyPaginator(qs, length)
         current_page = (start // length) + 1
 
         try:
-            # Get the current page from the Paginator
             page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
+        except (PageNotAnInteger, EmptyPage):
             page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
         # Convert the page object to a list of dictionaries
-        data = list(page)
+        data = list(page.object_list)
+
+        # Rename keys for frontend compatibility
+        for r in data:
+            if r.get("date_reception_labo"):
+                r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = r.pop("date_reception_labo").date()
+            else:
+                r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = r.pop("date_reception_labo", None)
+
+            r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
+            r["produit__nomproduit"] = r.pop("nom_produit", None)
+
+            # Completion Percentage
+            total = r.pop("total_params", 0) or 0
+            done = r.pop("done_params", 0) or 0
+            r["completion_percent"] = round((done / total * 100), 1) if total > 0 else 0
+            r["completion_text"] = f"{done}/{total}"
+
+        total_count = qs.count()
 
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
+            'recordsTotal': total_count,
+            'recordsFiltered': total_count,
         })
 
     else:
         return redirect('logout')
 
 
-
-#Saisie saisieResultat Ajax
+# Saisie saisieResultat Ajax
 @login_required(login_url='login')
+@require_POST
 def saisieResultatAjax(request):
-    pk = request.GET.get('idcargaison','')
-    print(pk)
-    e = Entrepot_echantillon.objects.get(idcargaison=pk)
-    a = LaboReception.objects.get(idcargaison=e)
-    a = a.codelabo
+    pk = request.POST.get('idcargaison', '')
+    try:
+        cargaison = Cargaison.objects.get(idcargaison=pk)
+    except Cargaison.DoesNotExist:
+        return JsonResponse({'data': [], 'codeLabo': None}, status=404)
 
-    qs = ParametresProduits.objects.raw('SELECT pp.idParametre, c.idcargaison, p.nomproduit, pp.nomParametre, r.valeurResultat, r.valeurResultatChar \
-                FROM enreg_cargaison c \
-                LEFT JOIN enreg_produit p \
-                ON c.produit_id = p.idproduit \
-                LEFT JOIN enreg_affectationparametre a \
-                ON p.idproduit = a.idproduit_id \
-                LEFT JOIN enreg_parametresproduits pp \
-                ON a.idParametre_id = pp.idParametre \
-                LEFT JOIN enreg_resultatanalyse r \
-                ON pp.idParametre = r.idParametre_id \
-                AND r.idcargaison_id = c.idcargaison \
-                WHERE c.idcargaison = %s \
-                ORDER BY a.id ASC', [pk, ])
+    # Use denormalized fields from Cargaison
+    nom_produit = cargaison.nom_produit
+    code_labo = cargaison.code_labo
 
-    # Serialize the raw SQL queryset results manually into a list of dictionaries
-    data = [
-        {
-            'idParametre': item.idParametre,
-            'idcargaison': item.idcargaison,
-            'nomproduit': item.nomproduit,
-            'nomParametre': item.nomParametre,
-            'valeurResultat': item.valeurResultat,
-            'valeurResultatChar': item.valeurResultatChar
-        }
-        for item in qs
-    ]
+    # Get all parameters assigned to this product
+    params_qs = AffectationParametre.objects.filter(
+        idproduit=cargaison.produit_id
+    ).select_related('idParametre').order_by('id')
+
+    # Fetch existing results for this cargaison to avoid N+1 in the loop
+    results = ResultatAnalyse.objects.filter(idcargaison=cargaison)
+    results_dict = {r.idParametre_id: r for r in results}
+
+    data = []
+    for ap in params_qs:
+        param = ap.idParametre
+        res = results_dict.get(param.idParametre)
+
+        data.append({
+            'idParametre': param.idParametre,
+            'idcargaison': cargaison.idcargaison,
+            'nomproduit': nom_produit,
+            'nomParametre': param.nomParametre,
+            'valeurResultat': res.valeurResultat if res else None,
+            'valeurResultatChar': res.valeurResultatChar if res else None
+        })
 
     # Return JSON response with the data
     return JsonResponse({
         'data': data,
-        'codeLabo': a,
+        'codeLabo': code_labo,
     })
 
 
 @login_required(login_url='login')
+@require_POST
 def saisieResultatParametreAjax(request):
     user = request.user
-    if request.method == 'POST':
-        parametreId = request.POST['idParametre']
-        idcargaison = request.POST['idcargaison']
-        inputValue = request.POST['inputValue']
-        cargaison = Cargaison.objects.get(idcargaison=idcargaison)
-        parametre = ParametresProduits.objects.get(idParametre=parametreId)
+    parametre_id = request.POST.get('idParametre')
+    idcargaison = request.POST.get('idcargaison')
+    input_value = request.POST.get('inputValue')
 
-        if parametre.idParametre == 2 or parametre.idParametre == 8 or parametre.idParametre == 22:
-            try:
-                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
-                r.valeurResultatChar = inputValue
-                r.save(update_fields=['valeurResultatChar'])
+    if not all([parametre_id, idcargaison]):
+        return JsonResponse({'status': 'error', 'message': 'Missing parameters'}, status=400)
 
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Test result input",
-                    description=f"User has input the test result for the record {cargaison.idcargaison}",
-                )
-                return JsonResponse({'status': 'success'})
-            except:
-                r = ResultatAnalyse(valeurResultatChar=inputValue, idParametre=parametre, idcargaison=cargaison)
-                r.save()
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Test result input",
-                    description=f"User has input the test result for the record {cargaison.idcargaison}",
-                )
-                return JsonResponse({'status': 'success'})
-        else:
-            try:
-                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
-                r.valeurResultat = inputValue
-                r.save(update_fields=['valeurResultat'])
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Test result input",
-                    description=f"User has input the test result for the record {cargaison.idcargaison}",
-                )
-                return JsonResponse({'status': 'success'})
-            except:
-                r = ResultatAnalyse(valeurResultat=inputValue, idParametre=parametre, idcargaison=cargaison)
-                r.save()
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Test result input",
-                    description=f"User has input the test result for the record {cargaison.idcargaison}",
-                )
-                return JsonResponse({'status': 'success'})
+    try:
+        # We need the cargaison instance for logging and potentially other logic
+        # if Cargaison is huge, we could use idcargaison directly in update_or_create
+        # but UserActivityLog description uses it.
+        cargaison = Cargaison.objects.only('idcargaison').get(idcargaison=idcargaison)
+    except Cargaison.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Cargaison not found'}, status=404)
+
+    # Determine which field to update based on parametreId
+    # Hardcoded IDs 2, 8, 22 use valeurResultatChar (string)
+    # Others use valeurResultat (float)
+    defaults = {}
+    if parametre_id in ['2', '8', '22']:
+        defaults['valeurResultatChar'] = input_value
     else:
-        redirect('logout')
+        try:
+            # Ensure it's a valid float if it's supposed to be numeric
+            # If input_value is empty, we might want to store None or 0.0
+            defaults['valeurResultat'] = float(input_value) if input_value else None
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid numeric value'}, status=400)
+
+    ResultatAnalyse.objects.update_or_create(
+        idcargaison_id=idcargaison,
+        idParametre_id=parametre_id,
+        defaults=defaults
+    )
+
+    UserActivityLog.objects.create(
+        user=user,
+        action="Test result input",
+        description=f"User has input the test result for the record {idcargaison}",
+    )
+
+    return JsonResponse({'status': 'success'})
 
 
 @login_required(login_url='login')
@@ -5202,81 +5405,119 @@ def affichageAnalyseRefaire(request):
     template = 'labo_analyse_refaire.html'
     if role == 5 or role == 1:
         count = Cargaison.objects.filter(
-                    etat='Refaire',
-                    entrepot__ville__affectationville__username_id=user.id
-                ).count()
+            etat='Refaire',
+            entrepot__ville__affectationville__username_id=user.id
+        ).count()
         print(count)
-        context={
-            'count':count
+        context = {
+            'count': count
         }
-        return render(request,template, context)
+        return render(request, template, context)
     else:
         return redirect('logout')
 
 
 @login_required(login_url='login')
+@require_POST
 def affichageAnalyseRefaireResponse(request):
     user = request.user
     id = user.id
     role = user.role_id
     if role == 5 or role == 1:
+        # ---------------------------
+        # Read POST payload safely
+        # ---------------------------
+        def get_payload():
+            ct = (request.headers.get("Content-Type") or "").lower()
+            if "application/json" in ct:
+                try:
+                    return json.loads(request.body.decode("utf-8") or "{}") or {}
+                except Exception:
+                    return {}
+            # regular form POST
+            return request.POST
+
+        params = get_payload()
+
+        # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+        allowed_entrepot_ids = Entrepot.objects.filter(
+            ville__affectationville__username_id=id
+        ).values_list('identrepot', flat=True)
+
         qs = Cargaison.objects.filter(
             etat="Refaire",
-            entrepot__ville__affectationville__username_id=id
-            ).values(
+            entrepot_id__in=allowed_entrepot_ids
+        ).values(
             'idcargaison',
-            'dateheurecargaison__date',
-            'entrepot_echantillon__laboreception__datereceptionlabo__date',
-            'entrepot_echantillon__laboreception__codelabo',
+            'date_reception_labo',
+            'code_labo',
             'entrepot_echantillon__numrappechauto',
-            'produit__nomproduit',
-            'immatriculation',
             'numdos',
-            'entrepot_echantillon__numrappechauto',
-            ).order_by('-entrepot_echantillon__dateechantillonage__date')
+            'immatriculation',
+            'nom_produit',
+        ).order_by('-date_echantillon')
 
         # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+        search_value = params.get('search[value]', '')
 
-        # Apply search filter to the QuerySet
+        # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
+                Q(code_labo__icontains=search_value) |
+                Q(numdos__icontains=search_value) |
+                Q(immatriculation__icontains=search_value)
             )
 
-        # Number of items to show per page
-        items_per_page = 10
+        # Pagination parameters
+        draw = int(params.get('draw', 1))
+        start = int(params.get('start', 0))
+        length = int(params.get('length', 10))
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+        if length <= 0:
+            # If length is 0, we typically just need the count (e.g., for badges)
+            count = qs.count()
+            return JsonResponse({
+                'data': [],
+                'draw': draw,
+                'recordsTotal': count,
+                'recordsFiltered': count,
+            })
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-        # Calculate the current page number based on start and length
+        # Use LazyPaginator to satisfy "lazy pagination" requirement
+        # It avoids unnecessary count queries if not accessed, improving performance.
+        paginator = LazyPaginator(qs, length)
         current_page = (start // length) + 1
 
         try:
-            # Get the current page from the Paginator
             page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
+        except (PageNotAnInteger, EmptyPage):
             page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
         # Convert the page object to a list of dictionaries
-        data = list(page)
+        data = list(page.object_list)
+
+        # Rename keys for frontend compatibility
+        for r in data:
+            if r.get("date_reception_labo"):
+                r["date_reception_labo__date"] = r.pop("date_reception_labo").date()
+            else:
+                r["date_reception_labo__date"] = r.pop("date_reception_labo", None)
+
+            # Ensure compatibility with redo-table expectations
+            r["code_labo"] = r.get("code_labo", None)
+            r["entrepot_echantillon__numrappechauto"] = r.get("entrepot_echantillon__numrappechauto", None)
+            r["nom_produit"] = r.get("nom_produit", None)
+
+        # Since DataTables and the redo-count badge require the total count,
+        # we still perform a count, but we've optimized the QuerySet above.
+        total_count = qs.count()
 
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
+            'recordsTotal': total_count,
+            'recordsFiltered': total_count,
         })
 
 
@@ -5286,8 +5527,8 @@ def echantillonRecus(request):
     role = user.role_id
     if role == 5 or role == 1 or role == 6:
         template = 'labo_rapport.html'
-        context={}
-        return render(request,template,context)
+        context = {}
+        return render(request, template, context)
     else:
         return redirect('logout')
 
@@ -5300,16 +5541,16 @@ def echantillonRecusResponse(request):
         qs = Cargaison.objects.filter(
             etat="Analyse Labo en cours",
             entrepot__ville__affectationville__username_id=user.id
-            ).values(
+        ).values(
             'dateheurecargaison__date',
-            'entrepot_echantillon__dateechantillonage__date',
-            'entrepot_echantillon__laboreception__datereceptionlabo__date',
-            'entrepot_echantillon__laboreception__codelabo',
+            'date_echantillon__date',
+            'date_reception_labo__date',
+            'code_labo',
             'entrepot_echantillon__numrappechauto',
-            'entrepot_echantillon__laboreception__numcertificatqualite',
-            'produit__nomproduit',
+            'num_certificat_qualite',
+            'nom_produit',
             'numdos',
-            ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo__date')
+        ).order_by('-date_reception_labo')
 
         # Get the search value from the request's GET parameters
         search_value = request.GET.get('search[value]', '')
@@ -5317,7 +5558,7 @@ def echantillonRecusResponse(request):
         # Apply search filter to the QuerySet
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
+                Q(code_labo__icontains=search_value)
             )
 
         # Number of items to show per page
@@ -5363,8 +5604,8 @@ def correctionNature(request):
     if request.method == 'POST':
         produit = request.POST['produit']
         idcargaison = request.POST['idcargaison']
-        c=Cargaison.objects.get(idcargaison=idcargaison)
-        p=Produit.objects.get(idproduit=produit)
+        c = Cargaison.objects.get(idcargaison=idcargaison)
+        p = Produit.objects.get(idproduit=produit)
         c.produit = p
         c.save(update_fields=['produit'])
         # print(produit)
@@ -5375,7 +5616,6 @@ def correctionNature(request):
         # Handle other HTTP methods or errors if needed
         response_data = {"message": "Invalid request method"}
         return JsonResponse(response_data, status=400)
-
 
 
 @login_required(login_url='login')
@@ -5420,15 +5660,16 @@ def enchAttenteReception(request):
         etat='Echantillonner',
         entrepot__ville__affectationville__username_id=user
     ).values(
-        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
-        'entrepot__nomentrepot','importateur__nomimportateur',
-        'produit__nomproduit','entrepot_echantillon__qte'
+        'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
+        'nom_entrepot', 'nom_importateur',
+        'nom_produit', 'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteReception(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
 
     context = {'table': table}
-    return render(request,template,context)
+    return render(request, template, context)
+
 
 @login_required(login_url='login')
 def enchAttenteReception2(request):
@@ -5438,15 +5679,15 @@ def enchAttenteReception2(request):
         etat='Echantillonner',
         entrepot__ville__affectationville__username_id=user
     ).values(
-        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
-        'entrepot__nomentrepot','importateur__nomimportateur',
-        'produit__nomproduit','entrepot_echantillon__qte'
+        'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
+        'nom_entrepot', 'nom_importateur',
+        'nom_produit', 'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteReception(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
 
     context = {'table': table}
-    return render(request,template,context)
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -5456,9 +5697,9 @@ def enchAttenteReceptionExport(request):
         etat='Echantillonner',
         entrepot__ville__affectationville__username_id=user
     ).values(
-        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
-        'entrepot__nomentrepot','importateur__nomimportateur',
-        'produit__nomproduit','entrepot_echantillon__qte'
+        'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
+        'nom_entrepot', 'nom_importateur',
+        'nom_produit', 'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteReception(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5467,10 +5708,10 @@ def enchAttenteReceptionExport(request):
 
     serialized_qs = list(qs)
 
-        # Start Celery task to export report asynchronously
+    # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task', args=[export_format, serialized_qs])
 
-        # Retrieve the task ID
+    # Retrieve the task ID
     task_id = result.id
 
     message = "Export task started. Task ID: {}".format(task_id)
@@ -5484,9 +5725,9 @@ def enchAttenteReceptionExport2(request):
         etat='Echantillonner',
         entrepot__ville__affectationville__username_id=user
     ).values(
-        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
-        'entrepot__nomentrepot','importateur__nomimportateur',
-        'produit__nomproduit','entrepot_echantillon__qte'
+        'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
+        'nom_entrepot', 'nom_importateur',
+        'nom_produit', 'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteReception(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5495,15 +5736,14 @@ def enchAttenteReceptionExport2(request):
 
     serialized_qs = list(qs)
 
-        # Start Celery task to export report asynchronously
+    # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task', args=[export_format, serialized_qs])
 
-        # Retrieve the task ID
+    # Retrieve the task ID
     task_id = result.id
 
     message = "Export task started. Task ID: {}".format(task_id)
     return JsonResponse({'task_id': task_id})
-
 
 
 @login_required(login_url='login')
@@ -5514,9 +5754,9 @@ def enchAttenteResultat(request):
         etat='Analyse Labo en cours',
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
-        'importateur__nomimportateur','produit__nomproduit',
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
+        'nom_importateur', 'nom_produit',
         'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteResultat(qs)
@@ -5530,7 +5770,6 @@ def enchAttenteResultat(request):
     return render(request, template, context)
 
 
-
 @login_required(login_url='login')
 def enchAttenteResultat2(request):
     user = request.user.id
@@ -5539,9 +5778,9 @@ def enchAttenteResultat2(request):
         etat='Analyse Labo en cours',
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
-        'importateur__nomimportateur','produit__nomproduit',
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
+        'nom_importateur', 'nom_produit',
         'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteResultat(qs)
@@ -5562,9 +5801,9 @@ def enchAttenteResultatExport(request):
         etat='Analyse Labo en cours',
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
-        'importateur__nomimportateur','produit__nomproduit',
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
+        'nom_importateur', 'nom_produit',
         'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteResultat(qs)
@@ -5591,9 +5830,9 @@ def enchAttenteResultatExport2(request):
         etat='Analyse Labo en cours',
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
-        'importateur__nomimportateur','produit__nomproduit',
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
+        'nom_importateur', 'nom_produit',
         'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteResultat(qs)
@@ -5621,10 +5860,10 @@ def enchAttenteValidation(request):
         etat='Validation en cours 2',
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot__nomentrepot','importateur__nomimportateur',
-        'produit__nomproduit'
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
+        'nom_entrepot', 'nom_importateur',
+        'nom_produit'
     )
     table = RapportLaboratoireEnAttenteValidation(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5645,10 +5884,10 @@ def enchAttenteValidation2(request):
         etat='Validation en cours 2',
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot__nomentrepot','importateur__nomimportateur',
-        'produit__nomproduit'
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
+        'nom_entrepot', 'nom_importateur',
+        'nom_produit'
     )
     table = RapportLaboratoireEnAttenteValidation(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5669,10 +5908,10 @@ def enchPrintedCert(request):
         impressionresultat__isPrinted=1,
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
-        'produit__nomproduit'
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
+        'nom_entrepot', 'nom_importateur', 'impressionresultat__printDate',
+        'nom_produit'
     )
     table = RapportLaboratoireEnchPrintedCert(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5693,10 +5932,10 @@ def enchPrintedCert2(request):
         impressionresultat__isPrinted=1,
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
-        'produit__nomproduit'
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
+        'nom_entrepot', 'nom_importateur', 'impressionresultat__printDate',
+        'nom_produit'
     )
     table = RapportLaboratoireEnchPrintedCert(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5716,10 +5955,10 @@ def enchPrintedCertExport(request):
         impressionresultat__isPrinted=1,
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
-        'produit__nomproduit'
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
+        'nom_entrepot', 'nom_importateur', 'impressionresultat__printDate',
+        'nom_produit'
     )
     table = RapportLaboratoireEnchPrintedCert(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5744,10 +5983,10 @@ def enchPrintedCertExport2(request):
         impressionresultat__isPrinted=1,
         entrepot__ville__affectationville__username_id=user,
     ).values(
-        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
-        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
-        'produit__nomproduit'
+        'date_echantillon', 'date_reception_labo', 'numdos',
+        'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
+        'nom_entrepot', 'nom_importateur', 'impressionresultat__printDate',
+        'nom_produit'
     )
     table = RapportLaboratoireEnchPrintedCert(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5765,21 +6004,20 @@ def enchPrintedCertExport2(request):
     return JsonResponse({'task_id': task_id})
 
 
-
 @login_required(login_url='login')
 def rapportCq(request):
-    template ='laboRapportsCq.html'
+    template = 'laboRapportsCq.html'
     form = FiltresDate()
-    context = {'form':form}
-    return render(request,template,context)
+    context = {'form': form}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
 def rapportCq2(request):
-    template ='laboRapportsCq2.html'
+    template = 'laboRapportsCq2.html'
     form = FiltresDate()
-    context = {'form':form}
-    return render(request,template,context)
+    context = {'form': form}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -5787,7 +6025,7 @@ def rapportCqResponse(request):
     user = request.user.id
     qs = Cargaison.objects.filter(
         entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__isnull=False
+        date_reception_labo__isnull=False
         # impressionresultat__isnull=False
     ).annotate(
         conformiteProduit=Case(
@@ -5800,16 +6038,16 @@ def rapportCqResponse(request):
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage__date',
-        'entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'code_labo',
+        'date_echantillon__date',
+        'num_certificat_qualite',
+        'date_reception_labo__date',
         'conformiteProduit',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
+        'nom_entrepot',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit','immatriculation','produit__nomproduit'
-    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+        'nom_produit'
+    ).order_by('-date_reception_labo')
 
     # Number of items to show per page
     items_per_page = 20
@@ -5852,7 +6090,7 @@ def rapportCQExport(request):
     user = request.user.id
     qs = Cargaison.objects.filter(
         entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__isnull=False
+        date_reception_labo__isnull=False
         # impressionresultat__isnull=False
     ).annotate(
         conformiteProduit=Case(
@@ -5865,16 +6103,16 @@ def rapportCQExport(request):
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage',
-        'entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'code_labo',
+        'date_echantillon',
+        'num_certificat_qualite',
+        'date_reception_labo',
         'conformiteProduit',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
+        'nom_entrepot',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit',
-    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+        'nom_produit',
+    ).order_by('-date_reception_labo')
 
     table = rapportActiviteCQ(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
@@ -5894,7 +6132,7 @@ def rapportCQExport(request):
 
 @login_required(login_url='login')
 def rapportCqfiltres(request):
-    template ='laboRapportsCQFiltres.html'
+    template = 'laboRapportsCQFiltres.html'
     # Get the search value from the request's GET parameters
     if request.method == 'POST':
         date_d = request.POST['date_d']
@@ -5904,15 +6142,15 @@ def rapportCqfiltres(request):
         request.session['date_f'] = date_f
 
         form = FiltresDate()
-        context = {'form':form}
-        return render(request,template,context)
+        context = {'form': form}
+        return render(request, template, context)
     else:
         return redirect('receptionRapports')
 
 
 @login_required(login_url='login')
 def rapportCqfiltres2(request):
-    template ='laboRapportsCQFiltres2.html'
+    template = 'laboRapportsCQFiltres2.html'
     # Get the search value from the request's GET parameters
     if request.method == 'POST':
         date_d = request.POST['date_d']
@@ -5922,8 +6160,8 @@ def rapportCqfiltres2(request):
         request.session['date_f'] = date_f
 
         form = FiltresDate()
-        context = {'form':form}
-        return render(request,template,context)
+        context = {'form': form}
+        return render(request, template, context)
     else:
         return redirect('receptionRapports')
 
@@ -5934,7 +6172,7 @@ def rapportCqfiltresResponse(request):
     ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
     qs = Cargaison.objects.filter(
         entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__isnull=False
+        date_reception_labo__isnull=False
         # impressionresultat__isnull=False
     ).annotate(
         conformiteProduit=Case(
@@ -5947,16 +6185,16 @@ def rapportCqfiltresResponse(request):
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage',
-        'entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'code_labo',
+        'date_echantillon',
+        'num_certificat_qualite',
+        'date_reception_labo',
         'conformiteProduit',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
+        'nom_entrepot',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit',
-    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+        'nom_produit',
+    ).order_by('-date_reception_labo')
 
     date_d = request.session['date_d']
     date_f = request.session['date_f']
@@ -5964,17 +6202,17 @@ def rapportCqfiltresResponse(request):
     # Apply search filter to the QuerySet
     if date_d and date_f:
         qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+            date_reception_labo__date__range=(date_d, date_f)
         )
     else:
         if date_d:
             qs = qs.filter(
-                entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
+                date_reception_labo__date=(date_d)
             )
         else:
             if date_f:
                 qs = qs.filter(
-                    entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
+                    date_reception_labo__date=(date_f)
                 )
 
     # Number of items to show per page
@@ -6013,14 +6251,13 @@ def rapportCqfiltresResponse(request):
     })
 
 
-
 @login_required(login_url='login')
 def rapportCqfiltresResponseExport(request):
     user = request.user.id
     ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
     qs = Cargaison.objects.filter(
         entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__isnull=False
+        date_reception_labo__isnull=False
         # impressionresultat__isnull=False
     ).annotate(
         conformiteProduit=Case(
@@ -6033,16 +6270,16 @@ def rapportCqfiltresResponseExport(request):
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage',
-        'entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'code_labo',
+        'date_echantillon',
+        'num_certificat_qualite',
+        'date_reception_labo',
         'conformiteProduit',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
+        'nom_entrepot',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit',
-    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+        'nom_produit',
+    ).order_by('-date_reception_labo')
 
     date_d = request.session['date_d']
     date_f = request.session['date_f']
@@ -6050,7 +6287,7 @@ def rapportCqfiltresResponseExport(request):
     # Apply search filter to the QuerySet
     if date_d and date_f:
         qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d, date_f)
         )
     else:
         if date_d:
@@ -6080,224 +6317,231 @@ def rapportCqfiltresResponseExport(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def bulkConforme1(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            selectedRows = request.POST.getlist('selectedRowIds[]')
-            for data in selectedRows:
-                try:
-                    c = Cargaison.objects.get(idcargaison=data)
-                    c.etat = "Validation en cours 2"
-                    c.conformite = "Conforme aux exigences"
-                    c.impression = "0"
-                    c.save(update_fields=['etat', 'conformite', 'impression'])
+    if role in (1, 6):
+        selected_ids = request.POST.getlist('selectedRowIds[]')
+        if not selected_ids:
+            return JsonResponse({'status': 'failure', 'message': 'No samples selected'}, status=400)
 
-                    UserActivityLog.objects.create(
-                        user=user,
-                        action="Test result first validation CONFORME",
-                        description=f"User has done the first validation for the results for the record {c.idcargaison}",
-                    )
+        try:
+            with transaction.atomic():
+                cargaisons = Cargaison.objects.select_for_update().filter(idcargaison__in=selected_ids)
+                count = cargaisons.count()
 
-                except Cargaison.DoesNotExist:
-                    return JsonResponse({'message': 'An error occured'}, status=400)
+                cargaisons.update(
+                    etat="Validation en cours 2",
+                    conformite="Conforme aux exigences",
+                    impression="0"
+                )
 
-            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
-        else:
-            # If the request method is not POST or it's not an AJAX request, return an error
-            return JsonResponse({'error': 'Invalid request.'}, status=400)
-    # If the request method is not POST or it's not an AJAX request, return an error
-    return JsonResponse({'error': 'Invalid request.'}, status=400)
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Bulk Validation 1: CONFORME",
+                    description=f"User validated {count} samples as CONFORME (Step 1). IDs: {', '.join(selected_ids)}",
+                )
 
+            return JsonResponse({'status': 'success', 'message': f'{count} samples processed.'})
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def bulkNonConforme1(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            selectedRows = request.POST.getlist('selectedRowIds[]')
-            for data in selectedRows:
-                try:
-                    c = Cargaison.objects.get(idcargaison=data)
-                    print(c.idcargaison)
-                    c.etat = "Validation en cours 2"
-                    c.conformite = "Non conforme aux exigences"
-                    c.impression = "0"
-                    c.save(update_fields=['etat', 'conformite', 'impression'])
+    if role in (1, 6):
+        selected_ids = request.POST.getlist('selectedRowIds[]')
+        if not selected_ids:
+            return JsonResponse({'status': 'failure', 'message': 'No samples selected'}, status=400)
 
-                    UserActivityLog.objects.create(
-                        user=user,
-                        action="Test result first validation NON CONFORME",
-                        description=f"User has done the first validation for the results for the record {c.idcargaison}",
-                    )
+        try:
+            with transaction.atomic():
+                cargaisons = Cargaison.objects.select_for_update().filter(idcargaison__in=selected_ids)
+                count = cargaisons.count()
 
-                except Cargaison.DoesNotExist:
-                    return JsonResponse({'message': 'An error occured'}, status=400)
+                cargaisons.update(
+                    etat="Validation en cours 2",
+                    conformite="Non conforme aux exigences",
+                    impression="0"
+                )
 
-            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
-        else:
-            # If the request method is not POST or it's not an AJAX request, return an error
-            return JsonResponse({'error': 'Invalid request.'}, status=400)
-    # If the request method is not POST or it's not an AJAX request, return an error
-    return JsonResponse({'error': 'Invalid request.'}, status=400)
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Bulk Validation 1: NON CONFORME",
+                    description=f"User validated {count} samples as NON CONFORME (Step 1). IDs: {', '.join(selected_ids)}",
+                )
 
+            return JsonResponse({'status': 'success', 'message': f'{count} samples processed.'})
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def bulkRefaire1(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            selectedRows = request.POST.getlist('selectedRowIds[]')
-            for data in selectedRows:
-                try:
-                    c = Cargaison.objects.get(idcargaison=data)
+    if role in (1, 6):
+        selected_ids = request.POST.getlist('selectedRowIds[]')
+        if not selected_ids:
+            return JsonResponse({'status': 'failure', 'message': 'No samples selected'}, status=400)
 
-                    c.etat = "Refaire"
+        try:
+            with transaction.atomic():
+                cargaisons = Cargaison.objects.select_for_update().filter(idcargaison__in=selected_ids)
+                count = cargaisons.count()
 
-                    c.save(update_fields=['etat'])
+                cargaisons.update(etat="Refaire")
 
-                    UserActivityLog.objects.create(
-                        user=user,
-                        action="Request to re-do the Test",
-                        description=f"User has requested that the record  {c.idcargaison} test need to be done again",
-                    )
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Bulk Validation: REFAIRE",
+                    description=f"User requested re-analysis for {count} samples. IDs: {', '.join(selected_ids)}",
+                )
 
-                except Cargaison.DoesNotExist:
-                    return JsonResponse({'message': 'An error occured'}, status=400)
-
-            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
-        else:
-            # If the request method is not POST or it's not an AJAX request, return an error
-            return JsonResponse({'error': 'Invalid request.'}, status=400)
-    # If the request method is not POST or it's not an AJAX request, return an error
-    return JsonResponse({'error': 'Invalid request.'}, status=400)
-
-
-
+            return JsonResponse({'status': 'success', 'message': f'{count} samples marked as REFAIRE.'})
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def bulkConforme2(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            selectedRows = request.POST.getlist('selectedRowIds[]')
-            for data in selectedRows:
-                try:
-                    c = Cargaison.objects.get(idcargaison=data)
+    if role in (1, 10):
+        selected_ids = request.POST.getlist('selectedRowIds[]')
+        if not selected_ids:
+            return JsonResponse({'status': 'failure', 'message': 'No samples selected'}, status=400)
 
-                    # Updated Method
-                    i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
-                    i.save()
+        try:
+            now = timezone.now()
+            with transaction.atomic():
+                cargaisons = Cargaison.objects.select_for_update().filter(idcargaison__in=selected_ids)
+                count = 0
+                processed_ids = []
 
-                    # A supprimer
-                    c.etat = "Conforme aux exigences"
-                    c.conformite = "Conforme aux exigences"
-                    c.impression = "0"
-                    c.dateHeureAnalyseLabo = datetime.now()
+                for c in cargaisons:
+                    if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                        ImpressionResultat.objects.create(
+                            printDate=now.date(),
+                            isConforme=True,
+                            isPrinted=False,
+                            idcargaison=c
+                        )
+                        c.etat = "Conforme aux exigences"
+                        c.conformite = "Conforme aux exigences"
+                        c.impression = "0"
+                        c.dateHeureAnalyseLabo = now
+                        c.save(update_fields=['etat', 'conformite', 'impression', 'dateHeureAnalyseLabo'])
+                        count += 1
+                        processed_ids.append(str(c.idcargaison))
 
-                    #Activity Log
+                if count > 0:
                     UserActivityLog.objects.create(
                         user=user,
-                        action="Test result second validation CONFORME",
-                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                        action="Bulk Validation 2: CONFORME",
+                        description=f"User performed final validation (CONFORME) for {count} samples. IDs: {', '.join(processed_ids)}",
                     )
 
-                    c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
-                except Cargaison.DoesNotExist:
-                    return JsonResponse({'message': 'An error occured'}, status=400)
-
-            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
-        else:
-            # If the request method is not POST or it's not an AJAX request, return an error
-            return JsonResponse({'error': 'Invalid request.'}, status=400)
-    # If the request method is not POST or it's not an AJAX request, return an error
-    return JsonResponse({'error': 'Invalid request.'}, status=400)
-
+            return JsonResponse({'status': 'success', 'message': f'{count} samples validated.'})
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def bulkNonConforme2(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            selectedRows = request.POST.getlist('selectedRowIds[]')
-            for data in selectedRows:
-                try:
-                    c = Cargaison.objects.get(idcargaison=data)
+    if role in (1, 10):
+        selected_ids = request.POST.getlist('selectedRowIds[]')
+        if not selected_ids:
+            return JsonResponse({'status': 'failure', 'message': 'No samples selected'}, status=400)
 
-                    # Updated Method
-                    i = ImpressionResultat(printDate=datetime.now, isConforme=0, isPrinted=0, idcargaison=c)
-                    i.save()
+        try:
+            now = timezone.now()
+            with transaction.atomic():
+                cargaisons = Cargaison.objects.select_for_update().filter(idcargaison__in=selected_ids)
+                count = 0
+                processed_ids = []
 
-                    c.etat = "Non conforme aux exigences"
-                    c.impression = "0"
-                    c.dateHeureAnalyseLabo = datetime.now()
-                    c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
+                for c in cargaisons:
+                    if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                        ImpressionResultat.objects.create(
+                            printDate=now.date(),
+                            isConforme=False,
+                            isPrinted=False,
+                            idcargaison=c
+                        )
+                        c.etat = "Non conforme aux exigences"
+                        c.conformite = "Non conforme aux exigences"
+                        c.impression = "0"
+                        c.dateHeureAnalyseLabo = now
+                        c.save(update_fields=['etat', 'conformite', 'impression', 'dateHeureAnalyseLabo'])
+                        count += 1
+                        processed_ids.append(str(c.idcargaison))
 
+                if count > 0:
                     UserActivityLog.objects.create(
                         user=user,
-                        action="Test result second validation NON CONFORME",
-                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                        action="Bulk Validation 2: NON CONFORME",
+                        description=f"User performed final validation (NON CONFORME) for {count} samples. IDs: {', '.join(processed_ids)}",
                     )
 
-                except Cargaison.DoesNotExist:
-                    return JsonResponse({'message': 'An error occured'}, status=400)
-
-            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
-        else:
-            # If the request method is not POST or it's not an AJAX request, return an error
-            return JsonResponse({'error': 'Invalid request.'}, status=400)
-    # If the request method is not POST or it's not an AJAX request, return an error
-    return JsonResponse({'error': 'Invalid request.'}, status=400)
-
+            return JsonResponse({'status': 'success', 'message': f'{count} samples validated.'})
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required(login_url='login')
+@require_POST
 def bulkRefaire2(request):
     user = request.user
     role = user.role_id
 
-    if role == 1 or role == 6:
-        if request.method == 'POST':
-            selectedRows = request.POST.getlist('selectedRowIds[]')
-            for data in selectedRows:
-                try:
-                    c = Cargaison.objects.get(idcargaison=data)
+    if role in (1, 10):
+        selected_ids = request.POST.getlist('selectedRowIds[]')
+        if not selected_ids:
+            return JsonResponse({'status': 'failure', 'message': 'No samples selected'}, status=400)
 
-                    c.etat = "Refaire"
+        try:
+            with transaction.atomic():
+                cargaisons = Cargaison.objects.select_for_update().filter(idcargaison__in=selected_ids)
+                count = cargaisons.count()
 
-                    c.save(update_fields=['etat'])
+                cargaisons.update(etat="Refaire")
 
-                    UserActivityLog.objects.create(
-                        user=user,
-                        action="Request to re-do the Test",
-                        description=f"User has requested that the record  {c.idcargaison} test need to be done again",
-                    )
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Bulk Validation 2: REFAIRE",
+                    description=f"User requested re-analysis for {count} samples (Step 2). IDs: {', '.join(selected_ids)}",
+                )
 
-
-                except Cargaison.DoesNotExist:
-                    return JsonResponse({'message': 'An error occured'}, status=400)
-
-            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
-        else:
-            # If the request method is not POST or it's not an AJAX request, return an error
-            return JsonResponse({'error': 'Invalid request.'}, status=400)
-    # If the request method is not POST or it's not an AJAX request, return an error
-    return JsonResponse({'error': 'Invalid request.'}, status=400)
-
+            return JsonResponse({'status': 'success', 'message': f'{count} samples marked as REFAIRE.'})
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
 # Fonction pour impression Certificat
@@ -6315,7 +6559,6 @@ def impressionCertificatBulk(request):
     role = user.role_id
 
     selectedRows = request.POST.getlist('selectedRowIds[]')
-
 
     # Recuperation des donnees liees aux signataires
     affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
@@ -6349,15 +6592,12 @@ def impressionCertificatBulk(request):
     # print(laboratoireData['laboratoireName'])
     # print(laboratoireData['laboratoireType'])
 
-
     # Start Celery task to export report asynchronously
-    result = app.send_task('labo.tasks.generate_bulk_pdf', args=[selectedRows,province,signGauche_data,signDroite_data,laboratoireName])
+    result = app.send_task('labo.tasks.generate_bulk_pdf',
+                           args=[selectedRows, province, signGauche_data, signDroite_data, laboratoireName])
 
     # Retrieve the task ID
     task_id = result.id
 
     message = "Export task started. Task ID: {}".format(task_id)
     return JsonResponse({'task_id': task_id})
-
-
-

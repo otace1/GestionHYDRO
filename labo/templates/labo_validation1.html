@@ -1,555 +1,554 @@
-{% extends 'labo/labo_base_validation1.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
 
+{% block extra_css %}
+<style>
+  :root{
+    --tf-primary:#0d6efd;
+    --tf-success:#198754;
+    --tf-info:#0dcaf0;
+    --tf-warning:#ffc107;
+    --tf-danger:#dc3545;
+    --tf-ink:#111827;
+    --tf-muted:#6b7280;
+    --tf-bd:rgba(0,0,0,.08);
+    --tf-shadow:0 10px 30px rgba(0,0,0,.08);
+    --tf-shadow2:0 14px 60px rgba(0,0,0,.18);
+  }
 
-{% block modal1 %}
-    {% csrf_token %}
-    {% crispy form %}
-    <script>
-        $(function () {
-            $("#id_date").datepicker({
-                format: 'dd/mm/yyyy',
-            });
-        });
-    </script>
+  /* Header mini-hero */
+  .tf-hero{
+    border:1px solid var(--tf-bd);
+    border-radius:16px;
+    background:linear-gradient(135deg, rgba(13,110,253,.12), rgba(25,135,84,.10));
+    box-shadow: var(--tf-shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .tf-title{
+    margin:0;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:var(--tf-ink);
+    line-height:1.1;
+    font-size:1.35rem;
+  }
+  .tf-sub{ color:var(--tf-muted); margin-top:4px; font-size:.92rem; }
+
+  .btn-pill{
+    border-radius:999px !important;
+    font-weight:800;
+    letter-spacing:.2px;
+    padding:.45rem .9rem;
+  }
+
+  /* Card wrapper */
+  .tf-card{
+    border:1px solid var(--tf-bd);
+    border-radius:16px;
+    background:#fff;
+    box-shadow: var(--tf-shadow);
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .tf-card-header{
+    padding:14px 16px;
+    border-bottom:1px solid var(--tf-bd);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fff;
+  }
+  .tf-card-left{
+    display:flex; align-items:center; gap:10px; min-width:0;
+  }
+  .tf-icon{
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(13,110,253,.10);
+    color:var(--tf-primary);
+    flex:0 0 auto;
+  }
+  .tf-card-titles h3{
+    margin:0;
+    font-weight:900;
+    color:var(--tf-ink);
+    font-size:1.05rem;
+  }
+  .tf-hint{
+    margin-top:3px;
+    color:var(--tf-muted);
+    font-size:.85rem;
+    max-width:70vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* Loadbar */
+  #data-table-wrapper{ position:relative; }
+  .loadbar{
+    display:none;
+    position:absolute;
+    left:0; right:0; top:0;
+    height:3px;
+    background:rgba(13,110,253,.15);
+    overflow:hidden;
+    z-index:10;
+  }
+  .loadbar:before{
+    content:"";
+    position:absolute;
+    left:-35%;
+    width:35%;
+    top:0; bottom:0;
+    background:linear-gradient(90deg, transparent, rgba(13,110,253,.55), transparent);
+    animation: loadbar 1.05s ease-in-out infinite;
+  }
+  @keyframes loadbar{ 0%{ transform:translateX(0);} 100%{ transform:translateX(400%);} }
+
+  /* DataTables tweaks */
+  table.dataTable thead th{
+    white-space:nowrap;
+    font-weight:900;
+    letter-spacing:.25px;
+    font-size:.80rem;
+  }
+  table.dataTable tbody td{ vertical-align:middle; }
+
+  .dataTables_wrapper .dataTables_filter input{
+    border-radius:999px;
+    border:1px solid var(--tf-bd);
+    padding:.35rem .75rem;
+    outline:none;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button{
+    border-radius:10px !important;
+  }
+
+  /* Action buttons */
+  .btn-action{
+    border-radius:999px !important;
+    font-weight:800;
+    padding:.32rem .75rem;
+    white-space:nowrap;
+  }
+
+  /* Modal polish */
+  .modal-content{
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--tf-shadow2);
+    overflow: hidden;
+    animation: modalZoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalZoomIn {
+    from { opacity: 0; transform: scale(0.95) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-header {
+    background: #fff;
+    border-bottom: 1px solid var(--tf-bd);
+    padding: 20px 24px;
+    background: linear-gradient(135deg, rgba(13,110,253,.10), rgba(25,135,84,.08));
+  }
+  .modal-title {
+    font-size: 1.25rem;
+    color: var(--tf-ink);
+    font-weight: 900;
+  }
+  .modal-body{ background:#fff; }
+  .modal-footer{ border-top:1px solid rgba(0,0,0,.06); background:#fff; }
+
+  .tf-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    border-radius:999px;
+    padding:.25rem .6rem;
+    border:1px solid rgba(0,0,0,.10);
+    background:rgba(0,0,0,.03);
+    font-weight:800;
+    font-size:.82rem;
+  }
+
+  .tick-box {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+</style>
 {% endblock %}
 
-
 {% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div>
+        <h1 class="tf-title">Validation - Niveau 1</h1>
+        <div class="tf-sub">Validation des résultats d'analyse par le Service Hydrocarbures</div>
+      </div>
 
-    <div class="row">
-        <a href="{% url 'rapportCq' %}" class="btn btn-app bg-blue" id="bulkConforme">
-            <span class="badge bg-info"></span>
-            <i class="fas fa-adjust"></i> CONFORME
-        </a>
-        <a href="{% url 'rapportCq' %}" class="btn btn-app bg-red" id="bulkNonConforme">
-            <span class="badge bg-info"></span>
-            <i class="fas fa-file-archive"></i> NON CONFORME
-        </a>
-        <a href="{% url 'rapportCq' %}" class="btn btn-app bg-orange" id="bulkRefaire">
-            <span class="badge bg-info"></span>
-            <i class="fas fa-file-archive"></i> A REFAIRE
-        </a>
+      <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+        <ol class="breadcrumb mb-0" style="background:transparent; padding:0;">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Validation - Niveau 1</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- KPI Section -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="tf-card p-3 mb-0 h-100 d-flex align-items-center" style="gap:15px; border-left: 4px solid var(--tf-warning);">
+          <div class="tf-icon warn" style="width:50px; height:50px; border-radius:14px; font-size:1.2rem;">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div>
+            <div class="small text-muted font-weight-bold text-uppercase">Total en attente</div>
+            <h2 class="mb-0 font-weight-bold" id="kpi-pending" style="color:var(--tf-ink);">0</h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="tf-card p-3 mb-0 h-100 d-flex align-items-center" style="gap:15px; border-left: 4px solid var(--tf-danger);">
+          <div class="tf-icon" style="width:50px; height:50px; border-radius:14px; font-size:1.2rem; background:rgba(220,53,69,.1); color:var(--tf-danger);">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div>
+            <div class="small text-muted font-weight-bold text-uppercase">Retard (>24h)</div>
+            <h2 class="mb-0 font-weight-bold" id="kpi-late" style="color:var(--tf-danger);">0</h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="tf-card p-3 mb-0 h-100 d-flex align-items-center" style="gap:15px; border-left: 4px solid var(--tf-success);">
+          <div class="tf-icon" style="width:50px; height:50px; border-radius:14px; font-size:1.2rem; background:rgba(25,135,84,.1); color:var(--tf-success);">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div>
+            <div class="small text-muted font-weight-bold text-uppercase">Validés Aujourd'hui</div>
+            <h2 class="mb-0 font-weight-bold" id="kpi-done" style="color:var(--tf-success);">0</h2>
+          </div>
+        </div>
+      </div>
     </div>
 
-<div class="modal fade" id="modal-lg">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Détails résultats</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              <p>One fine body&hellip;</p>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
-                <button type="button" class="btn btn-outline-info refaire-btn" id="btn-refaire">Refaire</button>
-                <button type="button" class="btn btn-success conform-btn" id="btn-conforme">Conforme</button>
-                <button type="button" class="btn btn-danger nonconform-btn" id="btn-non-conforme">Non conforme</button>
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon"><i class="fas fa-check-double"></i></div>
+          <div class="tf-card-titles">
+            <h3>Échantillons en attente de validation</h3>
+            <div class="tf-hint">
+              Sélectionnez les échantillons puis utilisez les actions groupées ci-contre.
             </div>
           </div>
-          <!-- /.modal-content -->
         </div>
-        <!-- /.modal-dialog -->
+
+        <div class="d-flex" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="btn btn-success btn-pill" id="bulkConforme">
+            <i class="fas fa-check mr-1"></i> CONFORME
+          </button>
+          <button class="btn btn-danger btn-pill" id="bulkNonConforme">
+            <i class="fas fa-times mr-1"></i> NON CONFORME
+          </button>
+          <button class="btn btn-warning btn-pill" id="bulkRefaire">
+            <i class="fas fa-redo mr-1"></i> A REFAIRE
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div id="data-table-wrapper">
+          <div class="loadbar" id="loadbar"></div>
+
+          <div class="table-responsive">
+            <table id="data-table" class="table table-bordered table-striped mb-0" style="width:100%">
+              <thead>
+                <tr>
+                  <th style="width: 40px;" class="text-center"><input type="checkbox" id="tick-all" class="tick-box"></th>
+                  <th>DATE RECEP.</th>
+                  <th>ENTREPOT</th>
+                  <th>FOURNISSEUR</th>
+                  <th>CODE LABO</th>
+                  <th>NUM.CERTIFICAT</th>
+                  <th>PRODUIT</th>
+                  <th style="width:120px;">ACTION(s)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- DETAILS MODAL -->
+<div class="modal fade" id="modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" style="font-weight:900;">
+          <i class="fas fa-flask mr-2"></i>DÉTAILS RÉSULTATS
+        </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div id="modal-details-content" class="modal-body" style="background: #f8fafc; max-height: 70vh; overflow-y: auto;">
+        <!-- Content loaded via AJAX -->
+        <div class="text-center p-5 text-muted">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p class="mt-2">Chargement des détails...</p>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+        <div class="d-flex" style="gap:.5rem;">
+          <button type="button" class="btn btn-outline-warning btn-pill refaire-btn" id="btn-refaire">
+            <i class="fas fa-redo mr-1"></i> Refaire
+          </button>
+          <button type="button" class="btn btn-danger btn-pill nonconform-btn" id="btn-non-conforme">
+            <i class="fas fa-times mr-1"></i> Non conforme
+          </button>
+          <button type="button" class="btn btn-success btn-pill conform-btn" id="btn-conforme">
+            <i class="fas fa-check mr-1"></i> Conforme
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-      <!-- /.modal -->
+{% endblock %}
 
-
-
-    <div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-      <tr>
-        <th></th>
-        <th>DATE RECEP.</th>
-        <th>ENTREPOT</th>
-        <th>FOURNISSEUR</th>
-        <th>CODE LABO</th>
-        <th>NUM.CERTIFICAT</th>
-        <th>PRODUIT</th>
-        <th>ACTION(s)</th>
-      </tr>
-
-    </thead>
-  </table>
-</div>
-
-<!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-
-
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    var dataRow;
-    var selectedRowIds = [];
+    function showLoadbar(){ $('#loadbar').show(); }
+    function hideLoadbar(){ $('#loadbar').hide(); }
+
+    let dataRow;
+    let selectedRowIds = [];
     const csrfToken = '{{ csrf_token }}';
 
+    function fetchKPIs() {
+        $.ajax({
+            url: '{% url "laboValidationKPIs" %}',
+            type: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function(data) {
+                $('#kpi-pending').text(data.lvl1.pending || 0);
+                $('#kpi-late').text(data.lvl1.late || 0);
+                $('#kpi-done').text(data.lvl1.done_today || 0);
+            }
+        });
+    }
+
     $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
+        fetchKPIs();
+        const dataTable = $('#data-table').DataTable({
+            lengthChange: false,
             ordering: false,
             processing: true,
             serverSide: true,
             responsive: true,
             ajax: {
                 url: '{% url 'affichagetableauvalidation1Response' %}',
-                type: 'GET',
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
+                type: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                beforeSend: function() { showLoadbar(); },
+                complete: function() { hideLoadbar(); }
             },
             columns: [
-                { // New column configuration for tick box
+                {
                     data: null,
                     render: function (data, type, row) {
-                        // Render a tick box in each cell of this column
-                        return '<input type="checkbox" class="tick-box" data-row-id="' + row.idcargaison + '">';
+                        const checked = selectedRowIds.includes(String(row.idcargaison)) ? 'checked' : '';
+                        return `<input type="checkbox" class="tick-box" data-row-id="${row.idcargaison}" ${checked}>`;
                     },
-                    className: 'text-center', // Center align content in this column
-                    title: '<input type="checkbox" id="tick-all">' // Add checkbox in the header
+                    className: 'text-center',
+                    orderable: false
                 },
-                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
-                { data: 'entrepot__nomentrepot' }, // Use array index to access 'frontiere__nomville'
-                { data: 'importateur__nomimportateur' }, // Use array index to access 'importateur__nomimportateur'
-                { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'entrepot__nomentrepot'
-                { data: 'entrepot_echantillon__laboreception__numcertificatqualite' }, // Use array index to access 'produit__nomproduit'
+                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
+                { data: 'entrepot__nomentrepot' },
+                { data: 'importateur__nomimportateur' },
+                { data: 'entrepot_echantillon__laboreception__codelabo' },
+                { data: 'entrepot_echantillon__laboreception__numcertificatqualite', defaultContent: '-' },
                 { data: 'produit__nomproduit' },
-                { // New column configuration
+                {
                     data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
-                        {##}
-                        {#const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +#}
-                        {#    '<input type="text" class="json-input" id="input-' + data + '">';#}
-
-                         // Include a link to be triggered with the parameter 'data'
-                        const linkURL = '/labo/affichageDetailsResultatsGauche/' + data;
-                        const linkText = 'AFFICHER';
-
-                        // Include a button to submit the JSON data for the row
-                        const submitAfficher = '<button class="btn btn-info afficher-btn" data-row-id="' + data + '">AFFICHER</button> ';
-                        {#const submitConforme = '<button class="btn btn-success" data-row-id="' + data + '">CONFORME</button> ';#}
-                        {#const submitNonConforme = '<button class="btn btn-danger" data-row-id="' + data + '">NON CONFORME</button> ';#}
-                        {#const submitARefaire = '<button class="btn btn-outline-danger" data-row-id="' + data + '">A REFAIRE</button> ';#}
-{##}
-{#                        return submitAfficher + submitConforme + submitNonConforme + submitARefaire;#}
-                        return submitAfficher;
+                    render: function (data) {
+                        return `<button class="btn btn-info btn-sm btn-pill afficher-btn" data-row-id="${data}">
+                                  <i class="fas fa-eye mr-1"></i> AFFICHER
+                                </button>`;
                     }
-                }// Use array index to access 'immatriculation'
+                }
             ],
-
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' },
+            drawCallback: function() {
+                // Update tick-all state on draw
+                const allChecked = $('.tick-box').length > 0 && $('.tick-box:checked').length === $('.tick-box').length;
+                $('#tick-all').prop('checked', allChecked);
+            }
         });
 
         // Event listener for opening the modal
         $('#data-table').on('click', '.afficher-btn', function() {
-          var rowId = $(this).data('row-id');
+          const rowId = $(this).data('row-id');
           dataRow = rowId;
-          var linkURL = '/labo/affichageDetailsResultatsGauche/' + rowId;
-          // Load content into the modal body via AJAX
-          $('#modal-lg .modal-body').load(linkURL);
-          // Show the modal
+          const linkURL = '/labo/affichageDetailsResultatsGauche/' + rowId;
+          
+          $('#modal-details-content').html('<div class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Chargement des détails...</p></div>');
           $('#modal-lg').modal('show');
+          
+          $.ajax({
+            url: linkURL,
+            type: 'GET',
+            success: function(html) {
+              $('#modal-details-content').html(html);
+            },
+            error: function() {
+              $('#modal-details-content').html('<div class="alert alert-danger m-3">Erreur lors du chargement des détails.</div>');
+            }
+          });
         });
-
 
         // Event listener for individual tick boxes
         $(document).on('change', '.tick-box', function() {
-            var rowId = $(this).data('row-id');
-            if ($(this).prop('checked')) {
-                selectedRowIds.push(rowId); // Store the row ID when the tick box is checked
-                console.log(selectedRowIds);
-            } else {
-                var index = selectedRowIds.indexOf(rowId);
-                if (index !== -1) {
-                    selectedRowIds.splice(index, 1); // Remove the row ID if the tick box is unchecked
-                    console.log(selectedRowIds);
+            const rowId = String($(this).data('row-id'));
+            const isChecked = $(this).prop('checked');
+
+            if (isChecked) {
+                if (!selectedRowIds.includes(rowId)) {
+                    selectedRowIds.push(rowId);
                 }
+            } else {
+                selectedRowIds = selectedRowIds.filter(id => id !== rowId);
+            }
+
+            // Sync tick-all: only checked if all visible boxes are checked
+            const visibleBoxes = $('.tick-box');
+            if (visibleBoxes.length > 0) {
+                const allChecked = visibleBoxes.length === visibleBoxes.filter(':checked').length;
+                $('#tick-all').prop('checked', allChecked);
+            } else {
+                $('#tick-all').prop('checked', false);
             }
         });
-
 
         // Event listener for the "Select All" checkbox
         $('#tick-all').on('change', function() {
-            var checkboxes = $('.tick-box');
-            checkboxes.prop('checked', $(this).prop('checked'));
-            if ($(this).prop('checked')) {
-                selectedRowIds = []; // Clear the selectedRowIds array
-                checkboxes.each(function() {
-                    var rowId = $(this).data('row-id');
-                    selectedRowIds.push(rowId); // Store all row IDs when "Select All" is checked
-                    console.log(selectedRowIds);
-                });
-            } else {
-                selectedRowIds = []; // Clear the selectedRowIds array if "Select All" is unchecked
-                console.log(selectedRowIds);
-            }
+            const isChecked = $(this).prop('checked');
+            // Update all visible checkboxes and trigger their change event to sync the array
+            $('.tick-box').each(function() {
+                if ($(this).prop('checked') !== isChecked) {
+                    $(this).prop('checked', isChecked).trigger('change');
+                }
+            });
         });
 
+        function performAction(url, data, successMsg) {
+            Swal.fire({
+                title: 'Confirmation',
+                text: "Voulez-vous confirmer cette action ?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Oui, confirmer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoadbar();
+                    $.ajax({
+                        type: 'POST',
+                        url: url,
+                        data: data,
+                        headers: { 'X-CSRFToken': csrfToken },
+                        success: function(response) {
+                            hideLoadbar();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Succès',
+                                text: successMsg || 'Opération réussie !',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            $('#modal-lg').modal('hide');
+                            dataTable.ajax.reload(null, false);
+                            fetchKPIs();
+                            selectedRowIds = [];
+                        },
+                        error: function(error) {
+                            hideLoadbar();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erreur',
+                                text: 'Une erreur est survenue lors du traitement.'
+                            });
+                        }
+                    });
+                }
+            });
+        }
 
-    });
+        // Action Handlers
+        $(document).on('click', '.conform-btn', function() {
+            performAction('{% url "conformeAjx" %}', { idcargaison: dataRow }, 'Échantillon validé comme CONFORME.');
+        });
 
-    // Add a click event listener for the 'CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.conform-btn', function() {
-        const idcargaison = dataRow;
-        console.log('TEST');
-        // Make an AJAX request to a particular URL with the 'idcargaison' data
-        $.ajax({
-            type: 'POST', // or 'GET' depending on your server-side implementation
-            url: '{% url "conformeAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-            data: { idcargaison: idcargaison },
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Display success SweetAlert
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your operation was successful!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle the AJAX response here if needed
-                {#console.log('AJAX request successful');#}
-                {#$('#modal-lg').modal('hide');#}
-                {#sweetAlert#}
-                {#// Reload the table#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            },
-            error: function(error) {
-                // Display error SweetAlert
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while processing your request!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle errors if any
-                console.error('AJAX request failed:', error);
-                {#$('#modal-lg').modal('hide');#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
+        $(document).on('click', '.nonconform-btn', function() {
+            performAction('{% url "nonconformeAjx" %}', { idcargaison: dataRow }, 'Échantillon marqué comme NON CONFORME.');
+        });
+
+        $(document).on('click', '.refaire-btn', function() {
+            performAction('{% url "refaireAjx" %}', { idcargaison: dataRow }, 'Échantillon renvoyé à l\'analyse.');
+        });
+
+        // Bulk Actions
+        $('#bulkConforme').click(function() {
+            if (selectedRowIds.length === 0) {
+                Swal.fire('Attention', 'Veuillez sélectionner au moins un échantillon.', 'warning');
+                return;
             }
+            performAction('{% url "bulkConforme1" %}', { selectedRowIds: selectedRowIds }, 'Sélection validée comme CONFORME.');
+        });
+
+        $('#bulkNonConforme').click(function() {
+            if (selectedRowIds.length === 0) {
+                Swal.fire('Attention', 'Veuillez sélectionner au moins un échantillon.', 'warning');
+                return;
+            }
+            performAction('{% url "bulkNonConforme1" %}', { selectedRowIds: selectedRowIds }, 'Sélection marquée comme NON CONFORME.');
+        });
+
+        $('#bulkRefaire').click(function() {
+            if (selectedRowIds.length === 0) {
+                Swal.fire('Attention', 'Veuillez sélectionner au moins un échantillon.', 'warning');
+                return;
+            }
+            performAction('{% url "bulkRefaire1" %}', { selectedRowIds: selectedRowIds }, 'Sélection renvoyée à l\'analyse.');
         });
     });
-
-
-    // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.nonconform-btn', function() {
-        {#const idcargaison = $(this).data('row-id');#}
-        const idcargaison = dataRow;
-
-        // Make an AJAX request to a particular URL with the 'idcargaison' data
-        $.ajax({
-            type: 'POST', // or 'GET' depending on your server-side implementation
-            url: '{% url "nonconformeAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-            data: { idcargaison: idcargaison },
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Display success SweetAlert
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your operation was successful!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle the AJAX response here if needed
-                console.log('AJAX request successful');
-                {#$('#modal-lg').modal('hide');#}
-                {#// Reload the table#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            },
-            error: function(error) {
-                // Display error SweetAlert
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while processing your request!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle errors if any
-                console.error('AJAX request failed:', error);
-                {#$('#modal-lg').modal('hide');#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            }
-        });
-    });
-
-
-    // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.refaire-btn', function() {
-        {#const idcargaison = $(this).data('row-id');#}
-        const idcargaison = dataRow;
-
-        // Make an AJAX request to a particular URL with the 'idcargaison' data
-        $.ajax({
-            type: 'POST', // or 'GET' depending on your server-side implementation
-            url: '{% url "refaireAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-            data: { idcargaison: idcargaison },
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Display success SweetAlert
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your operation was successful!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle the AJAX response here if needed
-                console.log('AJAX request successful');
-                {#$('#modal-lg').modal('hide');#}
-                {#// Reload the table#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            },
-            error: function(error) {
-                // Display error SweetAlert
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while processing your request!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle errors if any
-                console.error('AJAX request failed:', error);
-                {#$('#modal-lg').modal('show');#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            }
-        });
-    });
-
-
-
-    $(document).ready(function() {
-        $('#bulkConforme').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-
-            // Check if there are selected rows
-            if (selectedRowIds.length > 0) {
-                // Send the selectedRowIds array to the desired address
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "bulkConforme1" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: function(response) {
-                        // Handle the success response here if needed
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Your operation was successful!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        console.log('Selected rows sent successfully');
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-                // Inform the user that no rows are selected
-                {#console.log('No rows selected');#}
-            }
-
-
-        });
-    });
-
-
-    $(document).ready(function() {
-        $('#bulkNonConforme').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-        // Check if there are selected rows
-            if (selectedRowIds.length > 0) {
-                // Send the selectedRowIds array to the desired address
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "bulkNonConforme1" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: function(response) {
-                        // Handle the success response here if needed
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Your operation was successful!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        console.log('Selected rows sent successfully');
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-                // Inform the user that no rows are selected
-                {#console.log('No rows selected');#}
-            }
-
-        });
-    });
-
-
-    $(document).ready(function() {
-        $('#bulkRefaire').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-
-            if (selectedRowIds.length > 0) {
-                // Send the selectedRowIds array to the desired address
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "bulkRefaire1" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: function(response) {
-                        // Handle the success response here if needed
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Your operation was successful!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        console.log('Selected rows sent successfully');
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-                // Inform the user that no rows are selected
-                {#console.log('No rows selected');#}
-            }
-
-            // Your custom logic here
-            // For example, you can perform an AJAX request, display a message, etc.
-            console.log('Button clicked!');
-
-        });
-    });
-
-
-
 </script>
-
 {% endblock %}
 

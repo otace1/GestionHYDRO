@@ -1,333 +1,785 @@
-{% extends 'labo/lab_base_impression.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 
-{% block formsearch %}
- <div class="row">
-      <a class="btn btn-app bg-yellow" href="{% url 'impression' %}">
-                  <span class="badge bg-purple"></span>
-                  <i class="fas fa-recycle"></i>REFRESH
-      </a>
+{% block extra_css %}
+<style>
+  :root{
+    --tf-primary:#2563eb;
+    --tf-success:#16a34a;
+    --tf-info:#06b6d4;
+    --tf-warning:#f59e0b;
+    --tf-danger:#ef4444;
 
-      </div><!-- /.container-fluid -->
+    --tf-ink:#0f172a;
+    --tf-muted:#64748b;
 
+    --tf-bg:#f6f7fb;
+    --tf-surface:#ffffff;
 
-{% endblock%}
+    --tf-bd:rgba(2,6,23,.10);
+    --tf-bd2:rgba(2,6,23,.06);
+
+    --tf-shadow:0 10px 25px rgba(2,6,23,.08);
+    --tf-shadow2:0 18px 60px rgba(2,6,23,.18);
+
+    --tf-radius:18px;
+  }
+
+  .content-wrapper, .content, body{ background: var(--tf-bg) !important; }
+
+  .tf-hero{
+    border:1px solid var(--tf-bd2);
+    border-radius: var(--tf-radius);
+    background:
+      radial-gradient(900px 300px at 15% 10%, rgba(37,99,235,.18), transparent 60%),
+      radial-gradient(700px 260px at 85% 0%, rgba(22,163,74,.16), transparent 55%),
+      linear-gradient(135deg, rgba(255,255,255,.95), rgba(255,255,255,.80));
+    box-shadow: var(--tf-shadow);
+    padding:16px 18px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .tf-title{ margin:0; font-weight:900; color:var(--tf-ink); font-size:1.45rem; line-height:1.1; letter-spacing:-.2px; }
+  .tf-sub{ color:var(--tf-muted); margin-top:6px; font-size:.92rem; max-width:820px; }
+
+  .tf-breadcrumb{ background:transparent; padding:0; margin:0; font-size:.9rem; }
+  .tf-breadcrumb .breadcrumb-item a{ color:var(--tf-primary); font-weight:800; }
+
+  .tf-card{
+    border:1px solid var(--tf-bd2);
+    border-radius: var(--tf-radius);
+    background:var(--tf-surface);
+    box-shadow: var(--tf-shadow);
+    overflow:hidden;
+  }
+
+  .tf-card-header{
+    padding:14px 16px;
+    border-bottom:1px solid var(--tf-bd2);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(22,163,74,.06)), var(--tf-surface);
+  }
+
+  .tf-card-left{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .tf-icon{
+    width:44px; height:44px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(37,99,235,.12);
+    color: var(--tf-primary);
+    box-shadow: 0 10px 25px rgba(37,99,235,.18);
+    flex:0 0 auto;
+  }
+  .tf-card-titles h3{ margin:0; font-weight:900; color:var(--tf-ink); font-size:1.08rem; letter-spacing:-.15px; }
+  .tf-hint{ margin-top:4px; color:var(--tf-muted); font-size:.86rem; }
+
+  .btn-pill{ border-radius:999px !important; font-weight:900; padding:.48rem .95rem; }
+  .btn-action{ border-radius:999px !important; font-weight:900; padding:.34rem .72rem; white-space:nowrap; }
+
+  .tf-kpi{
+    display:inline-flex; align-items:center; gap:.5rem;
+    border-radius:999px;
+    padding:.34rem .72rem;
+    border:1px solid rgba(37,99,235,.22);
+    background: rgba(37,99,235,.10);
+    color: var(--tf-primary);
+    font-weight:900;
+    font-size:.86rem;
+  }
+
+  .tf-toolbar{
+    padding:12px 16px;
+    border-bottom:1px solid var(--tf-bd2);
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:end;
+    background: var(--tf-surface);
+  }
+  .tf-field{ min-width:190px; }
+  .tf-field label{ font-size:.78rem; font-weight:900; color:var(--tf-muted); margin-bottom:5px; }
+  .tf-field .form-control{
+    border-radius:14px;
+    border:1px solid var(--tf-bd2);
+    background: rgba(255,255,255,.95);
+    transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+  }
+  .tf-field .form-control:focus{
+    border-color: rgba(37,99,235,.35);
+    box-shadow: 0 0 0 .20rem rgba(37,99,235,.18);
+  }
+  .tf-actions-right{
+    margin-left:auto;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  #data-table-wrapper{ position:relative; }
+  .loadbar{
+    display:none;
+    position:absolute;
+    left:0; right:0; top:0;
+    height:3px;
+    background: rgba(37,99,235,.16);
+    overflow:hidden;
+    z-index:10;
+  }
+  .loadbar:before{
+    content:"";
+    position:absolute;
+    left:-35%;
+    width:35%;
+    top:0; bottom:0;
+    background: linear-gradient(90deg, transparent, rgba(37,99,235,.70), transparent);
+    animation: loadbar 1.0s ease-in-out infinite;
+  }
+  @keyframes loadbar{ 0%{ transform:translateX(0);} 100%{ transform:translateX(420%);} }
+
+  .table-responsive{ border-radius: 0 0 var(--tf-radius) var(--tf-radius); }
+  table.dataTable{ margin:0 !important; }
+  table.dataTable thead th{
+    white-space:nowrap;
+    font-weight:900;
+    letter-spacing:.28px;
+    font-size:.78rem;
+    color: var(--tf-ink);
+    background: rgba(2,6,23,.02);
+    border-bottom:1px solid var(--tf-bd2) !important;
+  }
+  table.dataTable tbody td{
+    vertical-align:middle;
+    border-color: var(--tf-bd2) !important;
+    color: rgba(15,23,42,.92);
+    font-size: .92rem;
+  }
+  .table td, .table th{ padding:.62rem .72rem; }
+
+  #data-table tbody tr:hover{ background: rgba(37,99,235,.05) !important; }
+  #data-table tbody tr:nth-child(even){ background: rgba(2,6,23,.015); }
+
+  #tick-all, .tick-box{ width:16px; height:16px; accent-color: var(--tf-primary); cursor:pointer; }
+
+  .dataTables_info{
+    padding: 12px 16px !important;
+    color: var(--tf-muted) !important;
+    font-weight: 800;
+  }
+  .dataTables_paginate{ padding: 10px 16px 14px !important; }
+  .paginate_button{
+    border-radius:999px !important;
+    font-weight:900 !important;
+    border:1px solid var(--tf-bd2) !important;
+    background: var(--tf-surface) !important;
+    padding: .34rem .7rem !important;
+    margin: 0 .15rem !important;
+  }
+  .paginate_button.current{
+    border-color: rgba(37,99,235,.35) !important;
+    box-shadow: 0 0 0 .18rem rgba(37,99,235,.12);
+  }
+
+  .modal-content{
+    border:0;
+    border-radius: var(--tf-radius);
+    overflow:hidden;
+    box-shadow: var(--tf-shadow2);
+  }
+  .modal-header{
+    border-bottom:1px solid rgba(2,6,23,.08);
+    background:
+      radial-gradient(650px 220px at 10% 0%, rgba(37,99,235,.18), transparent 60%),
+      radial-gradient(550px 180px at 90% 10%, rgba(22,163,74,.16), transparent 55%),
+      linear-gradient(135deg, rgba(255,255,255,.94), rgba(255,255,255,.78));
+  }
+  .modal-title{ font-weight:900; color:var(--tf-ink); letter-spacing:-.2px; }
+
+  .tf-chip{
+    display:inline-flex; align-items:center; gap:.35rem;
+    padding:.20rem .55rem;
+    border-radius:999px;
+    border:1px solid var(--tf-bd2);
+    background: rgba(255,255,255,.85);
+    color: var(--tf-muted);
+    font-weight: 900;
+    font-size: .80rem;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-     <a class="btn btn-app bg-success" href="#" id="bulkPrint">
-         <span class="badge bg-purple"></span>
-         <i class="fas fa-print"></i>IMPRESSION
-     </a>
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div>
+        <h1 class="tf-title">Gestion & Impression des Certificats</h1>
+        <div class="tf-sub">
+          Recherchez, sélectionnez, prévisualisez et imprimez les certificats validés.
+          <span class="tf-chip ml-1"><i class="fas fa-bolt"></i> Rapide</span>
+          <span class="tf-chip ml-1"><i class="fas fa-shield-alt"></i> Fiable</span>
+          <span class="tf-chip ml-1"><i class="fas fa-print"></i> Impression</span>
+        </div>
+      </div>
 
-
-     <div id="progress-bar-container" style="display: none;" class="mt-3">
-                    <div id="progress-bar" class="progress" style="border-radius: 25px">
-                        <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <div id="progress-bar-label" class="mt-2">Exporting...</div>
+      <div class="d-flex align-items-center" style="gap:.6rem; flex-wrap:wrap;">
+        <ol class="breadcrumb tf-breadcrumb">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Certificats</li>
+        </ol>
+      </div>
     </div>
-
-    <input type="hidden" id="parameter-input" name="parameter" value="2">
-
-    <div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-<table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-        <tr>
-            <th></th>
-            <th>DATE DE RECEPTION</th>
-            <th>DATE D'ANALYSE</th>
-            <th>CODE LABO</th>
-            <th>NUM. CERTIFICAT</th>
-            <th>FOURNISSEUR</th>
-            <th>ENTREPOT</th>
-            <th>PRODUIT</th>
-            <th>ACTION(s)</th>
-
-        </tr>
-    </thead>
-</table>
+  </div>
 </div>
 
-<!-- Include FileSaver.js library for saving the Excel file -->
+<section class="content">
+  <div class="container-fluid">
+
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon"><i class="fas fa-folder-open"></i></div>
+          <div class="tf-card-titles">
+            <h3>Certificats prêts</h3>
+            <div class="tf-hint">Astuce : combinez recherche + dates, puis imprimez en lot si nécessaire.</div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+
+          <button type="button" class="btn btn-outline-primary btn-pill" id="btnArchives" data-toggle="modal" data-target="#archivesModal">
+            <i class="fas fa-box-archive mr-1"></i> Certificats imprimés (Archives)
+          </button>
+
+          <span class="tf-kpi" title="Nombre de lignes sélectionnées">
+            <i class="fas fa-check-square"></i>
+            <span id="selectedCount">0</span> sélectionné(s)
+          </span>
+
+          <button class="btn btn-primary btn-pill" id="bulkPrint" disabled>
+            <i class="fas fa-print mr-1"></i> Impression groupée
+          </button>
+
+          <button class="btn btn-outline-secondary btn-pill" id="btnReset">
+            <i class="fas fa-sync-alt mr-1"></i> Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      {# ✅ ADDED: toolbar + table wrapper + table #}
+      <div class="tf-toolbar">
+        <div class="tf-field" style="min-width:300px;">
+          <label>Recherche rapide</label>
+          <input id="quickSearch" type="text" class="form-control form-control-sm"
+                 placeholder="Code labo, certificat, fournisseur, entrepôt, produit...">
+        </div>
+
+        <div class="tf-field">
+          <label>Date réception (début)</label>
+          <input id="dateStart" type="date" class="form-control form-control-sm">
+        </div>
+
+        <div class="tf-field">
+          <label>Date réception (fin)</label>
+          <input id="dateEnd" type="date" class="form-control form-control-sm">
+        </div>
+
+        <div class="tf-actions-right">
+          <button class="btn btn-success btn-pill" id="btnApply">
+            <i class="fas fa-filter mr-1"></i> Appliquer
+          </button>
+
+          <button class="btn btn-outline-dark btn-pill" id="btnRefresh" title="Rafraîchir">
+            <i class="fas fa-rotate"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div id="data-table-wrapper">
+          <div class="loadbar" id="loadbar"></div>
+
+          <div class="table-responsive">
+            <table id="data-table" class="table table-bordered table-striped mb-0" style="width:100%">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width:42px;">
+                    <input type="checkbox" id="tick-all" />
+                  </th>
+                  <th>DATE RÉCEPTION</th>
+                  <th>DATE IMPRESSION</th>
+                  <th>CODE LABO</th>
+                  <th>N° CERTIFICAT</th>
+                  <th>FOURNISSEUR</th>
+                  <th>ENTREPÔT</th>
+                  <th>IMMATRICULATION</th>
+                  <th>PRODUIT</th>
+                  <th style="width:190px;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+      {# ✅ END added #}
+
+    </div>
+  </div>
+</section>
+
+<!-- PROGRESS MODAL -->
+<div class="modal fade" id="progressModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-spinner mr-2"></i>Impression en cours</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="progress" style="height:10px; border-radius:999px;">
+          <div id="progress-bar-inner" class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+               role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div id="progress-bar-label" class="mt-2 small font-weight-bold text-muted">Préparation...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVES MODAL -->
+<div class="modal fade" id="archivesModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-box-archive mr-2"></i>Archives des Certificats Imprimés</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- Filters Toolbar -->
+        <div class="tf-toolbar" style="background: rgba(2,6,23,.02); border-bottom: 1px solid var(--tf-bd2);">
+          <div class="tf-field">
+            <label>Code labo</label>
+            <input id="archCodeLabo" type="text" class="form-control form-control-sm" placeholder="Rechercher code...">
+          </div>
+          <div class="tf-field">
+            <label>N° certificat</label>
+            <input id="archNumCert" type="text" class="form-control form-control-sm" placeholder="Rechercher n°...">
+          </div>
+          <div class="tf-field">
+            <label>Date impression (début)</label>
+            <input id="archDateStart" type="date" class="form-control form-control-sm">
+          </div>
+          <div class="tf-field">
+            <label>Date impression (fin)</label>
+            <input id="archDateEnd" type="date" class="form-control form-control-sm">
+          </div>
+          <div class="tf-actions-right">
+            <button class="btn btn-success btn-pill" id="archBtnApply">
+              <i class="fas fa-filter mr-1"></i> Appliquer
+            </button>
+          </div>
+        </div>
+
+        <div id="arch-table-wrapper" style="position:relative;">
+          <div class="loadbar" id="archLoadbar"></div>
+          <div class="table-responsive">
+            <table id="archives-table" class="table table-bordered table-striped mb-0" style="width:100%">
+              <thead>
+                <tr>
+                  <th>DATE IMPRESSION</th>
+                  <th>CODE LABO</th>
+                  <th>N° CERTIFICAT</th>
+                  <th>FOURNISSEUR</th>
+                  <th>ENTREPÔT</th>
+                  <th>IMMATRICULATION</th>
+                  <th>PRODUIT</th>
+                  <th style="width:120px;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 
-
 <script>
-    var dataRow;
-    var selectedRowIds = [];
-    const csrfToken = '{{ csrf_token }}';
+  const csrfToken = '{{ csrf_token }}';
 
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            language: {
-            search: "RECHERCHE ARCHIVES" // Change this to your desired placeholder text
-            },
-            lengthChange: false, // Display the length change dropdown
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ordering:false,
-            ajax: {
-                url: '{% url 'responseAffichagetableauimpression' %}',
-                type: 'GET',
-                // Show the loading spinner during DataTable processing
-                // Show the loading spinner during DataTable processing
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
+  function showLoadbar(){ $('#loadbar').show(); }
+  function hideLoadbar(){ $('#loadbar').hide(); }
+
+  const selectedIds = new Set();
+
+  function updateSelectedUI(){
+    const count = selectedIds.size;
+    $('#selectedCount').text(count);
+    $('#bulkPrint').prop('disabled', count === 0);
+  }
+
+  function base64ToBlob(base64, mime){
+    const byteChars = atob(base64);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], {type: mime});
+  }
+
+  let dataTable = null;
+
+  $(document).ready(function () {
+
+    dataTable = $('#data-table').DataTable({
+      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' },
+      lengthChange: false,
+      processing: true,
+      serverSide: true,
+      responsive: true,
+      ordering: false,
+      pageLength: 10,
+      ajax: {
+        url: '{% url "responseAffichagetableauimpression" %}',
+        type: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        data: function(d){
+          d.q = $('#quickSearch').val();
+          d.date_start = $('#dateStart').val();
+          d.date_end = $('#dateEnd').val();
         },
-            columns: [
-                { // New column configuration for tick box
-                    data: null,
-                    render: function (data, type, row) {
-                        // Render a tick box in each cell of this column
-                        return '<input type="checkbox" class="tick-box" data-row-id="' + row.idcargaison + '">';
-                    },
-                    className: 'text-center', // Center align content in this column
-                    title: '<input type="checkbox" id="tick-all">' // Add checkbox in the header
-                },
-                { data: 'dateReceptionLabo' },
-                { data: 'impressionresultat__printDate' },
-                { data: 'codelabo' },
-                { data: 'numcertificatqualite' },
-                { data: 'nomimportateur' },
-                { data: 'nomentrepot' },
-                { data: 'nomproduit' },
-                { // New column configuration
-                    data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // Include a button to submit the JSON data for the row
-                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">PRINT</button>';
-
-                        return submitButton;
-                    }
-                }
-            ],
-        });
-
-
-        // Event listener for individual tick boxes
-        $(document).on('change', '.tick-box', function() {
-            var rowId = $(this).data('row-id');
-            if ($(this).prop('checked')) {
-                selectedRowIds.push(rowId); // Store the row ID when the tick box is checked
-                console.log(selectedRowIds);
-            } else {
-                var index = selectedRowIds.indexOf(rowId);
-                if (index !== -1) {
-                    selectedRowIds.splice(index, 1); // Remove the row ID if the tick box is unchecked
-                    console.log(selectedRowIds);
-                }
-            }
-        });
-
-
-        // Event listener for the "Select All" checkbox
-        $('#tick-all').on('change', function() {
-            var checkboxes = $('.tick-box');
-            checkboxes.prop('checked', $(this).prop('checked'));
-            if ($(this).prop('checked')) {
-                selectedRowIds = []; // Clear the selectedRowIds array
-                checkboxes.each(function() {
-                    var rowId = $(this).data('row-id');
-                    selectedRowIds.push(rowId); // Store all row IDs when "Select All" is checked
-                    console.log(selectedRowIds);
-                });
-            } else {
-                selectedRowIds = []; // Clear the selectedRowIds array if "Select All" is unchecked
-                console.log(selectedRowIds);
-            }
-        });
-
-
-
-
-
-        // Handle form submission on button click
-        $('#data-table').on('click', '.btn-warning', function () {
-            const rowId = $(this).data('row-id');
-            const jsonData = $('#input-' + rowId).val();
-            const idcargaison = rowId;
-
-            // Show the loading icon while waiting for the response
-            $('#loading-icon').show();
-
-            // Include 'idcargaison' in the JSON data to send to the server
-            const dataToSend = {
-                idcargaison: idcargaison,
-            };
-
-            console.log(dataToSend);
-
-            // Send the JSON data to the URL using AJAX
-            $.ajax({
-                url: "{% url 'print' %}", // Replace with your actual URL
-                type: 'POST',
-                data: JSON.stringify(dataToSend), // Send as JSON string
-                contentType: 'application/json', // Set content type to JSON
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the success response here, if needed
-                    console.log('Data submitted successfully.');
-                    // Hide the loading icon after receiving the response
-                    $('#loading-icon').hide();
-
-                    // Decode the PDF content from the response
-                    var pdfContent = atob(response.pdf_base64);
-
-                    // Create a Blob object from the decoded PDF content
-                    var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
-
-                    // Create a URL for the Blob object
-                    var pdfURL = URL.createObjectURL(pdfBlob);
-
-                    // Open the PDF in a new browser window
-                    window.open(pdfURL);
-                    // Reload the dataTable after a successful response
-                    dataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle the error response here, if needed
-                    console.error('Error submitting data:', error);
-
-                    dataTable.ajax.reload();
-
-                    // Hide the loading icon after receiving the response
-                    $('#loading-icon').hide();
-
-                }
-            });
-        });
-
+        beforeSend: showLoadbar,
+        complete: hideLoadbar
+      },
+      columns: [
+        {
+          data: 'idcargaison',
+          className: 'text-center',
+          render: function(id){
+            const checked = selectedIds.has(String(id)) ? 'checked' : '';
+            return `<input type="checkbox" class="tick-box" data-row-id="${id}" ${checked} />`;
+          }
+        },
+        { data: 'dateReceptionLabo' },
+        { data: 'impressionresultat__printDate' },
+        { data: 'codelabo' },
+        { data: 'numcertificatqualite' },
+        { data: 'nomimportateur' },
+        { data: 'nomentrepot' },
+        { data: 'immatriculation' },
+        { data: 'nomproduit' },
+        {
+          data: 'idcargaison',
+          render: function(id){
+            return `
+              <div class="d-flex" style="gap:.35rem; flex-wrap:wrap;">
+                <button class="btn btn-warning btn-sm btn-action btn-print" data-row-id="${id}">
+                  <i class="fas fa-print mr-1"></i> Imprimer
+                </button>
+              </div>
+            `;
+          }
+        }
+      ],
+      drawCallback: function(){
+        const $pageChecks = $('.tick-box');
+        if ($pageChecks.length === 0){
+          $('#tick-all').prop('checked', false);
+          return;
+        }
+        const allChecked = $pageChecks.toArray().every(cb => cb.checked);
+        $('#tick-all').prop('checked', allChecked);
+        updateSelectedUI();
+      }
     });
 
-
-
-$(document).ready(function() {
-        $('#bulkPrint').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-            if (selectedRowIds.length > 0) {
-                this.style.display = "none";
-                // Show the progress bar
-                document.getElementById("progress-bar-container").style.display = "block";
-                console.log(selectedRowIds);
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "impressionCertificatBulk" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: async function (response) {
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                        selectedRowIds = [];
-                        console.log(response);
-
-                        {#// Parse the response as JSON#}
-                        {#const data = await response.json();#}
-
-                        // Update progress bar based on task ID
-                        if (response.task_id) {
-                            updateProgressBar(response.task_id);
-                            } else {
-                            throw new Error('Task ID not found in response.');
-                        }
-
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-                $('#data-table').DataTable().ajax.reload();
-
-                console.log(selectedRowIds);
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-            }
-        });
+    let t = null;
+    $('#quickSearch').on('input', function(){
+      clearTimeout(t);
+      t = setTimeout(() => dataTable.ajax.reload(), 320);
     });
 
-function updateProgressBar(taskId) {
-    const progressBar = document.getElementById('progress-bar-inner');
-    const progressBarLabel = document.getElementById('progress-bar-label');
+    $('#btnApply').on('click', function(){ dataTable.ajax.reload(); });
+    $('#btnRefresh').on('click', function(){ dataTable.ajax.reload(null, false); });
 
-    function checkProgress() {
-        fetch(`/shydro/checkExportTaskStatus/${taskId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.state === 'PENDING') {
-                    const progress = data.progress;
-                    progressBar.style.width = progress + '%';
-                    progressBar.setAttribute('aria-valuenow', progress);
-                    progressBarLabel.textContent = `Exporting... ${progress}%`;
-                    setTimeout(checkProgress, 1000);
-                } else if (data.state === 'SUCCESS') {
-                    progressBar.style.width = '100%';
-                    progressBar.setAttribute('aria-valuenow', 100);
-                    progressBarLabel.textContent = 'Export completed!';
-                    // Download PDF blob file
-                    downloadFile(data.result.file_url, data.result.file_name);
-                } else if (data.state === 'FAILURE') {
-                    progressBarLabel.textContent = 'Export failed!';
-                } else {
-                    // Handle other task states as needed
-                }
-            });
+    $('#btnReset').on('click', function(){
+      $('#quickSearch').val('');
+      $('#dateStart').val('');
+      $('#dateEnd').val('');
+      selectedIds.clear();
+      updateSelectedUI();
+      $('#tick-all').prop('checked', false);
+      dataTable.ajax.reload();
+    });
+
+    $(document).on('change', '.tick-box', function(){
+      const id = String($(this).data('row-id'));
+      if (this.checked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      updateSelectedUI();
+    });
+
+    $('#tick-all').on('change', function(){
+      const checked = this.checked;
+      $('.tick-box').each(function(){
+        this.checked = checked;
+        const id = String($(this).data('row-id'));
+        if (checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+      });
+      updateSelectedUI();
+    });
+
+    $(document).on('click', '.btn-print', function(){
+      const id = $(this).data('row-id');
+      singlePrint(id, {label: 'Impression', markAsPrinted: true});
+    });
+
+    function singlePrint(idcargaison, opts){
+      Swal.fire({
+        title: opts.label,
+        text: 'Génération du PDF...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      $.ajax({
+        url: "{% url 'print' %}",
+        type: "POST",
+        data: JSON.stringify({ idcargaison: idcargaison, mark_printed: !!opts.markAsPrinted }),
+        contentType: "application/json",
+        headers: {'X-CSRFToken': csrfToken},
+        success: function(resp){
+          Swal.close();
+
+          if(!resp || !resp.pdf_base64){
+            Swal.fire({icon:'error', title:'Erreur', text:'PDF non disponible.'});
+            return;
+          }
+
+          const blob = base64ToBlob(resp.pdf_base64, 'application/pdf');
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+
+          dataTable.ajax.reload(null, false);
+        },
+        error: function(){
+          Swal.close();
+          Swal.fire({icon:'error', title:'Erreur', text:"Impossible de générer le PDF."});
+          dataTable.ajax.reload(null, false);
+        }
+      });
     }
 
-    checkProgress();
-}
+    $('#bulkPrint').on('click', function(e){
+      e.preventDefault();
 
-function downloadFile(fileUrl, fileName) {
-    // Create an anchor element
-    const anchor = document.createElement('a');
-    anchor.href = fileUrl;
-    anchor.download = fileName;
+      if(selectedIds.size === 0){
+        Swal.fire({icon:'warning', title:'Aucune sélection', text:'Veuillez sélectionner au moins un certificat.'});
+        return;
+      }
 
-    // Append the anchor to the body and trigger a click event
-    document.body.appendChild(anchor);
-    anchor.click();
+      Swal.fire({
+        icon: 'question',
+        title: 'Impression groupée',
+        text: `Vous allez lancer l’impression de ${selectedIds.size} certificat(s). Continuer ?`,
+        showCancelButton: true,
+        confirmButtonText: 'Oui, lancer',
+        cancelButtonText: 'Annuler'
+      }).then((r) => {
+        if(!r.isConfirmed) return;
 
-    // Remove the anchor from the body
-    document.body.removeChild(anchor);
-}
+        $('#progress-bar-inner').css('width','0%').attr('aria-valuenow',0);
+        $('#progress-bar-label').text('Préparation...');
+        $('#progressModal').modal('show');
 
+        $.ajax({
+          type: 'POST',
+          url: '{% url "impressionCertificatBulk" %}',
+          data: { selectedRowIds: Array.from(selectedIds) },
+          headers: { 'X-CSRFToken': csrfToken },
+          success: function(resp){
+            if(resp && resp.task_id){
+              pollTask(resp.task_id);
+              selectedIds.clear();
+              updateSelectedUI();
+            }else{
+              $('#progressModal').modal('hide');
+              Swal.fire({icon:'error', title:'Erreur', text:"Task ID manquant."});
+            }
+            dataTable.ajax.reload(null, false);
+          },
+          error: function(){
+            $('#progressModal').modal('hide');
+            Swal.fire({icon:'error', title:'Erreur', text:"Erreur lors du lancement de l’impression groupée."});
+          }
+        });
+      });
+    });
+
+    function pollTask(taskId){
+      fetch(`/shydro/checkExportTaskStatus/${taskId}`)
+        .then(r => r.json())
+        .then(data => {
+          if(data.state === 'PENDING' || data.state === 'PROGRESS'){
+            const p = Math.max(0, Math.min(100, parseInt(data.progress || 0, 10)));
+            $('#progress-bar-inner').css('width', p + '%').attr('aria-valuenow', p);
+            $('#progress-bar-label').text(`Traitement... ${p}%`);
+            setTimeout(() => pollTask(taskId), 1100);
+            return;
+          }
+
+          if(data.state === 'SUCCESS'){
+            $('#progress-bar-inner').css('width','100%').attr('aria-valuenow', 100);
+            $('#progress-bar-label').text('Terminé. Téléchargement...');
+
+            if(data.result && data.result.file_url){
+              downloadFile(data.result.file_url, data.result.file_name || 'certificats.pdf');
+            }
+            setTimeout(() => $('#progressModal').modal('hide'), 850);
+            dataTable.ajax.reload(null, false);
+            return;
+          }
+
+          $('#progress-bar-label').text('Échec du traitement.');
+        })
+        .catch(() => {
+          $('#progress-bar-label').text('Erreur de suivi de tâche.');
+        });
+    }
+
+    function downloadFile(fileUrl, fileName){
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // --- ARCHIVES MODAL LOGIC ---
+    let archivesTable = null;
+    let archHasApplied = false;
+
+    function showArchLoadbar(){ $('#archLoadbar').show(); }
+    function hideArchLoadbar(){ $('#archLoadbar').hide(); }
+
+    $('#archivesModal').on('shown.bs.modal', function () {
+      // Do NOT auto-reload here. 
+      // We keep the previous state or empty if never applied.
+      if (!archHasApplied) {
+        // Optional: clear inputs and show a message in the table if not already done by DataTables emptyTable
+      }
+    });
+
+    function initArchivesTable() {
+      archivesTable = $('#archives-table').DataTable({
+        language: { 
+          url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json',
+          emptyTable: "Veuillez appliquer un filtre pour afficher les résultats."
+        },
+        lengthChange: false,
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        ordering: false,
+        pageLength: 10,
+        ajax: {
+          url: '{% url "responseArchivesTableau" %}',
+          type: 'POST',
+          headers: {'X-CSRFToken': csrfToken},
+          data: function(d){
+            d.code_labo = $('#archCodeLabo').val();
+            d.num_certificat = $('#archNumCert').val();
+            d.date_start = $('#archDateStart').val();
+            d.date_end = $('#archDateEnd').val();
+          },
+          beforeSend: showArchLoadbar,
+          complete: hideArchLoadbar
+        },
+        columns: [
+          { data: 'impressionresultat__printDate' },
+          { data: 'codelabo' },
+          { data: 'numcertificatqualite' },
+          { data: 'nomimportateur' },
+          { data: 'nomentrepot' },
+          { data: 'immatriculation' },
+          { data: 'nomproduit' },
+          {
+            data: 'idcargaison',
+            render: function(id){
+              return `
+                <button class="btn btn-warning btn-sm btn-action btn-reprint" data-row-id="${id}">
+                  <i class="fas fa-print mr-1"></i> Réimprimer
+                </button>
+              `;
+            }
+          }
+        ]
+      });
+    }
+
+    // Debounce for text inputs in archives
+    let archTimeout = null;
+    $('#archCodeLabo, #archNumCert').on('input', function(){
+      if (!archHasApplied) return;
+      clearTimeout(archTimeout);
+      archTimeout = setTimeout(() => archivesTable.ajax.reload(), 400);
+    });
+
+    $('#archBtnApply').on('click', function(){
+      const codeLabo = $('#archCodeLabo').val().trim();
+      const numCert = $('#archNumCert').val().trim();
+      const dateStart = $('#archDateStart').val();
+      const dateEnd = $('#archDateEnd').val();
+
+      if (!codeLabo && !numCert && !dateStart && !dateEnd) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Filtre requis',
+          text: 'Veuillez saisir au moins un critère de recherche (Code, N° ou Dates).'
+        });
+        return;
+      }
+
+      if (!archivesTable) {
+        archHasApplied = true;
+        initArchivesTable();
+      } else {
+        archHasApplied = true;
+        archivesTable.ajax.reload();
+      }
+    });
+
+    $(document).on('click', '.btn-reprint', function(){
+      const id = $(this).data('row-id');
+      singlePrint(id, {label: 'Réimpression', markAsPrinted: false});
+    });
+
+  });
 </script>
-
-
-
-
 {% endblock %}
-
-
-

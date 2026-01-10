@@ -1,344 +1,1204 @@
-{% extends 'base_lab_encodage.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
+{% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
 
+{% block extra_css %}
 
+    <style>
+  /* ===== SAISIE Lab UX ===== */
+  .tf-saisie-toolbar{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+    border-bottom: 1px solid var(--tf-bd);
+    padding: .75rem 1rem;
+  }
+
+  .tf-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    border-radius:999px;
+    padding:.3rem .65rem;
+    border:1px solid rgba(0,0,0,.10);
+    background:rgba(0,0,0,.03);
+    font-weight:800;
+    font-size:.82rem;
+    white-space:nowrap;
+  }
+  .tf-chip b{ font-weight:900; }
+  .tf-chip-success{
+    border-color: rgba(25,135,84,.25);
+    background: rgba(25,135,84,.08);
+    color: #0f5132;
+  }
+
+  .tf-search{
+    display:flex;
+    align-items:center;
+    gap:.45rem;
+    border:1px solid rgba(0,0,0,.10);
+    background:#fff;
+    padding:.35rem .65rem;
+    border-radius:999px;
+    min-width: 300px;
+  }
+  .tf-search input{
+    border:0;
+    outline:0;
+    width:100%;
+    font-size:.86rem;
+  }
+
+  .tf-progress{
+    height:6px;
+    border-radius:999px;
+    background: rgba(13,110,253,.10);
+    overflow:hidden;
+    margin-top:.6rem;
+  }
+  .tf-progress-bar{
+    height:100%;
+    background: rgba(13,110,253,.55);
+    border-radius:999px;
+    transition: width .2s ease;
+  }
+
+  .tf-saisie-scroll{
+    max-height: 65vh;
+    overflow:auto;
+    background: #f8fafc;
+  }
+
+  .tf-param-row{
+    background:#fff;
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:14px;
+    padding:.75rem .75rem;
+    margin-bottom:.6rem;
+    box-shadow: 0 8px 22px rgba(0,0,0,.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+  }
+  .tf-param-head{
+    flex: 1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom: 0;
+  }
+  .tf-param-name{
+    font-weight:900;
+    color: var(--tf-ink);
+    line-height:1.15;
+  }
+  .tf-param-sub{
+    color: var(--tf-muted);
+    font-size:.82rem;
+    margin-top:2px;
+  }
+  .tf-status-pill{
+    border-radius:999px;
+    padding:.18rem .55rem;
+    font-weight:900;
+    font-size:.78rem;
+    border:1px solid rgba(0,0,0,.10);
+    background: rgba(0,0,0,.03);
+    white-space:nowrap;
+  }
+  .tf-status-ok{
+    border-color: rgba(25,135,84,.25);
+    background: rgba(25,135,84,.08);
+    color: #0f5132;
+  }
+  .tf-status-missing{
+    border-color: rgba(255,193,7,.30);
+    background: rgba(255,193,7,.14);
+    color: #7a5200;
+  }
+
+  .tf-param-grid{
+    flex: 1.5;
+    display:grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap:.5rem;
+    align-items:center;
+  }
+  @media (max-width: 992px){
+    .tf-param-row { flex-direction: column; align-items: stretch; }
+    .tf-param-head { margin-bottom: 10px; }
+    .tf-param-grid{ grid-template-columns: 1fr; }
+  }
+
+  .tf-param-grid-single {
+    grid-template-columns: 1fr auto !important;
+  }
+
+  .tf-field label{
+    font-size:.76rem;
+    font-weight:900;
+    color: #374151;
+    margin-bottom:.25rem;
+  }
+  .tf-field input{
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.10);
+    font-size:.90rem;
+    min-width: 120px;
+  }
+
+  .tf-param-actions{
+    display:flex;
+    gap:.4rem;
+    justify-content:flex-end;
+  }
+
+  .tf-saisie-footer{
+    position: sticky;
+    bottom: 0;
+    background:#fff;
+    border-top:1px solid var(--tf-bd);
+  }
+
+  .tf-focus{
+    outline: 2px solid rgba(13,110,253,.35);
+    box-shadow: 0 0 0 6px rgba(13,110,253,.10);
+  }
+</style>
+<style>
+  :root{
+    --tf-primary:#0d6efd;
+    --tf-success:#198754;
+    --tf-info:#0dcaf0;
+    --tf-warning:#ffc107;
+    --tf-danger:#dc3545;
+    --tf-ink:#111827;
+    --tf-muted:#6b7280;
+    --tf-bd:rgba(0,0,0,.08);
+    --tf-shadow:0 10px 30px rgba(0,0,0,.08);
+    --tf-shadow2:0 14px 60px rgba(0,0,0,.18);
+  }
+
+  /* ===== Header / mini hero ===== */
+  .tf-hero{
+    border:1px solid var(--tf-bd);
+    border-radius:16px;
+    background:linear-gradient(135deg, rgba(13,110,253,.12), rgba(25,135,84,.10));
+    box-shadow: var(--tf-shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .tf-title{
+    margin:0;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:var(--tf-ink);
+    line-height:1.1;
+    font-size:1.35rem;
+  }
+  .tf-sub{ color:var(--tf-muted); margin-top:4px; font-size:.92rem; }
+
+  .btn-pill{
+    border-radius:999px !important;
+    font-weight:800;
+    letter-spacing:.2px;
+    padding:.45rem .9rem;
+  }
+
+  /* ===== Section cards ===== */
+  .tf-card{
+    border:1px solid var(--tf-bd);
+    border-radius:16px;
+    background:#fff;
+    box-shadow: var(--tf-shadow);
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .tf-card-header{
+    padding:14px 16px;
+    border-bottom:1px solid var(--tf-bd);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fff;
+  }
+  .tf-card-left{
+    display:flex; align-items:center; gap:10px; min-width:0;
+  }
+  .tf-icon{
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(13,110,253,.10);
+    color:var(--tf-primary);
+    flex:0 0 auto;
+  }
+  .tf-icon.warn{
+    background:rgba(255,193,7,.20);
+    color:#8a5b00;
+  }
+  .tf-card-titles h3{
+    margin:0;
+    font-weight:900;
+    color:var(--tf-ink);
+    font-size:1.05rem;
+  }
+  .tf-hint{
+    margin-top:3px;
+    color:var(--tf-muted);
+    font-size:.85rem;
+    max-width:70vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* ===== Loadbar ===== */
+  #data-table-wrapper, #redo-table-wrapper{ position:relative; }
+  .loadbar{
+    display:none;
+    position:absolute;
+    left:0; right:0; top:0;
+    height:3px;
+    background:rgba(13,110,253,.15);
+    overflow:hidden;
+    z-index:10;
+  }
+  .loadbar:before{
+    content:"";
+    position:absolute;
+    left:-35%;
+    width:35%;
+    top:0; bottom:0;
+    background:linear-gradient(90deg, transparent, rgba(13,110,253,.55), transparent);
+    animation: loadbar 1.05s ease-in-out infinite;
+  }
+  @keyframes loadbar{ 0%{ transform:translateX(0);} 100%{ transform:translateX(400%);} }
+
+  /* ===== DataTables tweaks ===== */
+  table.dataTable thead th{
+    white-space:nowrap;
+    font-weight:900;
+    letter-spacing:.25px;
+    font-size:.80rem;
+  }
+  table.dataTable tbody td{ vertical-align:middle; }
+
+  .dataTables_wrapper .dataTables_filter input{
+    border-radius:999px;
+    border:1px solid var(--tf-bd);
+    padding:.35rem .75rem;
+    outline:none;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button{
+    border-radius:10px !important;
+  }
+
+  /* Buttons */
+  .btn-action{
+    border-radius:999px !important;
+    font-weight:800;
+    padding:.32rem .75rem;
+    white-space:nowrap;
+  }
+
+  /* Alert warning area */
+  .tf-warning-box{
+    border:1px solid rgba(255,193,7,.35);
+    background:rgba(255,193,7,.12);
+    border-radius:14px;
+    padding:12px 14px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .tf-warning-box i{ margin-top:2px; color:#8a5b00; }
+  .tf-warning-title{ font-weight:900; color:var(--tf-ink); margin:0; line-height:1.2; }
+  .tf-warning-text{ margin:4px 0 0 0; color:var(--tf-muted); font-size:.90rem; }
+
+  /* Badge count */
+  .tf-count{
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    border-radius:999px;
+    padding:.25rem .6rem;
+    font-weight:900;
+    background:rgba(255,193,7,.16);
+    border:1px solid rgba(255,193,7,.30);
+    color:#7a5200;
+  }
+
+  /* Collapsible area */
+  .tf-collapse{
+    display:none;
+    border-top:1px solid var(--tf-bd);
+    background:#fff;
+  }
+
+  /* Modals */
+  .modal-content{
+    border:0;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: var(--tf-shadow2);
+  }
+  .modal-header{
+    border-bottom:1px solid rgba(0,0,0,.06);
+    background: linear-gradient(135deg, rgba(13,110,253,.10), rgba(25,135,84,.08));
+  }
+  .modal-title{ font-weight:900; color:var(--tf-ink); }
+  .modal-body{ background:#fff; }
+  .modal-footer{ border-top:1px solid rgba(0,0,0,.06); background:#fff; }
+
+  .tf-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    border-radius:999px;
+    padding:.25rem .6rem;
+    border:1px solid rgba(0,0,0,.10);
+    background:rgba(0,0,0,.03);
+    font-weight:800;
+    font-size:.82rem;
+  }
+   /* ===== Compact XL modal ===== */
+  #modal-xl .modal-dialog{
+    max-width: 1100px; /* still "xl" but controlled */
+  }
+
+  #modal-xl .modal-content{
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  #modal-xl .modal-header{
+    padding: .75rem 1rem;
+  }
+  #modal-xl .modal-title{
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: .2px;
+  }
+
+  /* Make body scroll instead of expanding huge */
+  #modal-xl .modal-body{
+    padding: .75rem 1rem;
+  }
+  #modal-xl .tf-modal-scroll{
+    max-height: 65vh;        /* key: prevents huge lines */
+    overflow: auto;
+  }
+
+  /* Compact table */
+  #modal-xl table{
+    font-size: .86rem;
+  }
+  #modal-xl .table thead th{
+    font-size: .75rem;
+    letter-spacing: .25px;
+    font-weight: 900;
+    white-space: nowrap;
+    padding: .45rem .6rem;
+  }
+  #modal-xl .table tbody td{
+    padding: .35rem .6rem;   /* smaller row height */
+    vertical-align: middle;
+  }
+
+  /* Wrap long text without forcing big height */
+  #modal-xl .cell-wrap{
+    max-width: 280px;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.15;
+  }
+  #modal-xl .cell-wrap.small{
+    max-width: 220px;
+  }
+
+  /* Compact inputs/buttons inside the "actions" column */
+  #modal-xl .form-control-sm{
+    height: calc(1.4em + .5rem + 2px);
+    padding: .2rem .45rem;
+    font-size: .82rem;
+    border-radius: 10px;
+  }
+  #modal-xl .btn.btn-sm{
+    padding: .22rem .55rem;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .78rem;
+    white-space: nowrap;
+  }
+
+  /* Keep actions column neat */
+  #modal-xl .actions-col{
+    /* Auto adjust to content */
+  }
+
+  #modal-xl .modal-footer{
+    padding: .6rem 1rem;
+  }
+
+  /* Parameter name wrapping */
+  .tf-parameter-name {
+    white-space: normal;
+    word-break: break-word;
+    min-width: 150px;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-        <div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-      <tr>
-        <th>DATE RECEP.</th>
-        <th>CODE LABO</th>
-        <th>NUM.RE</th>
-        <th>NUM. DOSSIER</th>
-        <th>IMMATRICULATION</th>
-        <th>PRODUIT</th>
-        <th>ACTION(s)</th>
-      </tr>
-    </thead>
-  </table>
-</div>
-
-
-    <div class="modal fade" id="correctionModal" tabindex="-1" role="dialog" aria-labelledby="correctionModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <!-- Add your modal content here -->
-      <div class="modal-header">
-        <h5 class="modal-title" id="correctionModalLabel">CORRECTION NATURE PRODUIT</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div>
+        <h1 class="tf-title">Encodage & Analyse — Laboratoire</h1>
+        <div class="tf-sub">Saisie des résultats + correction nature produit</div>
       </div>
-      <div class="modal-body">
-        {% crispy form %}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary validation-correction-btn" data-dismiss="modal">VALIDER</button>
+
+      <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+        <ol class="breadcrumb mb-0" style="background:transparent; padding:0;">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Analyse</li>
+        </ol>
       </div>
     </div>
   </div>
 </div>
 
+<section class="content">
+  <div class="container-fluid">
+
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon warn"><i class="fas fa-triangle-exclamation"></i></div>
+          <div class="tf-card-titles">
+            <h3>Échantillons à refaire</h3>
+            <div class="tf-hint">Zone de contrôle — afficher uniquement si nécessaire (pour éviter surcharge).</div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+          <span class="tf-count" title="Nombre d'échantillons à refaire">
+            <i class="fas fa-hashtag"></i> <span id="redo-count">0</span>
+          </span>
+
+          <button id="btn-toggle-redo" type="button" class="btn btn-outline-warning btn-pill">
+            <i class="fas fa-eye mr-1"></i> Afficher
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="tf-warning-box">
+          <i class="fas fa-bell"></i>
+          <div>
+            <p class="tf-warning-title mb-0">Rappel</p>
+            <p class="tf-warning-text">
+              Cette liste regroupe les échantillons marqués <b>“à refaire”</b>. Vérifiez-les régulièrement.
+              Cliquez sur <b>Afficher</b> pour charger la table (chargement à la demande).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tf-collapse" id="redo-collapse">
+        <div class="card-body p-0">
+          <div id="redo-table-wrapper">
+            <div class="loadbar" id="redo-loadbar"></div>
+
+            <div class="table-responsive">
+              <table id="redo-table" class="table table-bordered table-striped mb-0" style="width:100%">
+                <thead>
+                  <tr>
+                    <th>DATE RECEP.</th>
+                    <th>CODE LABO</th>
+                    <th>NUM.RE</th>
+                    <th>NUM. DOSSIER</th>
+                    <th>IMMATRICULATION</th>
+                    <th>PRODUIT</th>
+                    <th style="width:120px;">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon"><i class="fas fa-flask"></i></div>
+          <div class="tf-card-titles">
+            <h3>Échantillons à analyser</h3>
+            <div class="tf-hint">
+              Utilisez <span class="tf-badge"><i class="fas fa-pen"></i> SAISIE</span> pour encoder les résultats,
+              ou <span class="tf-badge"><i class="fas fa-wand-magic-sparkles"></i> CORRECTION PRODUIT</span>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-3 border-bottom">
+        <form id="filter-form" class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label for="filter-date-debut" class="form-label small font-weight-bold">Date Début</label>
+            <input type="date" class="form-control form-control-sm" id="filter-date-debut">
+          </div>
+          <div class="col-md-3">
+            <label for="filter-date-fin" class="form-label small font-weight-bold">Date Fin</label>
+            <input type="date" class="form-control form-control-sm" id="filter-date-fin">
+          </div>
+          <div class="col-md-3">
+            <label for="filter-code-labo" class="form-label small font-weight-bold">Code Labo</label>
+            <input type="text" class="form-control form-control-sm" id="filter-code-labo" placeholder="Ex: 123">
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex gap-2">
+              <button type="button" id="btn-filter" class="btn btn-primary btn-sm btn-pill w-100">
+                <i class="fas fa-search mr-1"></i> Filtrer
+              </button>
+              <button type="button" id="btn-clear-filter" class="btn btn-outline-secondary btn-sm btn-pill w-100">
+                <i class="fas fa-times mr-1"></i> Effacer
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card-body p-0">
+        <div id="data-table-wrapper">
+          <div class="loadbar" id="loadbar"></div>
+
+          <div class="table-responsive">
+            <table id="data-table" class="table table-bordered table-striped mb-0" style="width:100%">
+              <thead>
+                <tr>
+                  <th>DATE RECEP.</th>
+                  <th>CODE LABO</th>
+                  <th>NUM.RE</th>
+                  <th>NUM. DOSSIER</th>
+                  <th>IMMATRICULATION</th>
+                  <th>PRODUIT</th>
+                  <th>COMPLÉTION</th>
+                  <th style="width:220px;">ACTION(s)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CORRECTION MODAL -->
+<div class="modal fade" id="correctionModal" tabindex="-1" role="dialog" aria-labelledby="correctionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="correctionModalLabel">
+          <i class="fas fa-wand-magic-sparkles mr-2"></i>CORRECTION NATURE PRODUIT
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        {% crispy form %}
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+        <button type="button" class="btn btn-primary btn-pill validation-correction-btn">
+          <i class="fas fa-check mr-1"></i> Valider
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SAISIE MODAL (Lab-friendly) -->
+<div class="modal fade" id="modal-xl" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <div class="d-flex align-items-start" style="gap:.75rem;">
+          <div class="tf-icon" style="width:44px;height:44px;border-radius:14px;">
+            <i class="fas fa-pen"></i>
+          </div>
+          <div>
+            <h4 class="modal-title mb-0">SAISIE DES RÉSULTATS</h4>
+            <div class="small text-muted">
+              Renseignez chaque paramètre — <b>Entrée</b> pour sauvegarder et passer au suivant.
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.85;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body p-0">
+        <!-- sticky toolbar -->
+        <div class="tf-saisie-toolbar">
+          <div class="d-flex align-items-center flex-wrap" style="gap:.5rem;">
+            <span class="tf-chip">
+              <i class="fas fa-hashtag"></i> CODE LABO: <b id="saisie-code-labo">—</b>
+            </span>
+            <span class="tf-chip">
+              <i class="fas fa-flask"></i> Produit: <b id="saisie-produit">—</b>
+            </span>
+          </div>
+
+          <div class="d-flex align-items-center flex-wrap" style="gap:.5rem;">
+            <div class="tf-search">
+              <i class="fas fa-search"></i>
+              <input id="param-search" type="text" placeholder="Rechercher un paramètre… (ex: densité, soufre)">
+            </div>
+
+            <span class="tf-chip tf-chip-success" title="Paramètres complétés">
+              <i class="fas fa-check"></i> <b><span id="done-count">0</span>/<span id="total-count">0</span></b>
+            </span>
+          </div>
+
+          <div class="tf-progress">
+            <div class="tf-progress-bar" id="progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- scroll content -->
+        <div class="tf-saisie-scroll">
+          <div id="saisie-loading" class="p-3 text-center text-muted" style="display:none;">
+            <i class="fas fa-spinner fa-spin mr-1"></i> Chargement des paramètres…
+          </div>
+
+          <div id="param-list" class="p-3">
+            <!-- injected rows -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer tf-saisie-footer">
+        <div class="small text-muted">
+          Astuce: utilisez <b>Tab</b> pour naviguer, <b>Entrée</b> pour sauvegarder.
+        </div>
+
+        <div class="d-flex" style="gap:.5rem;">
+          <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+          <button id="saveChanges" type="button" class="btn btn-primary btn-pill">
+            <i class="fas fa-check mr-1"></i> Valider le dossier
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const csrfToken = '{{ csrf_token }}';
 
-let dynamicDataTable;
-let idcargaison;
-let dataTable;
+let dynamicDataTable = null;
+let idcargaison = null;
+let dataTable = null;
+
+let redoTable = null;
+let redoVisible = false;
+
+function showLoadbar(){ $('#loadbar').show(); }
+function hideLoadbar(){ $('#loadbar').hide(); }
+
+function showRedoLoadbar(){ $('#redo-loadbar').show(); }
+function hideRedoLoadbar(){ $('#redo-loadbar').hide(); }
+
+function setRedoCount(n){
+  const v = parseInt(n || 0, 10);
+  $('#redo-count').text(isNaN(v) ? '0' : String(v));
+
+  const $warnBox = $('.tf-warning-box');
+  const $warnIcon = $warnBox.find('i');
+  const $warnTitle = $warnBox.find('.tf-warning-title');
+  const $warnText = $warnBox.find('.tf-warning-text');
+
+  if(v > 0){
+    $warnBox.addClass('border-danger bg-danger-subtle').css({'background-color': 'rgba(220, 53, 69, 0.12)', 'border-color': 'rgba(220, 53, 69, 0.35)'});
+    $warnIcon.removeClass('fa-bell').addClass('fa-triangle-exclamation text-danger');
+    $warnTitle.addClass('text-danger').html('<i class="fas fa-circle-exclamation mr-1"></i> Attention : Échantillons à refaire');
+    $warnText.html(`Il y a <b>${v}</b> échantillon(s) marqué(s) <b>“à refaire”</b> qui nécessite(nt) votre attention immédiate.`);
+  } else {
+    $warnBox.removeClass('border-danger bg-danger-subtle').css({'background-color': '', 'border-color': ''});
+    $warnIcon.removeClass('fa-triangle-exclamation text-danger').addClass('fa-bell');
+    $warnTitle.removeClass('text-danger').text('Rappel');
+    $warnText.html('Cette liste regroupe les échantillons marqués <b>“à refaire”</b>. Vérifiez-les régulièrement.<br>Cliquez sur <b>Afficher</b> pour charger la table (chargement à la demande).');
+  }
+}
+
+function fetchRedoCount(){
+  $.ajax({
+    url: '{% url "affichageAnalyseRefaireResponse" %}',
+    type: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    data: { length: 0 },
+    success: function(json){
+      if(json){
+        setRedoCount(json.recordsTotal || 0);
+      }
+    }
+  });
+}
+
+function initRedoTable(){
+  if(redoTable) return redoTable;
+
+  redoTable = $('#redo-table').DataTable({
+    lengthChange: false,
+    processing: true,
+    serverSide: true,
+    responsive: true,
+    pageLength: 10,
+    ajax: {
+      url: '{% url "affichageAnalyseRefaireResponse" %}',  // 🔁 change to your real view name
+      type: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+      beforeSend: function(){ showRedoLoadbar(); },
+      complete: function(){ hideRedoLoadbar(); }
+    },
+    columns: [
+      { data: 'date_reception_labo__date' , defaultContent:'' },
+      { data: 'code_labo' , defaultContent:'' },
+      { data: 'entrepot_echantillon__numrappechauto' , defaultContent:'' },
+      { data: 'numdos' , defaultContent:'' },
+      { data: 'immatriculation' , defaultContent:'' },
+      { data: 'nom_produit' , defaultContent:'' },
+      {
+        data: 'idcargaison',
+        render: function (data) {
+          return `<button type="button" class="btn btn-success btn-sm btn-action saisie-btn"
+                           data-row-id="${data}">
+                    <i class="fas fa-pen mr-1"></i> Saisie
+                  </button>`;
+        }
+      }
+    ],
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' }
+  });
+
+  return redoTable;
+}
+
+/* Optional: if your backend can return a count endpoint,
+   you can set it here. If not, we’ll update count after the first load. */
+function refreshRedoCountFromTable(){
+  if(!redoTable) return;
+  // DataTables gives recordsFiltered/Total via ajax json.
+  // We hook once after xhr to update the badge.
+  $('#redo-table').on('xhr.dt', function(_e, _settings, json){
+    if(json){
+      // choose what you prefer: json.recordsFiltered or json.recordsTotal
+      setRedoCount(json.recordsFiltered ?? json.recordsTotal ?? 0);
+    }
+  });
+}
 
 $(document).ready(function () {
-        dataTable = $('#data-table').DataTable({
-        lengthChange: false, // Display the length change dropdown
-        processing: true,
-        serverSide: true,
-        responsive: true,
-        ajax: {
-            url: '{% url 'responseAffichageanalyse' %}',
-            type: 'GET',
-            beforeSend: function() {
-              $('#data-table-wrapper .loading-spinner').show();
-            },
-            // Hide the loading spinner after DataTable processing
-            complete: function() {
-              $('#data-table-wrapper .loading-spinner').hide();
-            }
-        },
-        columns: [
-            { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
-            { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'frontiere__nomville'
-            { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'numdos' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'immatriculation' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
-            { // New column configuration
-                data: 'idcargaison',
-                render: function (data, type, row) {
-                    const correctionProduit = '<button class="btn btn-info correction-btn" data-toggle="modal" data-target="#correctionModal" data-row-id="' + data + '">CORRECTION PRODUIT</button> ';
-                    const submitSaisie = '<button class="btn btn-success saisie-btn" data-row-id="' + data + '">SAISIE</button> ';
-                    return correctionProduit+submitSaisie;
-                }
-            }// Use array index to access 'immatriculation'
-        ],
+  fetchRedoCount();
 
+  // =====================
+  // MAIN DATA TABLE
+  // =====================
+  dataTable = $('#data-table').DataTable({
+    lengthChange: false,
+    processing: true,
+    serverSide: true,
+    responsive: true,
+    ajax: {
+      url: '{% url "responseAffichageanalyse" %}',
+      type: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+      data: function(d) {
+        d.date_debut = $('#filter-date-debut').val();
+        d.date_fin = $('#filter-date-fin').val();
+        d.code_labo_filter = $('#filter-code-labo').val();
+      },
+      beforeSend: function(){ showLoadbar(); },
+      complete: function(){ hideLoadbar(); }
+    },
+    columns: [
+      { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
+      { data: 'entrepot_echantillon__laboreception__codelabo' },
+      { data: 'entrepot_echantillon__numrappechauto' },
+      { data: 'numdos' },
+      { data: 'immatriculation' },
+      { data: 'produit__nomproduit' },
+      {
+        data: 'completion_percent',
+        render: function(data, type, row) {
+          const percent = data || 0;
+          const text = row.completion_text || '0/0';
+          let barClass = 'bg-danger';
+          if(percent >= 100) barClass = 'bg-success';
+          else if(percent >= 50) barClass = 'bg-warning';
+          
+          return `
+            <div class="d-flex align-items-center" style="gap:.5rem; min-width:100px;">
+              <div class="progress flex-grow-1" style="height:6px; border-radius:999px; background:rgba(0,0,0,.05);">
+                <div class="progress-bar ${barClass}" style="width:${percent}%"></div>
+              </div>
+              <span class="small font-weight-bold" style="font-size:.72rem; white-space:nowrap;">${text}</span>
+            </div>
+          `;
+        }
+      },
+      {
+        data: 'idcargaison',
+        render: function (data) {
+          const correctionProduit =
+            `<button type="button" class="btn btn-info btn-sm btn-action correction-btn"
+                     data-toggle="modal" data-target="#correctionModal"
+                     data-row-id="${data}">
+               <i class="fas fa-wand-magic-sparkles mr-1"></i> Correction
+             </button>`;
+          const submitSaisie =
+            `<button type="button" class="btn btn-success btn-sm btn-action saisie-btn"
+                     data-row-id="${data}">
+               <i class="fas fa-pen mr-1"></i> Saisie
+             </button>`;
+          return `<div class="d-flex" style="gap:.35rem; flex-wrap:wrap;">${correctionProduit}${submitSaisie}</div>`;
+        }
+      }
+    ],
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' }
+  });
+
+  // Filter button click
+  $('#btn-filter').on('click', function() {
+    dataTable.ajax.reload();
+  });
+
+  // Clear filter button click
+  $('#btn-clear-filter').on('click', function() {
+    $('#filter-date-debut').val('');
+    $('#filter-date-fin').val('');
+    $('#filter-code-labo').val('');
+    dataTable.ajax.reload();
+  });
+
+  // =====================
+  // TOGGLE "ÉCHANTILLONS À REFAIRE"
+  // =====================
+  $('#btn-toggle-redo').on('click', function(){
+    redoVisible = !redoVisible;
+
+    if(redoVisible){
+      $('#redo-collapse').slideDown(160);
+      $(this).removeClass('btn-outline-warning').addClass('btn-warning');
+      $(this).html('<i class="fas fa-eye-slash mr-1"></i> Masquer');
+
+      initRedoTable();
+      refreshRedoCountFromTable();
+      redoTable.ajax.reload(null, false);
+
+    }else{
+      $('#redo-collapse').slideUp(160);
+      $(this).removeClass('btn-warning').addClass('btn-outline-warning');
+      $(this).html('<i class="fas fa-eye mr-1"></i> Afficher');
+    }
+  });
+
+  // Capture idcargaison for correction
+  $(document).on('click', '.correction-btn', function () {
+    idcargaison = $(this).data('row-id');
+  });
+
+  // Validate correction
+  $(document).on('click','.validation-correction-btn', function (){
+    const formData = $("#correctionForm").serialize() + "&idcargaison=" + idcargaison;
+
+    $.ajax({
+      type: "POST",
+      url: "{% url 'correctionNature' %}",
+      data: formData,
+      headers: { 'X-CSRFToken': csrfToken },
+      success: function() {
+        $("#correctionModal").modal("hide");
+        dataTable.ajax.reload(null, false);
+        // optional: refresh redo table if visible
+        if(redoTable) redoTable.ajax.reload(null, false);
+        fetchRedoCount();
+        Swal.fire({
+          icon: 'success',
+          title: 'Succès',
+          text: 'Changement effectué',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      },
+      error: function() {
+        dataTable.ajax.reload(null, false);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Une erreur est survenue lors de la correction'
+        });
+      }
     });
+  });
 
+  // Open SAISIE modal + load dynamic table
+  $(document).on('click', '.saisie-btn', function() {
+    idcargaison = $(this).data('row-id');
+    $('#modal-xl').modal('show');
+    loadSaisieData(idcargaison);
+  });
 
-    $(document).on('click', '.correction-btn', function () {
-        idcargaison = $(this).data('row-id');
-        // Now you have the idcargaison value stored in the idcargaison variable
-        console.log('idcargaison:', idcargaison);
-        // Open the modal programmatically
-        {#$('#correctionModal').modal('show');#}
-        // ...
+  function loadSaisieData(id) {
+    const $paramList = $('#param-list');
+    const $loading = $('#saisie-loading');
+    
+    $paramList.empty();
+    $loading.show();
+
+    $.ajax({
+      url: '{% url "saisieResultatAjax" %}',
+      type: 'POST',
+      data: { idcargaison: id },
+      headers: { 'X-CSRFToken': csrfToken },
+      success: function(json) {
+        $loading.hide();
+        
+        if (!json.data || json.data.length === 0) {
+          $paramList.append('<div class="text-center p-5 text-muted"><i class="fas fa-ghost fa-3x mb-3"></i><p>Aucun paramètre trouvé pour ce produit.</p></div>');
+          updateProgress(0, 0);
+          return;
+        }
+
+        // Header info
+        $('#saisie-code-labo').text(json.codeLabo || '—');
+        $('#saisie-produit').text(json.data[0].nomproduit || '—');
+
+        let total = json.data.length;
+        let done = 0;
+
+        json.data.forEach(function(item) {
+          const valNum = item.valeurResultat !== null ? item.valeurResultat : '';
+          const valAlph = item.valeurResultatChar !== null ? item.valeurResultatChar : '';
+          const isDone = (valNum !== '' || valAlph !== '');
+          if(isDone) done++;
+
+          const statusClass = isDone ? 'tf-status-ok' : 'tf-status-missing';
+          const statusText = isDone ? '<i class="fas fa-check-circle mr-1"></i>Complété' : '<i class="far fa-circle mr-1"></i>En attente';
+
+          const isAlphaOnly = [2, 8, 22].includes(item.idParametre);
+          const gridClass = isAlphaOnly ? 'tf-param-grid-single' : 'tf-param-grid-single';
+          const rowHtml = `
+            <div class="tf-param-row" data-param-name="${item.nomParametre.toLowerCase()}">
+              <div class="tf-param-head">
+                <div>
+                  <div class="tf-param-name">${item.nomParametre}</div>
+                  <div class="tf-param-sub">ID: ${item.idParametre}</div>
+                </div>
+                <div class="tf-status-pill ${statusClass}">${statusText}</div>
+              </div>
+
+              <div class="tf-param-grid ${gridClass}">
+                ${isAlphaOnly ? `
+                <div class="tf-field">
+                  <input type="text" class="form-control form-control-sm json-input-char" 
+                         value="${valAlph}" data-param-id="${item.idParametre}" placeholder="Valeur Alpha (Obs.)">
+                  <input type="hidden" class="json-input-num" value="${valNum}" data-param-id="${item.idParametre}">
+                </div>
+                ` : `
+                <div class="tf-field">
+                  <input type="number" step="any" class="form-control form-control-sm json-input-num" 
+                         value="${valNum}" data-param-id="${item.idParametre}" placeholder="Valeur Numérique">
+                  <input type="hidden" class="json-input-char" value="${valAlph}" data-param-id="${item.idParametre}">
+                </div>
+                `}
+                <div class="tf-param-actions">
+                  <button type="button" class="btn btn-light btn-sm btn-pill clear-btn" data-row-id="${item.idParametre}" title="Effacer">
+                    <i class="fas fa-eraser"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          $paramList.append(rowHtml);
+        });
+
+        updateProgress(done, total);
+      },
+      error: function() {
+        $loading.hide();
+        $paramList.html('<div class="alert alert-danger">Erreur lors du chargement des paramètres.</div>');
+      }
     });
+  }
 
+  function updateProgress(done, total) {
+    $('#done-count').text(done);
+    $('#total-count').text(total);
+    const percent = total > 0 ? (done / total) * 100 : 0;
+    $('#progress-bar').css('width', percent + '%');
+  }
 
-    // Attach a click event handler to the "VALIDER" button
-    $(document).on('click','.validation-correction-btn', function (){
-      // Serialize the form data into a format that can be sent via AJAX
-      var formData = $("#correctionForm").serialize();
+  // Parameter Search
+  $('#param-search').on('input', function() {
+    const q = $(this).val().toLowerCase();
+    $('.tf-param-row').each(function() {
+      const name = $(this).data('param-name');
+      $(this).toggle(name.includes(q));
+    });
+  });
 
-      formData += "&idcargaison=" + idcargaison;
+  // Focus effect
+  $(document).on('focus', '.tf-param-row input', function() {
+    $(this).closest('.tf-param-row').addClass('tf-focus');
+  }).on('blur', '.tf-param-row input', function() {
+    $(this).closest('.tf-param-row').removeClass('tf-focus');
+  });
 
-      console.log(formData);
-      // Perform the AJAX request
+  // Helper for reloading
+  function reloadSaisieTable() {
+    if (idcargaison) loadSaisieData(idcargaison);
+  }
+
+  // Clear value
+  $(document).on('click', '.clear-btn', function() {
+    const rowId = $(this).data('row-id');
+
+    $.ajax({
+      url: "{% url 'clearSaisie' %}",
+      type: 'POST',
+      data: { rowId: rowId, idcargaison: idcargaison },
+      headers: { 'X-CSRFToken': csrfToken },
+      success: function(response) {
+        reloadSaisieTable();
+      },
+      error: function(error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Erreur lors de la suppression'
+        });
+      }
+    });
+  });
+
+  // Enter key save per parameter (Num)
+  $(document).on('keypress', '.json-input-num, .json-input-char', function (event) {
+    if (event.which === 13) {
+      event.preventDefault();
+      const $row = $(this).closest('.tf-param-row');
+      const paramId = $(this).data('param-id');
+      const numVal = $row.find('.json-input-num').val();
+      const charVal = $row.find('.json-input-char').val();
+
+      // We need to decide which value to send. 
+      // The current view 'saisieResultatParametreAjax' handles logic based on parametreId
+      // But we can send the one that was just edited or both if the backend supports it.
+      // Looking at saisieResultatParametreAjax, it takes 'inputValue'.
+      
+      const inputValue = $(this).val();
+
       $.ajax({
-        type: "POST", // Adjust the HTTP method as needed
-        url: "{% url 'correctionNature' %}", // Replace with the actual URL for your AJAX endpoint
-        data: formData,
-        headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-        success: function(response) {
-          // Handle the success response here, e.g., show a success message
-          console.log("Form submitted successfully", response);
-          alert('Changement effectué');
-          // Close the modal if needed
-          $("#correctionModal").modal("hide");
-          dataTable.ajax.reload();
+        type: 'POST',
+        url: '{% url "saisieResultatParametreAjax" %}',
+        data: { idcargaison: idcargaison, idParametre: paramId, inputValue: inputValue },
+        headers: { 'X-CSRFToken': csrfToken },
+        success: function () {
+          // Success feedback
+          $row.css('background', '#f0fff4');
+          setTimeout(() => $row.css('background', ''), 600);
+          
+          // Move focus to next row's input if possible
+          const $nextRow = $row.nextAll('.tf-param-row:visible').first();
+          if($nextRow.length) {
+            $nextRow.find('input').first().focus();
+          }
+
+          // Reload to update status pills/progress (could be optimized)
+          reloadSaisieTable();
         },
-        error: function(error) {
-          // Handle errors here, e.g., show an error message
-            alert('Erreur');
-          console.error("Error submitting form", error);
-          dataTable.ajax.reload();
+        error: function () {
+          Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Erreur lors de l\'enregistrement'
+          });
         }
       });
-    });
+    }
+  });
 
+  // Save changes (validate)
+  $('#saveChanges').on('click', function() {
+    const $btn = $(this);
+    $btn.prop('disabled', true);
 
-
-    // Add a click event listener for the 'SAISIE' buttons with class 'saisie-btn'
-    $(document).on('click', '.saisie-btn', function() {
-        idcargaison = $(this).data('row-id');
-
-        console.log(idcargaison);
-
-        // Show the AJAX input form wrapper
-        $('#ajax-form-wrapper').show();
-        $('#modal-xl').modal('show');
-
-        // Create a new DataTable instance for the dynamic table
-            dynamicDataTable = $('#dynamic-data-table').DataTable({
-            destroy: true,
-            lengthChange: false,
-            responsive: true,
-            searching: false, // Remove search field
-            paging: false, // Remove pagination display
-            info: false, // Remove information display
-            ordering: false, // Remove column sorting
-            ajax: {
-                url: '{% url "saisieResultatAjax" %}', // Replace with your dynamic data URL
-                type: 'GET',
-                data: { idcargaison: idcargaison }, // Send additional data if neededn`
-            },
-            columns: [
-                // Define your columns for the dynamic DataTable
-                // Example:
-                { data: 'nomproduit' },
-                { data: 'nomParametre' },
-                { data: 'valeurResultat' },
-                { data: 'valeurResultatChar' },
-                { // New column configuration
-                    data: 'idParametre',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
-                       // Create an input field for each row
-                        const inputField = `<input type="text" class="json-input" id="input-${data}" data-row-id="${data}">`;
-                        const clearButton = `<button class="btn btn-danger clear-btn" data-row-id="${data}">Effacer</button>`;
-                        return inputField+'&nbsp;'+clearButton;
-                    }
-                }
-                // Use array index to access 'immatriculation'
-                // ...
-            ],
+    $.ajax({
+      type: 'POST',
+      url: '{% url "validationResulat" %}',
+      data: { idcargaison: idcargaison },
+      headers: { 'X-CSRFToken': csrfToken },
+      success: function () {
+        Swal.fire({
+          icon: 'success',
+          title: 'Enregistré',
+          text: 'Données sauvegardées avec succès',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          $('#modal-xl').modal('hide');
+          dataTable.ajax.reload(null, false);
+          if(redoTable) redoTable.ajax.reload(null, false);
+          fetchRedoCount();
         });
-    });
-
-    // Attach a click event handler to the clear button
-    $('#dynamic-data-table').on('click', '.clear-btn', function() {
-        const rowId = $(this).data('row-id');
-
-        // Make an AJAX request here to clear data associated with the rowId
-        $.ajax({
-            url: "{% url 'clearSaisie' %}", // Replace with your clear data endpoint URL
-            type: 'POST', // or 'GET' depending on your server-side handling
-            data: {
-                rowId: rowId,
-                idcargaison: idcargaison,
-                    }, // Pass any data you need to clear the data
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Handle success response
-                console.log('Data cleared successfully:', response);
-                alert('Data cleared successfully:\n' + response.status);
-                dynamicDataTable.ajax.reload();
-                // Optionally, update the DataTable or perform any other actions here
-            },
-            error: function(error) {
-                // Handle error response
-                console.error('Error clearing data:', error);
-                alert('Error clearing data:\n' + error.statusText);
-                dynamicDataTable.ajax.reload();
-            }
+      },
+      error: function () {
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Une erreur est survenue lors de la validation'
         });
+      },
+      complete: function(){
+        setTimeout(function(){ $btn.prop('disabled', false); }, 400);
+      }
     });
-
-
-     // Add a keypress event listener for the input fields
-    $(document).on('keypress', '.json-input', function (event) {
-        if (event.which === 13) { // Enter key
-            // Get the typed value from the input field within the same row
-            const rowId = $(this).data('row-id');
-            const inputValue = $(this).val();
-
-            console.log(inputValue);
-            console.log(rowId);
-            console.log(idcargaison);
-
-            // Make an AJAX request to save the data
-            $.ajax({
-                type: 'POST', // or 'GET' depending on your server-side implementation
-                url: '{% url "saisieResultatParametreAjax" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-                data: {
-                    idcargaison: idcargaison,
-                    idParametre: rowId,
-                    inputValue: inputValue
-                },
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the AJAX response here if needed
-                    console.log('Data saved successfully');
-                    dynamicDataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
-                }
-            });
-        }
-    });
-
-
-    $(document).ready(function() {
-        $('#saveChanges').on('click', function() {
-            console.log('BUTTON PRESSED');
-
-            // Disable the button
-            $(this).prop('disabled', true);
-            // Simulate some asynchronous action
-            setTimeout(function() {
-                // Re-enable the button after some time
-                $('#saveChanges').prop('disabled', false);
-            }, 2000); // Enable after 2000 milliseconds (2 seconds)
-
-            // Make an AJAX request to save the data
-            $.ajax({
-                type: 'POST', // or 'GET' depending on your server-side implementation
-                url: '{% url "validationResulat" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-                data: {
-                    idcargaison: idcargaison,
-                },
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the AJAX response here if needed
-                    console.log('Data saved successfully');
-                    alert('Data saved successfully');
-                    // Show the AJAX input form wrapper
-                    $('#ajax-form-wrapper').hide();
-                    $('#modal-xl').modal('hide');
-                    // Reload the table
-                    dataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
-                    alert('An error occured');
-
-                }
-            });
-            // Your code here
-        });
-    });
-
-
+  });
 
 });
-
 </script>
-{% endblock %}
-
-
-{% block content1 %}
-    <div id="ajax-form-wrapper" style="display:none;">
-        <div id="dynamic-data-table-wrapper">
-            <div class="modal fade" id="modal-xl">
-                <div class="modal-dialog modal-xl">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h4 class="modal-title">SAISIE DE(S) RESULTAT(S)</h4>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <table id="dynamic-data-table" class="table table-bordered display responsive" style="width:100%">
-                           <div id="data-table-wrapper" style="position: relative;">
-                      <div class="loading-spinner"></div>
-                        <thead>
-                          <tr>
-                            <th>PRODUIT</th>
-                            <th>PARAMETRE</th>
-                            <th>VALEUR RESULTAT NUM.</th>
-                            <th>VALEUR RESULTAT ALPH.</th>
-                            <th>ACTION(s)</th>
-                          </tr>
-                        </thead>
-                    </div>
-                    </table>
-                    </div>
-                    <div class="modal-footer justify-content-between">
-                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                      <button id="saveChanges" type="button" class="btn btn-primary">Save changes</button>
-                    </div>
-                  </div>
-                  <!-- /.modal-content -->
-                </div>
-                <!-- /.modal-dialog -->
-            </div>
-              <!-- /.modal -->
-        </div>
-    </div>
 {% endblock %}

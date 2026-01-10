@@ -62,12 +62,19 @@ def link_callback(uri, rel):
     return file_url
 
 
-def render_to_pdf(template_src, context_dict={}):
+def render_to_pdf_content(template_src, context_dict={}):
     template = get_template(template_src)
     html = template.render(context_dict)
     result = BytesIO()
     pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback, encoding='UTF-8')
 
     if not pdf.err:
-        return HttpResponse(result.getvalue(), content_type='application/pdf')
+        return result.getvalue()
+    return None
+
+
+def render_to_pdf(template_src, context_dict={}):
+    content = render_to_pdf_content(template_src, context_dict)
+    if content:
+        return HttpResponse(content, content_type='application/pdf')
     return None

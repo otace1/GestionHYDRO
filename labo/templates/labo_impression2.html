@@ -60,6 +60,7 @@
             <th>NUM. CERTIFICAT</th>
             <th>FOURNISSEUR</th>
             <th>ENTREPOT</th>
+            <th>IMMATRICULATION</th>
             <th>PRODUIT</th>
             <th>ACTION(s)</th>
 {#            <th>#.T1D</th>#}
@@ -84,7 +85,8 @@
             responsive: true,
             ajax: {
                 url: '{% url 'responseAffichagetableauimpression' %}',
-                type: 'GET',
+                type: 'POST',
+                headers: {'X-CSRFToken': csrfToken},
                 // Show the loading spinner during DataTable processing
                 // Show the loading spinner during DataTable processing
                 beforeSend: function() {
@@ -101,6 +103,7 @@
                 { data: 'numcertificatqualite' },
                 { data: 'nomimportateur' },
                 { data: 'nomentrepot' },
+                { data: 'immatriculation' },
                 { data: 'nomproduit' },
                 { // New column configuration
                     data: 'idcargaison',

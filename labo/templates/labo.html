@@ -1,150 +1,590 @@
-{% extends 'base_lab_layout.html' %}
+{% extends 'base_template/base_template.html' %}
 
-{% block dashboard %}
-    <style>
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+{% block content %}
+<style>
+  :root{
+    --tf-primary:#0d6efd;
+    --tf-success:#198754;
+    --tf-info:#0dcaf0;
+    --tf-warning:#ffc107;
+    --tf-danger:#dc3545;
+    --tf-ink:#111827;
+    --tf-muted:#6b7280;
+    --tf-bd:rgba(0,0,0,.08);
+    --tf-shadow:0 10px 30px rgba(0,0,0,.08);
+    --tf-shadow2:0 14px 60px rgba(0,0,0,.18);
+  }
 
-    .loading-spinner {
-      border: 4px solid rgba(0, 0, 0, 0.3);
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 2s linear infinite;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      margin-left: -20px;
-      margin-top: -20px;
-      z-index: 9999;
-    }
-    </style>
+  /* Header mini-hero */
+  .tf-hero{
+    border:1px solid var(--tf-bd);
+    border-radius:14px;
+    background:linear-gradient(135deg, rgba(13,110,253,.12), rgba(25,135,84,.10));
+    box-shadow: var(--tf-shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .tf-title{
+    margin:0;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:var(--tf-ink);
+    line-height:1.1;
+    font-size:1.35rem;
+  }
+  .tf-sub{ color:var(--tf-muted); margin-top:4px; font-size:.92rem; }
 
-    <div id="data-table-wrapper" style="position: relative;">
-        <div class="loading-spinner"></div>
-          <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-              <tr>
-                <th>DATE ENTREE</th>
-                <th>DATE ECHANT</th>
-                <th>ENTREPOT</th>
-                <th>PRODUIT</th>
-                <th>IMMATRICULATION</th>
-                <th>NUM. DOSSIER</th>
-                <th>NUM. RE</th>
-                <th>ACTION(s)</th>
-              </tr>
-            </thead>
-          </table>
+  .btn-pill{
+    border-radius:999px !important;
+    font-weight:800;
+    letter-spacing:.2px;
+    padding:.45rem .9rem;
+  }
+
+  /* Card wrapper */
+  .tf-card{
+    border:1px solid var(--tf-bd);
+    border-radius:14px;
+    background:#fff;
+    box-shadow: var(--tf-shadow);
+    overflow:hidden;
+  }
+  .tf-card-header{
+    padding:14px 16px;
+    border-bottom:1px solid var(--tf-bd);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fff;
+  }
+  .tf-card-left{
+    display:flex; align-items:center; gap:10px; min-width:0;
+  }
+  .tf-icon{
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(13,110,253,.10);
+    color:var(--tf-primary);
+    flex:0 0 auto;
+  }
+  .tf-card-titles h3{
+    margin:0;
+    font-weight:900;
+    color:var(--tf-ink);
+    font-size:1.05rem;
+  }
+  .tf-hint{
+    margin-top:3px;
+    color:var(--tf-muted);
+    font-size:.85rem;
+    max-width:70vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* Filterbar */
+  .tf-filterbar{
+    padding: 14px 16px;
+    background: rgba(0,0,0,.02);
+    border-bottom: 1px solid var(--tf-bd);
+  }
+  .tf-filter-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap:12px;
+    align-items:end;
+  }
+  .tf-field{ grid-column: span 3; }
+  .tf-field label{
+    font-size:.78rem; font-weight:800; color:var(--tf-muted); margin-bottom:6px; display:block;
+  }
+  .tf-input{
+    border-radius:12px !important;
+    border:1px solid rgba(0,0,0,.14) !important;
+    box-shadow:none !important;
+  }
+  .tf-actions{ grid-column: span 12; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-top:4px; }
+
+  @media (max-width: 992px){ .tf-field{ grid-column: span 6; } }
+  @media (max-width: 576px){ .tf-field{ grid-column: span 12; } }
+
+  /* Loadbar */
+  .table-wrap{ position:relative; }
+  .loadbar{
+    display:none;
+    position:absolute; left:0; right:0; top:0; height:3px;
+    background:rgba(13,110,253,.15);
+    overflow:hidden; z-index:10;
+  }
+  .loadbar:before{
+    content:""; position:absolute; left:-35%; width:35%; top:0; bottom:0;
+    background:linear-gradient(90deg, transparent, rgba(13,110,253,.55), transparent);
+    animation: loadbar 1.05s ease-in-out infinite;
+  }
+  @keyframes loadbar{ 0%{ transform:translateX(0);} 100%{ transform:translateX(400%);} }
+
+  /* Table */
+  .tf-table thead th{
+    white-space:nowrap; font-weight:900; letter-spacing:.25px; font-size:.80rem;
+    background:rgba(0,0,0,.02);
+  }
+  .tf-table tbody td{ vertical-align:middle; }
+
+  .tf-empty{ padding:30px; text-align:center; color:var(--tf-muted); }
+
+  /* Result Modal */
+  .result-modal{ border:0; border-radius:16px; overflow:hidden; box-shadow: var(--tf-shadow2); }
+  .result-modal__header{ border:0; padding:18px; display:flex; align-items:flex-start; gap:14px; background:#fff; }
+  .result-modal__icon{
+    width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    background:rgba(13,110,253,.10); color:var(--tf-primary);
+  }
+  .result-modal__titles h5{ font-weight:900; color:var(--tf-ink); margin:0; }
+  .result-modal__subtitle{ margin-top:4px; color:var(--tf-muted); font-size:.88rem; }
+  .rm-success .result-modal__icon{ background:rgba(25,135,84,.10); color:var(--tf-success); }
+  .rm-danger .result-modal__icon{ background:rgba(220,53,69,.10); color:var(--tf-danger); }
+
+  .success-card{ border:1px solid rgba(25,135,84,.15); background:rgba(25,135,84,.04); border-radius:14px; padding:14px; }
+  .code-box{ margin-top:12px; border-radius:12px; border:1px solid rgba(25,135,84,.20); background:#fff; padding:12px; display:flex; align-items:center; justify-content:space-between; }
+  .code-label{ font-size:.75rem; color:var(--tf-muted); margin-bottom:4px; }
+  .code-badge{ display:inline-block; padding:.4rem .8rem; border-radius:999px; background:rgba(25,135,84,.10); color:#0f5132; font-weight:900; }
+</style>
+
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div>
+        <h1 class="tf-title">Réception d’échantillons</h1>
+        <div class="tf-sub">Laboratoire • Contrôle des Hydrocarbures</div>
+      </div>
+      <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+        <ol class="breadcrumb mb-0" style="background:transparent; padding:0;">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Réception</li>
+        </ol>
+        <a class="btn btn-success btn-pill" href="{% url 'receptionRapports' %}">
+          <i class="fas fa-file-alt mr-1"></i> Rapports
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon"><i class="fas fa-vials"></i></div>
+          <div class="tf-card-titles">
+            <h3>Échantillons à réceptionner</h3>
+            <div class="tf-hint">Filtrez puis cliquez sur <b>Réception</b> pour générer le code labo.</div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline-primary btn-pill" type="button"
+                data-toggle="collapse" data-target="#filtersCollapse"
+                aria-expanded="true">
+          <i class="fas fa-filter mr-1"></i> Filtres
+        </button>
+      </div>
+
+      <div class="collapse show" id="filtersCollapse">
+        <div class="tf-filterbar">
+          <form id="filtersForm" autocomplete="off">
+            <div class="tf-filter-grid">
+              <div class="tf-field">
+                <label for="entrepot">Entrepôt</label>
+                <select class="form-control tf-input" id="entrepot" name="entrepot_id">
+                  <option value="all">Tous</option>
+                  {% if entrepots %}
+                    {% for e in entrepots %}
+                      <option value="{{ e.identrepot }}">{{ e.nomentrepot }}</option>
+                    {% endfor %}
+                  {% endif %}
+                </select>
+              </div>
+
+              <div class="tf-field">
+                <label for="num_dossier">Num. dossier</label>
+                <input class="form-control tf-input" id="num_dossier" name="num_dossier" placeholder="Ex: 2025/..">
+              </div>
+
+              <div class="tf-field">
+                <label for="num_re">Num. RE</label>
+                <input class="form-control tf-input" id="num_re" name="num_re" placeholder="Ex: RE-...">
+              </div>
+
+              <div class="tf-field">
+                <label for="immatriculation">Immatriculation</label>
+                <input class="form-control tf-input" id="immatriculation" name="immatriculation" placeholder="Ex: 1234AB">
+              </div>
+
+              <div class="tf-actions">
+                <button id="btnSearch" class="btn btn-primary btn-pill" type="submit">
+                  <i class="fas fa-search mr-1"></i> Rechercher
+                </button>
+
+                <button id="btnReset" class="btn btn-outline-secondary btn-pill" type="button">
+                  <i class="fas fa-eraser mr-1"></i> Réinitialiser
+                </button>
+
+                <div class="ml-auto d-flex align-items-center" style="gap:.5rem;">
+                  <span class="text-muted small" id="resultCount">Appliquez un filtre</span>
+                  <select id="pageSize" class="form-control tf-input" style="width:110px;">
+                    <option value="15" selected>15 / page</option>
+                    <option value="25">25 / page</option>
+                    <option value="50">50 / page</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <div class="loadbar" id="loadbar"></div>
+          <div class="table-responsive">
+            <table class="table table-hover tf-table mb-0">
+              <thead>
+                <tr>
+                  <th>DATE ENTREE</th>
+                  <th>DATE ECHANT</th>
+                  <th>ENTREPOT</th>
+                  <th>PRODUIT</th>
+                  <th>IMMATRICULATION</th>
+                  <th>NUM. DOSSIER</th>
+                  <th>NUM. RE</th>
+                  <th style="width:150px;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="samplesBody">
+                <tr><td colspan="8" class="tf-empty">Appliquez un filtre pour charger les données.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
+            <div class="text-muted small" id="pageInfo">—</div>
+            <div class="btn-group">
+              <button id="btnPrev" class="btn btn-outline-secondary btn-pill" type="button" disabled>Précédent</button>
+              <button id="btnNext" class="btn btn-outline-secondary btn-pill" type="button" disabled>Suivant</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-<script>
-    const csrfToken = '{{ csrf_token }}';
-    let dataTable;
+    <!-- RESULT MODAL -->
+    <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content result-modal" id="result-modal-content">
+          <div class="modal-header result-modal__header">
+            <div class="result-modal__icon"><i id="result-modal-icon" class="fas fa-info-circle"></i></div>
+            <div class="result-modal__titles">
+              <h5 class="modal-title" id="result-modal-title">Information</h5>
+              <div class="result-modal__subtitle" id="result-modal-subtitle">Message</div>
+            </div>
+            <button type="button" class="close" data-dismiss="modal" style="opacity:.75;">&times;</button>
+          </div>
+          <div class="modal-body" id="result-modal-body"></div>
+          <div class="modal-footer result-modal__footer" id="result-modal-footer">
+            <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    $(document).ready(function () {
-        dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'affichageenchantillonResponse' %}',
-                type: 'GET',
-                // Show the loading spinner during DataTable processing
-                // Show the loading spinner during DataTable processing
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
-        },
-            columns: [
-                { data: 'dateheurecargaison__date' },
-                { data: 'entrepot_echantillon__dateechantillonage__date' },
-                { data: 'entrepot__nomentrepot' },
-                { data: 'produit__nomproduit' },
-                { data: 'immatriculation' },
-                { data: 'numdos' },
-                { data: 'entrepot_echantillon__numrappechauto' },
-                { // New column configuration
-                    data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // Include a button to submit the JSON data for the row
-                        const submitButton = '<button type="button" class="btn btn-block btn-warning" data-row-id="' + data + '">RECEPTION</button>';
-                        return submitButton;
-                    }
-                }
-            ],
-        });
-
-
-        // Handle form submission on button click
-        $('#data-table').on('click', '.btn-warning', function () {
-            const button = $(this);
-            if (button.attr('disabled')) {
-                return; // Return if the button is disabled
-            }
-
-            const rowId = $(this).data('row-id');
-            const idcargaison = rowId;
-
-
-
-            // Disable the button and show the loading spinner
-            button.attr('disabled', true);
-            $('#data-table-wrapper .loading-spinner').show();
-
-            // Include 'idcargaison' in the JSON data to send to the server
-            const dataToSend = {
-                idcargaison: idcargaison,
-            };
-
-            console.log(dataToSend);
-
-            // Send the JSON data to the URL using AJAX
-            $.ajax({
-                url: "{% url 'reception' %}", // Replace with your actual URL
-                type: 'POST',
-                data: JSON.stringify(dataToSend), // Send as JSON string
-                contentType: 'application/json', // Set content type to JSON
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                        if (response.success) {
-                            var codeLabo = response.codeLabo;
-                            alert("CODE LABO: " + codeLabo);
-                            $('#data-table-wrapper .loading-spinner').show();
-                            dataTable.ajax.reload();
-                        } else {
-                            alert("An error occurred");
-                            $('#data-table-wrapper .loading-spinner').show();
-                            dataTable.ajax.reload();
-                        }
-                        button.attr('disabled', false);
-                },
-
-                error: function () {
-                    console.log('Erreur');
-                    alert("An error occurred");
-                    {#$('.btn-warning').attr("disabled", false);#}
-                    // Enable the button and hide the loading spinner
-                    $('#data-table-wrapper .loading-spinner').show();
-                    button.attr('disabled', false);
-                    dataTable.ajax.reload();
-                }
-            });
-        });
-    });
-
-</script>
-
+  </div>
+</section>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+  const csrfToken = '{{ csrf_token }}';
+  const listUrl = "{% url 'affichageenchantillonResponse' %}";
+  const receptionUrl = "{% url 'reception' %}";
 
+  let currentPage = 1;
+  let totalFiltered = 0;
+  let lastQueryPayload = null;
+
+  const elBody = document.getElementById('samplesBody');
+  const elLoadbar = document.getElementById('loadbar');
+  const elResultCount = document.getElementById('resultCount');
+  const elPageInfo = document.getElementById('pageInfo');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const pageSizeEl = document.getElementById('pageSize');
+
+  function showLoadbar(){ elLoadbar.style.display = 'block'; }
+  function hideLoadbar(){ elLoadbar.style.display = 'none'; }
+
+  function escapeHtml(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  function showResultModal(title, bodyHtml){
+    const $m = $('#result-modal');
+    const $content = $('#result-modal-content');
+    const $icon = $('#result-modal-icon');
+    const $title = $('#result-modal-title');
+    const $sub = $('#result-modal-subtitle');
+    const $body = $('#result-modal-body');
+    const $footer = $('#result-modal-footer');
+
+    const t = (title || 'Information').trim();
+    $title.text(t);
+    $content.removeClass('rm-success rm-danger');
+
+    const lower = t.toLowerCase();
+    const isSuccess = lower.includes('succ') || lower.includes('réussi') || lower.includes('reussi');
+    const isError = lower.includes('erreur') || lower.includes('fail') || lower.includes('échec') || lower.includes('echec');
+
+    if(isSuccess){
+      $content.addClass('rm-success');
+      $icon.attr('class','fas fa-check');
+      $sub.text("Opération effectuée avec succès.");
+      $body.html(bodyHtml || 'OK.');
+      $footer.html(`<button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>`);
+    }else if(isError){
+      $content.addClass('rm-danger');
+      $icon.attr('class','fas fa-triangle-exclamation');
+      $sub.text("Une erreur est survenue. Veuillez réessayer.");
+      $body.html(bodyHtml || 'Erreur.');
+      $footer.html(`<button type="button" class="btn btn-danger btn-pill" data-dismiss="modal">Fermer</button>`);
+    }else{
+      $icon.attr('class','fas fa-info-circle');
+      $sub.text("Information");
+      $body.html(bodyHtml || '');
+      $footer.html(`<button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>`);
+    }
+    $m.modal('show');
+  }
+
+  async function postJson(url, payload){
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    const data = ct.includes('application/json') ? await res.json() : null;
+    if(!res.ok) throw (data || {error: 'Erreur serveur.'});
+    return data;
+  }
+
+  function hasAnyFilter(payload){
+    return (
+      (payload.entrepot_id && payload.entrepot_id !== 'all') ||
+      (payload.num_dossier && payload.num_dossier.trim().length) ||
+      (payload.num_re && payload.num_re.trim().length) ||
+      (payload.immatriculation && payload.immatriculation.trim().length)
+    );
+  }
+
+  function renderEmptyState(title, subtitle){
+    elBody.innerHTML = `
+      <tr>
+        <td colspan="8">
+          <div class="tf-empty" style="border:1px dashed var(--tf-border); border-radius:12px;">
+            <i class="fas fa-inbox fa-2x mb-2" style="color:rgba(15,23,42,.25)"></i>
+            <div style="font-weight:900; color:var(--tf-dark);">${escapeHtml(title)}</div>
+            <div>${escapeHtml(subtitle)}</div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function fmtDate(v){
+    if(!v) return '';
+    // API returns "YYYY-MM-DD" already (from values __date)
+    return escapeHtml(v);
+  }
+
+  function renderRows(rows){
+    if(!rows || !rows.length){
+      renderEmptyState('Aucun résultat', 'Essayez d’ajuster vos filtres.');
+      return;
+    }
+
+    elBody.innerHTML = rows.map(r => `
+      <tr id="row-${r.idcargaison}">
+        <td>${fmtDate(r["dateheurecargaison__date"])}</td>
+        <td>${fmtDate(r["entrepot_echantillon__dateechantillonage__date"])}</td>
+        <td>${escapeHtml(r["entrepot__nomentrepot"] || '')}</td>
+        <td>${escapeHtml(r["produit__nomproduit"] || '')}</td>
+        <td>${escapeHtml(r["immatriculation"] || '')}</td>
+        <td>${escapeHtml(r["numdos"] || '')}</td>
+        <td>${escapeHtml(r["entrepot_echantillon__numrappechauto"] || '')}</td>
+        <td>
+          <button type="button"
+                  class="btn btn-warning btn-sm btn-pill tf-action-btn js-reception"
+                  data-id="${escapeHtml(r.idcargaison)}">
+            <i class="fas fa-inbox mr-1"></i> Réception
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function updatePagination(){
+    const pageSize = parseInt(pageSizeEl.value || '15', 10);
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+
+    btnPrev.disabled = (currentPage <= 1);
+    btnNext.disabled = (currentPage >= totalPages);
+
+    elPageInfo.textContent = totalFiltered
+      ? `Page ${currentPage} / ${totalPages}`
+      : '—';
+  }
+
+  async function loadPage(page){
+    const pageSize = parseInt(pageSizeEl.value || '15', 10);
+    const payload = { ...(lastQueryPayload || {}), page, page_size: pageSize };
+
+    // Guard: do not load if no filters applied (your original UX)
+    if(!hasAnyFilter(payload)){
+      totalFiltered = 0;
+      elResultCount.textContent = 'Appliquez un filtre pour afficher les résultats';
+      renderEmptyState('Appliquez un filtre', 'Choisissez un Entrepôt ou renseignez un champ, puis cliquez sur Rechercher.');
+      updatePagination();
+      return;
+    }
+
+    showLoadbar();
+    try{
+      const r = await postJson(listUrl, payload);
+      const rows = r.data || [];
+      totalFiltered = parseInt(r.recordsFiltered || 0, 10);
+
+      renderRows(rows);
+      elResultCount.textContent = `${totalFiltered} résultat(s)`;
+
+      currentPage = page;
+      updatePagination();
+    }catch(err){
+      showResultModal('Erreur', escapeHtml(err?.error || 'Erreur serveur.'));
+      renderEmptyState('Erreur', 'Impossible de charger les données.');
+    }finally{
+      hideLoadbar();
+    }
+  }
+
+  function buildQueryFromForm(){
+    const fd = new FormData(document.getElementById('filtersForm'));
+    return {
+      entrepot_id: (fd.get('entrepot_id') || 'all').toString(),
+      num_dossier: (fd.get('num_dossier') || '').toString(),
+      num_re: (fd.get('num_re') || '').toString(),
+      immatriculation: (fd.get('immatriculation') || '').toString(),
+      // optional sort (matches the view mapping)
+      sort: 'date_echant',
+      dir: 'desc'
+    };
+  }
+
+  // Submit filters (POST-only)
+  document.getElementById('filtersForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    lastQueryPayload = buildQueryFromForm();
+    currentPage = 1;
+    loadPage(currentPage);
+  });
+
+  // Reset
+  document.getElementById('btnReset').addEventListener('click', () => {
+    document.getElementById('entrepot').value = 'all';
+    document.getElementById('num_dossier').value = '';
+    document.getElementById('num_re').value = '';
+    document.getElementById('immatriculation').value = '';
+    lastQueryPayload = null;
+    currentPage = 1;
+    loadPage(currentPage);
+  });
+
+  // Page size change
+  pageSizeEl.addEventListener('change', () => {
+    currentPage = 1;
+    loadPage(currentPage);
+  });
+
+  // Pagination
+  btnPrev.addEventListener('click', () => {
+    if(currentPage > 1) loadPage(currentPage - 1);
+  });
+  btnNext.addEventListener('click', () => {
+    loadPage(currentPage + 1);
+  });
+
+  // Reception action (POST-only)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.js-reception');
+    if(!btn) return;
+
+    const idcargaison = btn.getAttribute('data-id');
+    if(!idcargaison) return;
+
+    btn.disabled = true;
+    showLoadbar();
+
+    try{
+      const r = await postJson(receptionUrl, { idcargaison });
+      if(r && r.success){
+        const code = r.codeLabo ? String(r.codeLabo) : '';
+        showResultModal(
+          'Succès',
+          code
+            ? `<div class="success-card">
+                 <div style="font-weight:900;color:#0f5132;margin-bottom:6px;">Réception confirmée</div>
+                 <div>Réception enregistrée.</div>
+                 <div class="code-box">
+                   <div>
+                     <div class="code-label">Code laboratoire</div>
+                     <span class="code-badge">${escapeHtml(code)}</span>
+                   </div>
+                 </div>
+               </div>`
+            : `Réception enregistrée.`
+        );
+
+        // Refresh current page
+        await loadPage(currentPage);
+      }else{
+        showResultModal('Erreur', escapeHtml(r?.error || "Une erreur est survenue."));
+      }
+    }catch(err){
+      showResultModal('Erreur', escapeHtml(err?.error || "Une erreur est survenue."));
+    }finally{
+      hideLoadbar();
+      btn.disabled = false;
+    }
+  });
+
+  // Initial state
+  loadPage(1);
+</script>
+{% endblock %}

@@ -1,28 +1,272 @@
-{% extends 'base_lab_encodage_refaire.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
 
+{% block extra_css %}
+<style>
+  :root{
+    --tf-primary:#0d6efd;
+    --tf-success:#198754;
+    --tf-info:#0dcaf0;
+    --tf-warning:#ffc107;
+    --tf-danger:#dc3545;
+    --tf-ink:#111827;
+    --tf-muted:#6b7280;
+    --tf-bd:rgba(0,0,0,.08);
+    --tf-shadow:0 10px 30px rgba(0,0,0,.08);
+    --tf-shadow2:0 14px 60px rgba(0,0,0,.18);
+  }
 
+  /* Header mini-hero */
+  .tf-hero{
+    border:1px solid var(--tf-bd);
+    border-radius:14px;
+    background:linear-gradient(135deg, rgba(13,110,253,.12), rgba(25,135,84,.10));
+    box-shadow: var(--tf-shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .tf-title{
+    margin:0;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:var(--tf-ink);
+    line-height:1.1;
+    font-size:1.35rem;
+  }
+  .tf-sub{ color:var(--tf-muted); margin-top:4px; font-size:.92rem; }
+
+  .btn-pill{
+    border-radius:999px !important;
+    font-weight:800;
+    letter-spacing:.2px;
+    padding:.45rem .9rem;
+  }
+
+  /* Card wrapper */
+  .tf-card{
+    border:1px solid var(--tf-bd);
+    border-radius:14px;
+    background:#fff;
+    box-shadow: var(--tf-shadow);
+    overflow:hidden;
+  }
+  .tf-card-header{
+    padding:14px 16px;
+    border-bottom:1px solid var(--tf-bd);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fff;
+  }
+  .tf-card-left{
+    display:flex; align-items:center; gap:10px; min-width:0;
+  }
+  .tf-icon{
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(13,110,253,.10);
+    color:var(--tf-primary);
+    flex:0 0 auto;
+  }
+  .tf-card-titles h3{
+    margin:0;
+    font-weight:900;
+    color:var(--tf-ink);
+    font-size:1.05rem;
+  }
+  .tf-hint{
+    margin-top:3px;
+    color:var(--tf-muted);
+    font-size:.85rem;
+    max-width:70vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* Loadbar */
+  #data-table-wrapper{ position:relative; }
+  .loadbar{
+    display:none;
+    position:absolute;
+    left:0; right:0; top:0;
+    height:3px;
+    background:rgba(13,110,253,.15);
+    overflow:hidden;
+    z-index:10;
+  }
+  .loadbar:before{
+    content:"";
+    position:absolute;
+    left:-35%;
+    width:35%;
+    top:0; bottom:0;
+    background:linear-gradient(90deg, transparent, rgba(13,110,253,.55), transparent);
+    animation: loadbar 1.05s ease-in-out infinite;
+  }
+  @keyframes loadbar{ 0%{ transform:translateX(0);} 100%{ transform:translateX(400%);} }
+
+  /* DataTables tweaks */
+  table.dataTable thead th{
+    white-space:nowrap;
+    font-weight:900;
+    letter-spacing:.25px;
+    font-size:.80rem;
+  }
+  table.dataTable tbody td{ vertical-align:middle; }
+
+  .dataTables_wrapper .dataTables_filter input{
+    border-radius:999px;
+    border:1px solid var(--tf-bd);
+    padding:.35rem .75rem;
+    outline:none;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button{
+    border-radius:10px !important;
+  }
+
+  /* Action buttons */
+  .btn-action{
+    border-radius:999px !important;
+    font-weight:800;
+    padding:.32rem .75rem;
+    white-space:nowrap;
+  }
+
+  /* Modal polish */
+  .modal-content{
+    border:0;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: var(--tf-shadow2);
+  }
+  .modal-header{
+    border-bottom:1px solid rgba(0,0,0,.06);
+    background: linear-gradient(135deg, rgba(13,110,253,.10), rgba(25,135,84,.08));
+  }
+  .modal-title{ font-weight:900; color:var(--tf-ink); }
+  .modal-body{ background:#fff; }
+  .modal-footer{ border-top:1px solid rgba(0,0,0,.06); background:#fff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-      <tr>
-        <th>DATE RECEP.</th>
-        <th>CODE LABO</th>
-        <th>NUM.RE</th>
-        <th>NUM. DOSSIER</th>
-        <th>IMMATRICULATION</th>
-        <th>PRODUIT</th>
-        <th>ACTION(s)</th>
-      </tr>
-    </thead>
-  </table>
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div class="d-flex align-items-center" style="gap:15px;">
+        <a href="{% url 'analyse' %}" class="btn btn-outline-secondary btn-pill" title="Retour">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="tf-title">Analyses à Refaire</h1>
+          <div class="tf-sub">Laboratoire • Échantillons nécessitant une nouvelle saisie</div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+        <ol class="breadcrumb mb-0" style="background:transparent; padding:0;">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Refaire</li>
+        </ol>
+      </div>
+    </div>
+  </div>
 </div>
 
+<section class="content">
+  <div class="container-fluid">
+
+    <div class="tf-card">
+      <div class="tf-card-header">
+        <div class="tf-card-left">
+          <div class="tf-icon"><i class="fas fa-redo"></i></div>
+          <div class="tf-card-titles">
+            <h3>Liste des échantillons</h3>
+            <div class="tf-hint">Utilisez <b>SAISIE</b> pour ré-encoder les résultats.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div id="data-table-wrapper">
+          <div class="loadbar" id="loadbar"></div>
+
+          <div class="table-responsive">
+            <table id="data-table" class="table table-bordered table-striped mb-0" style="width:100%">
+              <thead>
+                <tr>
+                  <th>DATE RECEP.</th>
+                  <th>CODE LABO</th>
+                  <th>NUM.RE</th>
+                  <th>NUM. DOSSIER</th>
+                  <th>IMMATRICULATION</th>
+                  <th>PRODUIT</th>
+                  <th style="width:120px;">ACTION(s)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SAISIE MODAL XL -->
+<div class="modal fade" id="modal-xl" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" style="font-weight:900;">
+          <i class="fas fa-pen mr-2"></i>SAISIE DE(S) RESULTAT(S)
+        </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table id="dynamic-data-table" class="table table-bordered table-striped mb-0" style="width:100%">
+            <thead>
+              <tr>
+                <th>PRODUIT</th>
+                <th>PARAMETRE</th>
+                <th>VALEUR RESULTAT NUM.</th>
+                <th>VALEUR RESULTAT ALPH.</th>
+                <th style="width:220px;">ACTION(s)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+        <button id="saveChanges" type="button" class="btn btn-primary btn-pill">
+          <i class="fas fa-save mr-1"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 const csrfToken = '{{ csrf_token }}';
 
@@ -30,247 +274,140 @@ let dynamicDataTable;
 let idcargaison;
 let dataTable;
 
+function showLoadbar(){ $('#loadbar').show(); }
+function hideLoadbar(){ $('#loadbar').hide(); }
+
 $(document).ready(function () {
-        dataTable = $('#data-table').DataTable({
-        lengthChange: false, // Display the length change dropdown
-        processing: true,
-        serverSide: true,
-        responsive: true,
-        ajax: {
-            url: '{% url 'affichageAnalyseRefaireResponse' %}',
-            type: 'GET',
-            beforeSend: function() {
-              $('#data-table-wrapper .loading-spinner').show();
-            },
-            // Hide the loading spinner after DataTable processing
-            complete: function() {
-              $('#data-table-wrapper .loading-spinner').hide();
-            }
-        },
-        columns: [
-            { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
-            { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'frontiere__nomville'
-            { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'numdos' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'immatriculation' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
-            { // New column configuration
-                data: 'idcargaison',
-                render: function (data, type, row) {
-                    const submitSaisie = '<button class="btn btn-success saisie-btn" data-row-id="' + data + '">SAISIE</button> ';
-                    return submitSaisie;
-                }
-            }// Use array index to access 'immatriculation'
-        ],
-
-    });
-
-    // Add a click event listener for the 'SAISIE' buttons with class 'saisie-btn'
-    $(document).on('click', '.saisie-btn', function() {
-        idcargaison = $(this).data('row-id');
-
-        console.log(idcargaison);
-
-        // Show the AJAX input form wrapper
-        $('#ajax-form-wrapper').show();
-        $('#modal-xl').modal('show');
-
-        // Create a new DataTable instance for the dynamic table
-            dynamicDataTable = $('#dynamic-data-table').DataTable({
-            destroy: true,
-            lengthChange: false,
-            responsive: true,
-            searching: false, // Remove search field
-            paging: false, // Remove pagination display
-            info: false, // Remove information display
-            ordering: false, // Remove column sorting
-            ajax: {
-                url: '{% url "saisieResultatAjax" %}', // Replace with your dynamic data URL
-                type: 'GET',
-                data: { idcargaison: idcargaison }, // Send additional data if neededn`
-            },
-            columns: [
-                // Define your columns for the dynamic DataTable
-                // Example:
-                { data: 'nomproduit' },
-                { data: 'nomParametre' },
-                { data: 'valeurResultat' },
-                { data: 'valeurResultatChar' },
-                { // New column configuration
-                    data: 'idParametre',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
-                       // Create an input field for each row
-                        const inputField = `<input type="text" class="json-input" id="input-${data}" data-row-id="${data}">`;
-                        const clearButton = `<button class="btn btn-danger clear-btn" data-row-id="${data}">Effacer</button>`;
-                        return inputField+'&nbsp;'+clearButton;
-                    }
-                }
-                // Use array index to access 'immatriculation'
-                // ...
-            ],
-        });
-    });
-
-        // Attach a click event handler to the clear button
-    $('#dynamic-data-table').on('click', '.clear-btn', function() {
-        const rowId = $(this).data('row-id');
-
-        // Make an AJAX request here to clear data associated with the rowId
-        $.ajax({
-            url: "{% url 'clearSaisie' %}", // Replace with your clear data endpoint URL
-            type: 'POST', // or 'GET' depending on your server-side handling
-            data: {
-                rowId: rowId,
-                idcargaison: idcargaison,
-                    }, // Pass any data you need to clear the data
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Handle success response
-                console.log('Data cleared successfully:', response);
-                alert('Data cleared successfully:\n' + response.status);
-                dynamicDataTable.ajax.reload();
-                // Optionally, update the DataTable or perform any other actions here
-            },
-            error: function(error) {
-                // Handle error response
-                console.error('Error clearing data:', error);
-                alert('Error clearing data:\n' + error.statusText);
-                dynamicDataTable.ajax.reload();
-            }
-        });
-    });
-
-
-     // Add a keypress event listener for the input fields
-    $(document).on('keypress', '.json-input', function (event) {
-        if (event.which === 13) { // Enter key
-            // Get the typed value from the input field within the same row
-            const rowId = $(this).data('row-id');
-            const inputValue = $(this).val();
-
-            console.log(inputValue);
-            console.log(rowId);
-            console.log(idcargaison);
-
-            // Make an AJAX request to save the data
-            $.ajax({
-                type: 'POST', // or 'GET' depending on your server-side implementation
-                url: '{% url "saisieResultatParametreAjax" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-                data: {
-                    idcargaison: idcargaison,
-                    idParametre: rowId,
-                    inputValue: inputValue
-                },
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the AJAX response here if needed
-                    console.log('Data saved successfully');
-                    dynamicDataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
-                }
-            });
+  dataTable = $('#data-table').DataTable({
+    lengthChange: false,
+    processing: true,
+    serverSide: true,
+    responsive: true,
+    ajax: {
+      url: '{% url "affichageAnalyseRefaireResponse" %}',
+      type: 'GET',
+      beforeSend: function(){ showLoadbar(); },
+      complete: function(){ hideLoadbar(); }
+    },
+    columns: [
+      { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
+      { data: 'entrepot_echantillon__laboreception__codelabo' },
+      { data: 'entrepot_echantillon__numrappechauto' },
+      { data: 'numdos' },
+      { data: 'immatriculation' },
+      { data: 'produit__nomproduit' },
+      {
+        data: 'idcargaison',
+        render: function (data) {
+          return `<button type="button" class="btn btn-success btn-sm btn-pill saisie-btn" data-row-id="${data}">
+                    <i class="fas fa-pen mr-1"></i> Saisie
+                  </button>`;
         }
+      }
+    ],
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' }
+  });
+
+  // Open SAISIE modal + load dynamic table
+  $(document).on('click', '.saisie-btn', function() {
+    idcargaison = $(this).data('row-id');
+    $('#modal-xl').modal('show');
+
+    dynamicDataTable = $('#dynamic-data-table').DataTable({
+      destroy: true,
+      lengthChange: false,
+      responsive: true,
+      searching: false,
+      paging: false,
+      info: false,
+      ordering: false,
+      ajax: {
+        url: '{% url "saisieResultatAjax" %}',
+        type: 'GET',
+        data: { idcargaison: idcargaison }
+      },
+      columns: [
+        { data: 'nomproduit' },
+        { data: 'nomParametre' },
+        { data: 'valeurResultat' },
+        { data: 'valeurResultatChar' },
+        {
+          data: 'idParametre',
+          render: function (data) {
+            const inputField = `<input type="text" class="form-control form-control-sm json-input" id="input-${data}" data-row-id="${data}" placeholder="Valeur + Enter">`;
+            const clearButton = `<button type="button" class="btn btn-danger btn-sm btn-pill clear-btn" data-row-id="${data}">
+                                  <i class="fas fa-eraser mr-1"></i> Effacer
+                                 </button>`;
+            return `<div class="d-flex" style="gap:.35rem; align-items:center;">${inputField}${clearButton}</div>`;
+          }
+        }
+      ],
+      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' }
     });
+  });
 
-
-    $(document).ready(function() {
-        $('#saveChanges').on('click', function() {
-            console.log('BUTTON PRESSED');
-
-            // Disable the button
-            $(this).prop('disabled', true);
-            // Simulate some asynchronous action
-            setTimeout(function() {
-                // Re-enable the button after some time
-                $('#saveChanges').prop('disabled', false);
-            }, 2000); // Enable after 2000 milliseconds (2 seconds)
-
-            // Make an AJAX request to save the data
-            $.ajax({
-                type: 'POST', // or 'GET' depending on your server-side implementation
-                url: '{% url "validationResulat" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-                data: {
-                    idcargaison: idcargaison,
-                },
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the AJAX response here if needed
-                    console.log('Data saved successfully');
-                    alert('Data saved successfully');
-                    // Show the AJAX input form wrapper
-                    $('#ajax-form-wrapper').hide();
-                    $('#modal-xl').modal('hide');
-                    // Reload the table
-                    dataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
-                    alert('An error occured');
-
-                }
-            });
-            // Your code here
-        });
+  // Clear value
+  $('#dynamic-data-table').on('click', '.clear-btn', function() {
+    const rowId = $(this).data('row-id');
+    $.ajax({
+      url: "{% url 'clearSaisie' %}",
+      type: 'POST',
+      data: { rowId: rowId, idcargaison: idcargaison },
+      headers: { 'X-CSRFToken': csrfToken },
+      success: function(response) {
+        alert('Data cleared');
+        dynamicDataTable.ajax.reload(null, false);
+      },
+      error: function() {
+        alert('Error');
+        dynamicDataTable.ajax.reload(null, false);
+      }
     });
+  });
 
+  // Enter key save
+  $(document).on('keypress', '.json-input', function (event) {
+    if (event.which === 13) {
+      event.preventDefault();
+      const rowId = $(this).data('row-id');
+      const inputValue = $(this).val();
+      $.ajax({
+        type: 'POST',
+        url: '{% url "saisieResultatParametreAjax" %}',
+        data: { idcargaison: idcargaison, idParametre: rowId, inputValue: inputValue },
+        headers: { 'X-CSRFToken': csrfToken },
+        success: function () {
+          dynamicDataTable.ajax.reload(null, false);
+        },
+        error: function () {
+          alert('Erreur');
+        }
+      });
+    }
+  });
 
-
+  // Save changes
+  $('#saveChanges').on('click', function() {
+    const $btn = $(this);
+    $btn.prop('disabled', true);
+    $.ajax({
+      type: 'POST',
+      url: '{% url "validationResulat" %}',
+      data: { idcargaison: idcargaison },
+      headers: { 'X-CSRFToken': csrfToken },
+      success: function () {
+        alert('Saved successfully');
+        $('#modal-xl').modal('hide');
+        dataTable.ajax.reload(null, false);
+      },
+      error: function () {
+        alert('Error');
+      },
+      complete: function(){
+        setTimeout(function(){ $btn.prop('disabled', false); }, 400);
+      }
+    });
+  });
 });
-
 </script>
-{% endblock %}
-
-
-{% block content1 %}
-    <div id="ajax-form-wrapper" style="display:none;">
-        <div id="dynamic-data-table-wrapper">
-            <div class="modal fade" id="modal-xl">
-                <div class="modal-dialog modal-xl">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h4 class="modal-title">SAISIE DE(S) RESULTAT(S)</h4>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <table id="dynamic-data-table" class="table table-bordered display responsive" style="width:100%">
-                           <div id="data-table-wrapper" style="position: relative;">
-                      <div class="loading-spinner"></div>
-                        <thead>
-                          <tr>
-                            <th>PRODUIT</th>
-                            <th>PARAMETRE</th>
-                            <th>VALEUR RESULTAT NUM.</th>
-                            <th>VALEUR RESULTAT ALPH.</th>
-                            <th>ACTION(s)</th>
-                          </tr>
-                        </thead>
-                    </div>
-                    </table>
-                    </div>
-                    <div class="modal-footer justify-content-between">
-                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                      <button id="saveChanges" type="button" class="btn btn-primary">Save changes</button>
-                    </div>
-                  </div>
-                  <!-- /.modal-content -->
-                </div>
-                <!-- /.modal-dialog -->
-            </div>
-              <!-- /.modal -->
-        </div>
-    </div>
 {% endblock %}
