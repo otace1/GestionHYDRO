@@ -1,95 +1,95 @@
-#name: Django Tests
-#
-#on:
-#  workflow_dispatch:
-#  workflow_call:
-#  push:
-#    branches: ["Dockerized"]
-#  pull_request:
-#    branches: ["Dockerized"]
-#
-#concurrency:
-#  group: django-tests-${{ github.ref }}
-#  cancel-in-progress: true
-#
-#jobs:
-#  test:
-#    runs-on: ubuntu-latest
-#
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        python-version: ["3.11"]
-#
-#    env:
-#      DEBUG: "0"
-#      DEVELOPMENT_MODE: "1"
-#      DJANGO_SECRET_KEY: "ci-test-key-not-for-prod"
-#      ALLOWED_HOSTS: "localhost,127.0.0.1"
-#      DATABASE_HOST: "127.0.0.1"
-#      DATABASE_PORT: "3306"
-#      DATABASE_NAME: "hydro"
-#      DATABASE_USER: "root"
-#      DATABASE_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD || 'P@55w0rd!' }}
-#      CELERY_BROKER: "redis://127.0.0.1:6379/0"
-#      PYTHONUNBUFFERED: "1"
-#      PYTHONDONTWRITEBYTECODE: "1"
-#
-#    services:
-#      redis:
-#        image: redis:7
-#        ports:
-#          - 6379:6379
-#        options: >-
-#          --health-cmd "redis-cli ping"
-#          --health-interval 5s
-#          --health-timeout 3s
-#          --health-retries 20
-#
-#      mysql:
-#        image: mysql:8.3
-#        env:
-#          MYSQL_DATABASE: hydro
-#          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD || 'P@55w0rd!' }}
-#        ports:
-#          - 3306:3306
-#        options: >-
-#          --health-cmd "mysqladmin ping -h 127.0.0.1 -proot"
-#          --health-interval 5s
-#          --health-timeout 5s
-#          --health-retries 30
-#
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#          cache: "pip"
-#
-#      - name: Install dependencies
-#        run: |
-#          python -m pip install --upgrade pip wheel
-#          pip install -r requirements.txt
-#
-#      - name: Wait for MySQL to be ready
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y mysql-client
-#          for i in {1..60}; do
-#            mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p"${DATABASE_PASSWORD}" --silent && break
-#            echo "Waiting for MySQL..."
-#            sleep 2
-#          done
-#          mysql -h 127.0.0.1 -P 3306 -u root -p"${DATABASE_PASSWORD}" -e "SELECT VERSION();"
-#
-#      - name: Django checks + migrate
-#        run: |
-#          python manage.py check
-#          python manage.py migrate --noinput
-#
-#      - name: Run tests
-#        run: |
-#          python manage.py test -v 2
+name: Django Tests
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: ["Dockerized"]
+  pull_request:
+    branches: ["Dockerized"]
+
+concurrency:
+  group: django-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+
+    env:
+      DEBUG: "0"
+      DEVELOPMENT_MODE: "1"
+      DJANGO_SECRET_KEY: "ci-test-key-not-for-prod"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DATABASE_HOST: "127.0.0.1"
+      DATABASE_PORT: "3306"
+      DATABASE_NAME: "hydro"
+      DATABASE_USER: "root"
+      DATABASE_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD || 'P@55w0rd!' }}
+      CELERY_BROKER: "redis://127.0.0.1:6379/0"
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      mysql:
+        image: mysql:8.3
+        env:
+          MYSQL_DATABASE: hydro
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD || 'P@55w0rd!' }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install -r requirements.txt
+
+      - name: Wait for MySQL to be ready
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          for i in {1..60}; do
+            mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p"${DATABASE_PASSWORD}" --silent && break
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+          mysql -h 127.0.0.1 -P 3306 -u root -p"${DATABASE_PASSWORD}" -e "SELECT VERSION();"
+
+      - name: Django checks + migrate
+        run: |
+          python manage.py check
+          python manage.py migrate --noinput
+
+      - name: Run tests
+        run: |
+          python manage.py test -v 2
