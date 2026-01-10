@@ -4,6 +4,7 @@ on:
   workflow_call:
   workflow_dispatch:
   push:
+    branches: ["Dockerized"]
   pull_request:
     branches: ["Dockerized"]
 
@@ -12,6 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test_django_job:
+    uses: otace1/GestionHYDRO/.github/workflows/test-django.yaml@Dockerized
+
   build:
     runs-on: ubuntu-latest
 
@@ -99,9 +103,8 @@ jobs:
           kubectl rollout status deployment/gestionhydro-deployment --timeout=300s
           kubectl rollout status deployment/gestionhydro-celery --timeout=300s
 
-      - name: Run migrate + collectstatic inside one pod
+      - name: Run migrate inside one pod
         run: |
           set -euo pipefail
           POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}")
           kubectl exec "$POD_NAME" -- bash /app/scripts/migration.sh
-          kubectl exec "$POD_NAME" -- bash /app/scripts/collectstatic.sh
