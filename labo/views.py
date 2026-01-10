@@ -73,7 +73,8 @@ def affichageenchantillon(request):
             selected_entrepot_id not in (None, '', 'all') or
             (request.GET.get('num_dossier') or '').strip() or
             (request.GET.get('num_re') or '').strip() or
-            (request.GET.get('immatriculation') or '').strip()
+            (request.GET.get('immatriculation') or '').strip() or
+            (request.GET.get('qrcode') or '').strip()
     ):
         has_filters_applied = True
 
@@ -148,6 +149,7 @@ def affichageenchantillonResponse(request):
     num_dossier = _s("num_dossier")
     num_re = _s("num_re")
     immat = _s("immatriculation")
+    qrcode = _s("qrcode")
 
     entrepot_id_param = _s("entrepot_id")
     try:
@@ -156,25 +158,34 @@ def affichageenchantillonResponse(request):
         entrepot_id_selected = 0
 
     if entrepot_name:
-        qs = qs.filter(nom_entrepot__icontains=entrepot_name)
+        qs = qs.filter(nom_entrepot__iexact=entrepot_name)
     if num_dossier:
-        qs = qs.filter(numdos__icontains=num_dossier)
+        qs = qs.filter(numdos__iexact=num_dossier)
     if num_re:
-        qs = qs.filter(entrepot_echantillon__numrappechauto__icontains=num_re)
+        qs = qs.filter(entrepot_echantillon__numrappechauto__iexact=num_re)
     if immat:
-        qs = qs.filter(immatriculation__icontains=immat)
+        qs = qs.filter(immatriculation__iexact=immat)
+    if qrcode:
+        qs = qs.filter(qrcode__iexact=qrcode)
     if entrepot_id_selected > 0:
         qs = qs.filter(entrepot_id=entrepot_id_selected)
 
     # Optional: generic search text (POST key = search)
     search_value = _s("search") or _s("search[value]")
     if search_value:
+        # qs = qs.filter(
+        #     Q(nom_entrepot__icontains=search_value) |
+        #     Q(immatriculation__icontains=search_value) |
+        #     Q(numdos__icontains=search_value) |
+        #     Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+        #     Q(qrcode__icontains=search_value)
+        # )
         qs = qs.filter(
-            Q(nom_entrepot__icontains=search_value) |
-            Q(immatriculation__icontains=search_value) |
-            Q(numdos__icontains=search_value) |
-            Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-            Q(qrcode__icontains=search_value)
+            Q(nom_entrepot__iexact=search_value) |
+            Q(immatriculation__iexact=search_value) |
+            Q(numdos__iexact=search_value) |
+            Q(entrepot_echantillon__numrappechauto__iexact=search_value) |
+            Q(qrcode__iexact=search_value)
         )
 
     # ---------------------------
@@ -3295,28 +3306,28 @@ def receptionRapportsResponse(request):
 
     # Other filters (leveraging denormalized fields)
     if entrepot:
-        qs = qs.filter(nom_entrepot__icontains=entrepot)
+        qs = qs.filter(nom_entrepot__iexact=entrepot)
     if num_re:
         # Check if we have a denormalized num_re? In models.py Entrepot_echantillon has numrappechauto.
         # Cargaison doesn't seem to have numrappechauto denormalized yet, but it HAS it via Entrepot_echantillon (OneToOne).
         # Wait, I should check models.py again.
-        qs = qs.filter(entrepot_echantillon__numrappechauto__icontains=num_re)
+        qs = qs.filter(entrepot_echantillon__numrappechauto__iexact=num_re)
     if immat:
-        qs = qs.filter(immatriculation__icontains=immat)
+        qs = qs.filter(immatriculation__iexact=immat)
     if code_labo_param:
-        qs = qs.filter(code_labo__icontains=code_labo_param)
+        qs = qs.filter(code_labo__iexact=code_labo_param)
 
     # ---------- Global search (DataTables) ----------
     search_value = _s("search[value]")
     if search_value:
         qs = qs.filter(
-            Q(numdos__icontains=search_value) |
-            Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-            Q(code_labo__icontains=search_value) |
-            Q(nom_entrepot__icontains=search_value) |
-            Q(nom_importateur__icontains=search_value) |
-            Q(immatriculation__icontains=search_value) |
-            Q(nom_produit__icontains=search_value)
+            Q(numdos__iexact=search_value) |
+            Q(entrepot_echantillon__numrappechauto__iexact=search_value) |
+            Q(code_labo__iexact=search_value) |
+            Q(nom_entrepot__iexact=search_value) |
+            Q(nom_importateur__iexact=search_value) |
+            Q(immatriculation__iexact=search_value) |
+            Q(nom_produit__iexact=search_value)
         )
 
     # ---------- Ordering (DataTables) ----------
@@ -3907,11 +3918,11 @@ def affichagetableauvalidation1Response(request):
         # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(code_labo__icontains=search_value) |
-                Q(nom_importateur__icontains=search_value) |
-                Q(nom_entrepot__icontains=search_value) |
-                Q(num_certificat_qualite__icontains=search_value) |
-                Q(nom_produit__icontains=search_value)
+                Q(code_labo__iexact=search_value) |
+                Q(nom_importateur__iexact=search_value) |
+                Q(nom_entrepot__iexact=search_value) |
+                Q(num_certificat_qualite__iexact=search_value) |
+                Q(nom_produit__iexact=search_value)
             )
 
         # Pagination parameters
@@ -4013,11 +4024,11 @@ def affichagetableauvalidation2Response(request):
         # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(code_labo__icontains=search_value) |
-                Q(nom_importateur__icontains=search_value) |
-                Q(nom_entrepot__icontains=search_value) |
-                Q(num_certificat_qualite__icontains=search_value) |
-                Q(nom_produit__icontains=search_value)
+                Q(code_labo__iexact=search_value) |
+                Q(nom_importateur__iexact=search_value) |
+                Q(nom_entrepot__iexact=search_value) |
+                Q(num_certificat_qualite__iexact=search_value) |
+                Q(nom_produit__iexact=search_value)
             )
 
         # Pagination parameters
@@ -4225,12 +4236,12 @@ def responseAffichagetableauimpression(request):
     search_value = search_value or params.get('q')
     if search_value:
         qs = qs.filter(
-            Q(code_labo__icontains=search_value) |
-            Q(num_certificat_qualite__icontains=search_value) |
-            Q(nom_importateur__icontains=search_value) |
-            Q(nom_entrepot__icontains=search_value) |
-            Q(nom_produit__icontains=search_value) |
-            Q(immatriculation__icontains=search_value)
+            Q(code_labo__iexact=search_value) |
+            Q(num_certificat_qualite__iexact=search_value) |
+            Q(nom_importateur__iexact=search_value) |
+            Q(nom_entrepot__iexact=search_value) |
+            Q(nom_produit__iexact=search_value) |
+            Q(immatriculation__iexact=search_value)
         )
 
     # recordsTotal / recordsFiltered
@@ -4253,7 +4264,7 @@ def responseAffichagetableauimpression(request):
         'nom_importateur',
         'nom_entrepot',
         'immatriculation'
-    ).order_by('-date_reception_labo')
+    ).order_by('date_reception_labo')
 
     # ---------- Pagination ----------
     draw = int(params.get('draw', 1))
@@ -4347,9 +4358,9 @@ def responseArchivesTableau(request):
     date_end = params.get('date_end')
 
     if code_labo:
-        qs = qs.filter(code_labo__icontains=code_labo)
+        qs = qs.filter(code_labo__iexact=code_labo)
     if num_certificat:
-        qs = qs.filter(num_certificat_qualite__icontains=num_certificat)
+        qs = qs.filter(num_certificat_qualite__iexact=num_certificat)
     if date_start:
         qs = qs.filter(print_date_val__gte=date_start)
     if date_end:
@@ -4360,12 +4371,12 @@ def responseArchivesTableau(request):
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
     if search_value:
         qs = qs.filter(
-            Q(code_labo__icontains=search_value) |
-            Q(num_certificat_qualite__icontains=search_value) |
-            Q(nom_importateur__icontains=search_value) |
-            Q(nom_entrepot__icontains=search_value) |
-            Q(nom_produit__icontains=search_value) |
-            Q(immatriculation__icontains=search_value)
+            Q(code_labo__iexact=search_value) |
+            Q(num_certificat_qualite__iexact=search_value) |
+            Q(nom_importateur__iexact=search_value) |
+            Q(nom_entrepot__iexact=search_value) |
+            Q(nom_produit__iexact=search_value) |
+            Q(immatriculation__iexact=search_value)
         )
 
     total_count = qs.count()
@@ -5215,7 +5226,7 @@ def responseAffichageanalyse(request):
             qs = qs.filter(date_reception_labo__date__lte=date_fin)
             has_filter = True
         if code_labo_filter:
-            qs = qs.filter(code_labo__icontains=code_labo_filter)
+            qs = qs.filter(code_labo__iexact=code_labo_filter)
             has_filter = True
 
         # If no filter is applied, return empty data (as requested "before display... a filter has to be applied")
@@ -5237,7 +5248,7 @@ def responseAffichageanalyse(request):
             'nom_produit',
             'total_params',
             'done_params'
-        ).order_by('-date_reception_labo')
+        ).order_by('date_reception_labo')
 
         # Get the search value from the request's GET parameters
         search_value = params.get('search[value]', '')
@@ -5245,9 +5256,9 @@ def responseAffichageanalyse(request):
         # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(code_labo__icontains=search_value) |
-                Q(numdos__icontains=search_value) |
-                Q(immatriculation__icontains=search_value)
+                Q(code_labo__iexact=search_value) |
+                Q(numdos__iexact=search_value) |
+                Q(immatriculation__iexact=search_value)
             )
 
         # Pagination parameters
@@ -5455,7 +5466,7 @@ def affichageAnalyseRefaireResponse(request):
             'numdos',
             'immatriculation',
             'nom_produit',
-        ).order_by('-date_echantillon')
+        ).order_by('date_echantillon')
 
         # Get the search value from the request's GET parameters
         search_value = params.get('search[value]', '')
@@ -5463,9 +5474,9 @@ def affichageAnalyseRefaireResponse(request):
         # Apply search filter to the QuerySet (leveraging denormalized fields)
         if search_value:
             qs = qs.filter(
-                Q(code_labo__icontains=search_value) |
-                Q(numdos__icontains=search_value) |
-                Q(immatriculation__icontains=search_value)
+                Q(code_labo__iexact=search_value) |
+                Q(numdos__iexact=search_value) |
+                Q(immatriculation__iexact=search_value)
             )
 
         # Pagination parameters
@@ -5550,7 +5561,7 @@ def echantillonRecusResponse(request):
             'num_certificat_qualite',
             'nom_produit',
             'numdos',
-        ).order_by('-date_reception_labo')
+        ).order_by('date_reception_labo')
 
         # Get the search value from the request's GET parameters
         search_value = request.GET.get('search[value]', '')
@@ -5558,7 +5569,7 @@ def echantillonRecusResponse(request):
         # Apply search filter to the QuerySet
         if search_value:
             qs = qs.filter(
-                Q(code_labo__icontains=search_value)
+                Q(code_labo__iexact=search_value)
             )
 
         # Number of items to show per page

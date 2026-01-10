@@ -230,6 +230,11 @@
                 <input class="form-control tf-input" id="immatriculation" name="immatriculation" placeholder="Ex: 1234AB">
               </div>
 
+              <div class="tf-field">
+                <label for="qrcode">QR Code</label>
+                <input class="form-control tf-input" id="qrcode" name="qrcode" placeholder="Scanner le code">
+              </div>
+
               <div class="tf-actions">
                 <button id="btnSearch" class="btn btn-primary btn-pill" type="submit">
                   <i class="fas fa-search mr-1"></i> Rechercher
@@ -400,7 +405,8 @@
       (payload.entrepot_id && payload.entrepot_id !== 'all') ||
       (payload.num_dossier && payload.num_dossier.trim().length) ||
       (payload.num_re && payload.num_re.trim().length) ||
-      (payload.immatriculation && payload.immatriculation.trim().length)
+      (payload.immatriculation && payload.immatriculation.trim().length) ||
+      (payload.qrcode && payload.qrcode.trim().length)
     );
   }
 
@@ -501,6 +507,7 @@
       num_dossier: (fd.get('num_dossier') || '').toString(),
       num_re: (fd.get('num_re') || '').toString(),
       immatriculation: (fd.get('immatriculation') || '').toString(),
+      qrcode: (fd.get('qrcode') || '').toString(),
       // optional sort (matches the view mapping)
       sort: 'date_echant',
       dir: 'desc'
@@ -515,12 +522,26 @@
     loadPage(currentPage);
   });
 
+  // Support Enter key on all fields (including select)
+  document.querySelectorAll('#filtersForm input, #filtersForm select').forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        // e.preventDefault(); // don't prevent default for inputs, they trigger submit naturally
+        if (el.tagName === 'SELECT') {
+          e.preventDefault();
+          document.getElementById('filtersForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+    });
+  });
+
   // Reset
   document.getElementById('btnReset').addEventListener('click', () => {
     document.getElementById('entrepot').value = 'all';
     document.getElementById('num_dossier').value = '';
     document.getElementById('num_re').value = '';
     document.getElementById('immatriculation').value = '';
+    document.getElementById('qrcode').value = '';
     lastQueryPayload = null;
     currentPage = 1;
     loadPage(currentPage);

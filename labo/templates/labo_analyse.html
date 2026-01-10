@@ -907,6 +907,14 @@ $(document).ready(function () {
     dataTable.ajax.reload();
   });
 
+  // Filter on Enter key
+  $('#filter-form input').on('keypress', function(e) {
+    if (e.which === 13) {
+      e.preventDefault();
+      dataTable.ajax.reload();
+    }
+  });
+
   // Clear filter button click
   $('#btn-clear-filter').on('click', function() {
     $('#filter-date-debut').val('');
