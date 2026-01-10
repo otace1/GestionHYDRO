@@ -4,7 +4,6 @@ on:
   workflow_call:
   workflow_dispatch:
   push:
-    branches: ["Dockerized"]
   pull_request:
     branches: ["Dockerized"]
 
@@ -13,12 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_django_job:
-    uses: otace1/GestionHYDRO/.github/workflows/test-django.yaml@Dockerized
-
   build:
     runs-on: ubuntu-latest
-    needs: [test_django_job]
 
     env:
       CLUSTER_NAME: k8s-gestionhydro
