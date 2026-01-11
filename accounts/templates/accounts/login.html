@@ -1,38 +1,335 @@
 {% extends 'accounts/login_layout.html' %}
 
-
 {% block login %}
+<style>
+  /* =========================================================
+     TrackFlow-style Professional Login (Bootstrap-friendly)
+  ========================================================= */
 
-    <style>
-  .btn-animate {
-    transition: transform 0.3s ease;
+  .tf-login-card{
+    border-radius: 18px;
+    background: rgba(17, 24, 39, .50);
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 18px 55px rgba(0,0,0,.35);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
   }
 
-  .btn-animate:hover {
-    transform: scale(1.1);
+  .tf-login-header{
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  }
+
+  .tf-brand{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .tf-brand-badge{
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(242,201,76,.16);
+    border: 1px solid rgba(242,201,76,.30);
+    color: rgba(242,201,76,.95);
+    box-shadow: 0 10px 22px rgba(242,201,76,.08);
+  }
+  .tf-title{
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: rgba(255,255,255,.92);
+    letter-spacing: .2px;
+    line-height: 1.2;
+  }
+  .tf-subtitle{
+    margin: 2px 0 0;
+    font-size: .9rem;
+    color: rgba(255,255,255,.62);
+  }
+
+  .tf-login-body{
+    padding: 16px 18px 18px;
+  }
+
+  .tf-form-group{ margin-bottom: 14px; }
+
+  .tf-label{
+    display:block;
+    font-size: .92rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.78);
+    margin: 0 0 7px 2px;
+  }
+
+  .tf-input-wrap{ position: relative; }
+
+  .tf-input-icon{
+    position:absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,.50);
+    pointer-events:none;
+  }
+
+  .tf-input{
+    width: 100%;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    background: rgba(255,255,255,.06) !important;
+    color: rgba(255,255,255,.92) !important;
+    padding: 12px 44px 12px 42px !important;
+    height: auto !important;
+    transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .tf-input:focus{
+    box-shadow: 0 0 0 .22rem rgba(242,201,76,.18) !important;
+    border-color: rgba(242,201,76,.55) !important;
+    background: rgba(255,255,255,.08) !important;
+  }
+  .tf-input::placeholder{ color: rgba(255,255,255,.42); }
+
+  .tf-input-action{
+    position:absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.72);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition: background .15s ease, transform .15s ease;
+  }
+  .tf-input-action:hover{ background: rgba(255,255,255,.10); transform: translateY(-50%) scale(1.02); }
+  .tf-input-action:active{ transform: translateY(-50%) scale(.98); }
+
+  .tf-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .tf-check{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    user-select:none;
+    font-size: .9rem;
+    color: rgba(255,255,255,.68);
+  }
+  .tf-check input{
+    width: 16px;
+    height: 16px;
+    accent-color: rgba(242,201,76,.95);
+  }
+
+  .tf-meta{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    color: rgba(255,255,255,.62);
+    font-size: .88rem;
+  }
+
+  .tf-btn{
+    width: 100%;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-weight: 800;
+    border: 1px solid rgba(242,201,76,.45);
+    background: linear-gradient(180deg, rgba(242,201,76,.96), rgba(242,201,76,.78));
+    color: #111827;
+    box-shadow: 0 12px 26px rgba(242,201,76,.10);
+    transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+  }
+  .tf-btn:hover{ filter: brightness(1.03); transform: translateY(-1px); box-shadow: 0 14px 30px rgba(242,201,76,.14); }
+  .tf-btn:active{ transform: translateY(0px); }
+
+  .tf-divider{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin: 14px 0;
+    color: rgba(255,255,255,.40);
+    font-size: .85rem;
+  }
+  .tf-divider:before, .tf-divider:after{
+    content:"";
+    height: 1px;
+    background: rgba(255,255,255,.10);
+    flex: 1;
+  }
+
+  .tf-error{
+    background: rgba(239,68,68,.12);
+    border: 1px solid rgba(239,68,68,.28);
+    color: rgba(255,255,255,.92);
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    display:flex;
+    gap: 10px;
+    align-items:flex-start;
+  }
+
+  .tf-hint{
+    background: rgba(59,130,246,.10);
+    border: 1px solid rgba(59,130,246,.22);
+    color: rgba(255,255,255,.85);
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-top: 12px;
+    display:flex;
+    gap: 10px;
+    align-items:flex-start;
+  }
+
+  .tf-footer{
+    padding: 12px 18px 16px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    color: rgba(255,255,255,.55);
+    font-size: .86rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Keep comfortable on small screens */
+  @media (max-width: 420px){
+    .tf-login-header, .tf-login-body, .tf-footer{ padding-left: 14px; padding-right: 14px; }
   }
 </style>
 
-<form method="post">
-  {% csrf_token %}
-  {% if next %}
-    <input type="hidden" name="next" value="{{ next }}"/>
-  {% endif %}
-  <div class="form-group has-feedback">
-    <input type="text" id="username" name="username" class="form-control" placeholder="Nom d'utilisateur">
-    <span class="glyphicon glyphicon-user form-control-feedback"></span>
-  </div>
-  <div class="form-group has-feedback">
-    <input type="password" id="password" name="password" class="form-control" placeholder="Mot de passe">
-    <span class="glyphicon glyphicon-lock form-control-feedback"></span>
-  </div>
-  <div class="row justify-content-center">
-    <div class="col-md-6">
-      <button type="submit" class="btn btn-primary btn-block btn-flat btn-animate">Connexion</button>
+<div class="tf-login-card">
+  <div class="tf-login-header">
+    <div class="tf-brand">
+      <div class="tf-brand-badge" aria-hidden="true">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <p class="tf-title">Connexion sécurisée</p>
+        <p class="tf-subtitle">Accès réservé au personnel autorisé</p>
+      </div>
     </div>
   </div>
-</form>
 
+  <div class="tf-login-body">
+    <form method="post" autocomplete="on" novalidate>
+      {% csrf_token %}
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
 
+      {% if form and form.errors %}
+        <div class="tf-error" role="alert">
+          <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px;"></i>
+          <div>
+            <div style="font-weight:800;">Identifiants incorrects</div>
+            <div style="color:rgba(255,255,255,.72); font-size:.9rem;">
+              Veuillez vérifier votre nom d’utilisateur et votre mot de passe, puis réessayer.
+            </div>
+          </div>
+        </div>
+      {% endif %}
 
+      <div class="tf-form-group">
+        <label class="tf-label" for="username">Nom d’utilisateur</label>
+        <div class="tf-input-wrap">
+          <i class="fa-solid fa-user tf-input-icon" aria-hidden="true"></i>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="form-control tf-input"
+            placeholder="ex: admin"
+            inputmode="text"
+            autofocus
+            required
+          >
+        </div>
+      </div>
+
+      <div class="tf-form-group">
+        <label class="tf-label" for="password">Mot de passe</label>
+        <div class="tf-input-wrap">
+          <i class="fa-solid fa-lock tf-input-icon" aria-hidden="true"></i>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-control tf-input"
+            placeholder="••••••••"
+            required
+          >
+          <button type="button" class="tf-input-action" id="togglePwd" aria-label="Afficher/Masquer le mot de passe">
+            <i class="fa-solid fa-eye" id="togglePwdIcon"></i>
+          </button>
+        </div>
+
+        <div class="tf-row">
+          <label class="tf-check">
+            <input type="checkbox" id="rememberMe" name="remember_me">
+            <span>Rester connecté</span>
+          </label>
+
+          {# Optional link if you have a password reset URL; remove if not used #}
+          {# <a href="{% url 'password_reset' %}" class="text-warning" style="font-weight:700; text-decoration:none;">Mot de passe oublié ?</a> #}
+        </div>
+      </div>
+
+      <button type="submit" class="tf-btn">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        <span style="margin-left:8px;">Se connecter</span>
+      </button>
+
+      <div class="tf-hint" role="note">
+        <i class="fa-solid fa-circle-info" style="margin-top:2px;"></i>
+        <div>
+          <div style="font-weight:800;">Sécurité</div>
+          <div style="color:rgba(255,255,255,.70); font-size:.9rem;">
+            Vos connexions et actions sont journalisées à des fins d’audit.
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="tf-footer">
+    <span><i class="fa-solid fa-lock mr-1"></i> Session chiffrée</span>
+    <span>© {{ now|date:"Y" }} TrackFlow</span>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const toggleBtn = document.getElementById('togglePwd');
+    const pwd = document.getElementById('password');
+    const icon = document.getElementById('togglePwdIcon');
+
+    if (!toggleBtn || !pwd || !icon) return;
+
+    toggleBtn.addEventListener('click', function () {
+      const isHidden = pwd.type === 'password';
+      pwd.type = isHidden ? 'text' : 'password';
+      icon.classList.toggle('fa-eye', !isHidden);
+      icon.classList.toggle('fa-eye-slash', isHidden);
+    });
+  })();
+</script>
 {% endblock %}

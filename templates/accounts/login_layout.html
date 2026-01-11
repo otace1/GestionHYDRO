@@ -1,110 +1,271 @@
 {% load static %}
-
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-        <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>TrackFlow+</title>
-    <!-- Tell the browser to be responsive to screen width -->
-    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>TrackFlow+</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <!-- Performance -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Bootstrap 4 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700&display=swap" rel="stylesheet">
 
-    <!-- DataTables -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
 
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
+  <!-- AdminLTE -->
+  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
 
-    <!-- Ionicons -->
-    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+  <style>
+    :root{
+      --tf-bg: #0b1220;
+      --tf-card: rgba(255,255,255,.06);
+      --tf-card-border: rgba(255,255,255,.12);
+      --tf-text: rgba(255,255,255,.92);
+      --tf-muted: rgba(255,255,255,.65);
+      --tf-accent: #f2c94c;
+      --tf-shadow: 0 20px 60px rgba(0,0,0,.35);
+      --tf-radius: 18px;
+    }
 
-    <!-- iCheck -->
-    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-    <!-- JQVMap -->
-    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-    <!-- Theme style -->
-    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-    <!-- overlayScrollbars -->
-    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-    <!-- Daterange picker -->
-    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-    <!-- summernote -->
-    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+    body.hold-transition.login-page{
+      min-height: 100vh;
+      margin: 0;
+      font-family: "Source Sans Pro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--tf-text);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(242,201,76,.28), transparent 60%),
+        radial-gradient(900px 500px at 85% 20%, rgba(86,204,242,.22), transparent 55%),
+        radial-gradient(900px 600px at 50% 100%, rgba(111,207,151,.18), transparent 60%),
+        linear-gradient(180deg, var(--tf-bg), #070b14);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 24px 14px;
+    }
 
-    <!-- Google Font: Source Sans Pro -->
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    .tf-shell{
+      width: 100%;
+      max-width: 980px;
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: stretch;
+    }
 
-    <!-- ChartJS -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    /* Left panel (branding/info) */
+    .tf-left{
+      border-radius: var(--tf-radius);
+      padding: 28px 26px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid var(--tf-card-border);
+      box-shadow: var(--tf-shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .tf-left:before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: radial-gradient(700px 260px at 20% 0%, rgba(242,201,76,.25), transparent 60%);
+      pointer-events:none;
+    }
 
-    <!-- Sparkline -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
+    .tf-brand{
+      position:relative;
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .tf-logo{
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.14);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      flex: 0 0 auto;
+    }
+    .tf-logo img{
+      width: 82%;
+      height: auto;
+      display:block;
+    }
+    .tf-brand h1{
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.1;
+      letter-spacing: .2px;
+    }
+    .tf-brand p{
+      margin: 4px 0 0 0;
+      color: var(--tf-muted);
+      font-size: .95rem;
+    }
 
-    <!-- overlayScrollbars -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.10.0/browser/overlayscrollbars.browser.es6.min.js"></script>
+    .tf-left h2{
+      position:relative;
+      margin: 18px 0 8px 0;
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 1.35rem;
+    }
+    .tf-left .tf-lead{
+      position:relative;
+      color: var(--tf-muted);
+      margin: 0 0 18px 0;
+      line-height: 1.45;
+    }
 
-    <!-- AdminLTE App -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+    .tf-bullets{
+      position:relative;
+      margin: 0;
+      padding: 0;
+      list-style:none;
+      display:grid;
+      gap: 10px;
+    }
+    .tf-bullets li{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      color: rgba(255,255,255,.82);
+    }
+    .tf-bullets i{
+      margin-top: 3px;
+      color: var(--tf-accent);
+    }
 
+    .tf-footer-note{
+      position:relative;
+      margin-top: 18px;
+      font-size: .9rem;
+      color: var(--tf-muted);
+    }
 
-    <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
+    /* Right panel (form card) */
+    .tf-right{
+      border-radius: var(--tf-radius);
+      padding: 18px;
+      background: var(--tf-card);
+      border: 1px solid var(--tf-card-border);
+      box-shadow: var(--tf-shadow);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
 
-        .zoom-in-card {
-            animation-name: zoomIn;
-            animation-duration: 0.5s;
-            animation-timing-function: ease-in-out;
-        }
+    .tf-card{
+      width: 100%;
+      max-width: 430px;
+      background: rgba(15, 23, 42, .65);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
 
-        @keyframes zoomIn {
-            0% {
-                transform: scale(0);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-    </style>
+    .tf-card-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .tf-card-title{
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .tf-card-subtitle{
+      margin: 2px 0 0 0;
+      color: var(--tf-muted);
+      font-size: .92rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .tf-shell{
+        grid-template-columns: 1fr;
+        max-width: 560px;
+      }
+      .tf-left{
+        padding: 22px 18px;
+      }
+      .tf-right{
+        padding: 14px;
+      }
+    }
+
+    /* Small utilities */
+    .tf-divider{
+      height: 1px;
+      background: rgba(255,255,255,.12);
+      margin: 14px 0;
+    }
+  </style>
 </head>
-<body class="hold-transition login-page bg-white">
-<img src="{% static 'img/logo.png' %}" alt="OCC & CGW">
 
-<div class="login-box zoom-in-card">
-    <div class="login-logo">
-        {# <a href="#"><b>CGW</b>APP</a> #}
-    </div>
-    <!-- /.login-logo -->
+<body class="hold-transition login-page">
 
-    <div class="card bg-yellow">
-        <div class="card-body bg-yellow login-card-body">
-            <p class="login-box-msg"><b>Ouverture de Session</b></p>
+  <main class="tf-shell">
 
-            {% block login %}{% endblock %}
+    <!-- Left / Branding -->
+    <section class="tf-left">
+      <div class="tf-brand">
+        <div class="tf-logo" aria-hidden="true">
+          <img src="{% static 'img/logo.png' %}" alt="">
         </div>
-        <!-- /.login-card-body -->
-    </div>
-</div>
-<!-- /.login-box -->
+        <div>
+          <h1>TrackFlow+</h1>
+          <p>Plateforme de suivi & opérations</p>
+        </div>
+      </div>
 
+      <h2>Accès sécurisé</h2>
+      <p class="tf-lead">
+        Connectez-vous pour accéder à vos tableaux de bord, rapports, régularisations et opérations terrain.
+      </p>
 
-<script>
-    // Trigger the animation after the page loads
-    document.addEventListener("DOMContentLoaded", function () {
-        var card = document.querySelector(".zoom-in-card");
-        card.classList.add("animated");
-    });
-</script>
+      <ul class="tf-bullets">
+        <li><i class="fa-solid fa-shield-halved"></i><span>Session sécurisée avec contrôles d’accès par rôle.</span></li>
+        <li><i class="fa-solid fa-bolt"></i><span>Interface optimisée pour mobile, tablette et desktop.</span></li>
+        <li><i class="fa-solid fa-chart-line"></i><span>Suivi et reporting en temps réel.</span></li>
+      </ul>
+
+      <div class="tf-divider"></div>
+      <div class="tf-footer-note">
+        Besoin d’assistance ? Contactez l’administrateur système.
+      </div>
+    </section>
+
+    <!-- Right / Form -->
+    <section class="tf-right">
+      <div class="tf-card">
+        <div class="tf-card-header">
+          <div>
+            <p class="tf-card-title">Ouverture de session</p>
+            <p class="tf-card-subtitle">Veuillez saisir vos identifiants</p>
+          </div>
+          <i class="fa-solid fa-right-to-bracket" style="color: var(--tf-accent); font-size: 1.35rem;"></i>
+        </div>
+
+        {% block login %}{% endblock %}
+      </div>
+    </section>
+
+  </main>
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 </body>
 </html>

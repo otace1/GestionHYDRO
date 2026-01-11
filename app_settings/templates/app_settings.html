@@ -128,6 +128,134 @@
                                 </div>
                             </div>
 
+                            <!-- Referentials Tab -->
+                            {% if user.is_admin %}
+                            <div class="tab-pane fade {% if active_tab == 'referentials' %}show active{% endif %}" id="referentials" role="tabpanel">
+                                <h5 class="mb-4 font-weight-bold"><i class="fas fa-database text-success mr-2"></i> Gestion des Référentiels</h5>
+                                
+                                <div class="row">
+                                    <!-- Code Bureau Section -->
+                                    <div class="col-md-12 mb-4">
+                                        <div class="card card-outline card-success shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center justify-content-between">
+                                                <h6 class="card-title font-weight-bold mb-0">CODES BUREAUX (DGDA)</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-success btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-add-bureau">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">CODE</th>
+                                                                <th class="border-0">DESCRIPTION</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for bureau in bureaus %}
+                                                            <tr>
+                                                                <td class="px-3 font-weight-bold text-primary border-top">{{ bureau.codebureau }}</td>
+                                                                <td class="border-top">{{ bureau.descriptionbureau }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-bureau-btn" data-pk="{{ bureau.pk }}" data-code="{{ bureau.codebureau }}" data-desc="{{ bureau.descriptionbureau }}"><i class="fas fa-edit"></i></button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-bureau-btn" data-pk="{{ bureau.pk }}" data-name="{{ bureau.codebureau }}" data-type="bureau"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="3" class="text-center text-muted py-3">Aucun bureau enregistré</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Banques Section -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card card-outline card-primary shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">BANQUES</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-primary btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-add-banque">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">NOM</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for banque in banques %}
+                                                            <tr>
+                                                                <td class="px-3 border-top">{{ banque.nombanque }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-banque-btn" data-pk="{{ banque.pk }}" data-name="{{ banque.nombanque }}"><i class="fas fa-edit"></i></button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-banque-btn" data-pk="{{ banque.pk }}" data-name="{{ banque.nombanque }}" data-type="banque"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="2" class="text-center text-muted py-3">Aucune banque enregistrée</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modèles Section -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card card-outline card-info shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">MODÈLES LIQUIDATION</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-info btn-xs px-2 font-weight-bold text-white" data-toggle="modal" data-target="#modal-add-modele">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">MODÈLE</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for modele in modeles %}
+                                                            <tr>
+                                                                <td class="px-3 border-top">{{ modele.liquidationModel }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-modele-btn" data-pk="{{ modele.pk }}" data-name="{{ modele.liquidationModel }}"><i class="fas fa-edit"></i></button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-modele-btn" data-pk="{{ modele.pk }}" data-name="{{ modele.liquidationModel }}" data-type="modele"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="2" class="text-center text-muted py-3">Aucun modèle enregistré</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
                             <!-- System Tab -->
                             <div class="tab-pane fade {% if active_tab == 'system' %}show active{% endif %}" id="system" role="tabpanel">
                                 <h5 class="mb-4 font-weight-bold"><i class="fas fa-info-circle text-info mr-2"></i> Informations Système & Statistiques</h5>
@@ -214,6 +342,117 @@
     </div>
 </section>
 
+{% if user.is_admin %}
+<!-- Bureau Modal (Add/Edit) -->
+<div class="modal fade" id="modal-bureau" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="bureauModalTitle">AJOUTER UN BUREAU</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="bureauForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="bureau_pk">
+                <input type="hidden" name="add_bureau" id="bureau_action_add" value="1">
+                <input type="hidden" name="edit_bureau" id="bureau_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy bureau_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-success px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Banque Modal (Add/Edit) -->
+<div class="modal fade" id="modal-banque" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="banqueModalTitle">AJOUTER UNE BANQUE</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="banqueForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="banque_pk">
+                <input type="hidden" name="add_banque" id="banque_action_add" value="1">
+                <input type="hidden" name="edit_banque" id="banque_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy banque_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-primary px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modèle Modal (Add/Edit) -->
+<div class="modal fade" id="modal-modele" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-info text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="modeleModalTitle">AJOUTER UN MODÈLE</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="modeleForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="modele_pk">
+                <input type="hidden" name="add_modele" id="modele_action_add" value="1">
+                <input type="hidden" name="edit_modele" id="modele_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy modele_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-info px-4 font-weight-bold text-white shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="modal-delete-confirm" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title font-weight-bold">CONFIRMATION</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="delete_pk">
+                <input type="hidden" name="" id="delete_action" value="1">
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="mb-0">Voulez-vous vraiment supprimer <strong><span id="delete_item_name"></span></strong> ?</p>
+                    <p class="text-danger small mt-2">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer bg-light border-0 justify-content-center">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-danger px-4 font-weight-bold shadow-sm">SUPPRIMER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <style>
     .page-title {
         letter-spacing: -0.5px;
@@ -243,6 +482,92 @@
             const url = new URL(window.location);
             url.searchParams.set('tab', tabId);
             window.history.replaceState({}, '', url);
+        });
+
+        // --- Référentiels JS ---
+
+        // Bureau Edit
+        $('.edit-bureau-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var code = $(this).data('code');
+            var desc = $(this).data('desc');
+            
+            $('#bureauModalTitle').text('MODIFIER LE BUREAU');
+            $('#bureau_pk').val(pk);
+            $('#id_codebureau').val(code);
+            $('#id_descriptionbureau').val(desc);
+            
+            $('#bureau_action_add').prop('disabled', true);
+            $('#bureau_action_edit').prop('disabled', false);
+            
+            $('#modal-bureau').modal('show');
+        });
+
+        $('#modal-bureau').on('hidden.bs.modal', function () {
+            $('#bureauModalTitle').text('AJOUTER UN BUREAU');
+            $('#bureauForm')[0].reset();
+            $('#bureau_pk').val('');
+            $('#bureau_action_add').prop('disabled', false);
+            $('#bureau_action_edit').prop('disabled', true);
+        });
+
+        // Banque Edit
+        $('.edit-banque-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            
+            $('#banqueModalTitle').text('MODIFIER LA BANQUE');
+            $('#banque_pk').val(pk);
+            $('#id_nombanque').val(name);
+            
+            $('#banque_action_add').prop('disabled', true);
+            $('#banque_action_edit').prop('disabled', false);
+            
+            $('#modal-banque').modal('show');
+        });
+
+        $('#modal-banque').on('hidden.bs.modal', function () {
+            $('#banqueModalTitle').text('AJOUTER UNE BANQUE');
+            $('#banqueForm')[0].reset();
+            $('#banque_pk').val('');
+            $('#banque_action_add').prop('disabled', false);
+            $('#banque_action_edit').prop('disabled', true);
+        });
+
+        // Modèle Edit
+        $('.edit-modele-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            
+            $('#modeleModalTitle').text('MODIFIER LE MODÈLE');
+            $('#modele_pk').val(pk);
+            $('#id_liquidationModel').val(name);
+            
+            $('#modele_action_add').prop('disabled', true);
+            $('#modele_action_edit').prop('disabled', false);
+            
+            $('#modal-modele').modal('show');
+        });
+
+        $('#modal-modele').on('hidden.bs.modal', function () {
+            $('#modeleModalTitle').text('AJOUTER UN MODÈLE');
+            $('#modeleForm')[0].reset();
+            $('#modele_pk').val('');
+            $('#modele_action_add').prop('disabled', false);
+            $('#modele_action_edit').prop('disabled', true);
+        });
+
+        // Delete Confirmation
+        $('.delete-bureau-btn, .delete-banque-btn, .delete-modele-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            var type = $(this).data('type');
+            
+            $('#delete_pk').val(pk);
+            $('#delete_item_name').text(name);
+            $('#delete_action').attr('name', 'delete_' + type);
+            
+            $('#modal-delete-confirm').modal('show');
         });
     });
 </script>
