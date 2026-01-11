@@ -230,6 +230,11 @@
                 <input class="form-control tf-input" id="immatriculation" name="immatriculation" placeholder="Ex: 1234AB">
               </div>
 
+{#              <div class="tf-field">#}
+{#                <label for="filter_f">Filtre Rapide (Immat, Dossier, Décl.)</label>#}
+{#                <input class="form-control tf-input" id="filter_f" name="f" placeholder="Exact match">#}
+{#              </div>#}
+
               <div class="tf-field">
                 <label for="qrcode">QR Code</label>
                 <input class="form-control tf-input" id="qrcode" name="qrcode" placeholder="Scanner le code">
@@ -247,7 +252,7 @@
                 <div class="ml-auto d-flex align-items-center" style="gap:.5rem;">
                   <span class="text-muted small" id="resultCount">Appliquez un filtre</span>
                   <select id="pageSize" class="form-control tf-input" style="width:110px;">
-                    <option value="15" selected>15 / page</option>
+                    <option value="10" selected>10 / page</option>
                     <option value="25">25 / page</option>
                     <option value="50">50 / page</option>
                   </select>
@@ -406,7 +411,8 @@
       (payload.num_dossier && payload.num_dossier.trim().length) ||
       (payload.num_re && payload.num_re.trim().length) ||
       (payload.immatriculation && payload.immatriculation.trim().length) ||
-      (payload.qrcode && payload.qrcode.trim().length)
+      (payload.qrcode && payload.qrcode.trim().length) ||
+      (payload.f && payload.f.trim().length)
     );
   }
 
@@ -508,6 +514,7 @@
       num_re: (fd.get('num_re') || '').toString(),
       immatriculation: (fd.get('immatriculation') || '').toString(),
       qrcode: (fd.get('qrcode') || '').toString(),
+      f: (fd.get('f') || '').toString(),
       // optional sort (matches the view mapping)
       sort: 'date_echant',
       dir: 'desc'
@@ -542,6 +549,7 @@
     document.getElementById('num_re').value = '';
     document.getElementById('immatriculation').value = '';
     document.getElementById('qrcode').value = '';
+    document.getElementById('filter_f').value = '';
     lastQueryPayload = null;
     currentPage = 1;
     loadPage(currentPage);

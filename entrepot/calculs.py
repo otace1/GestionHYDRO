@@ -5,13 +5,19 @@ import math
 def densite15(x, y):
     # x: Temperature
     # y: Densite a la temp ambiante
+    if x is None or y is None:
+        return None
+    try:
+        x = float(x)
+        y = float(y)
+    except (ValueError, TypeError):
+        return None
+
     t15 = x - 15
-    y = float(y)
     if y > 1:
         a = y
     else:
-        if y < 1:
-            a = y * 1000
+        a = y * 1000
 
     if 500 <= a < 770.5:
         b = 346.4228
@@ -74,14 +80,18 @@ def densite15(x, y):
 def vcf(x, y):
     # x: Densite a 15
     # y: Temperature ambiante
-
-    y = float(y)
+    if x is None or y is None or x == 0:
+        return 0
+    try:
+        x = float(x)
+        y = float(y)
+    except (ValueError, TypeError):
+        return 0
 
     if x > 1:
         x = x
     else:
-        if x < 1:
-            x = x * 1000
+        x = x * 1000
 
     if x >= float(839):
         a = 186.9696
@@ -91,14 +101,14 @@ def vcf(x, y):
         vcfValue = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
         return round(vcfValue,5)
     else:
-        if (x >= float(788)) & (x < float(839)):
+        if (x >= float(788)) and (x < float(839)):
             a = 594.5418
             delta = y - 15
             alpha = (a / x) / x
             vcfValue = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
             return round(vcfValue,5)
         else:
-            if (x > float(770)) & (x < float(788)):
+            if (x > float(770)) and (x < float(788)):
                 a = 0.00336312
                 b = 2680.3206
                 delta = y - 15
@@ -118,7 +128,13 @@ def vcf(x, y):
 def gsv(x, y):
     # x: Valeur de VCF
     # y: Valeur de GOV
-    y = float(y)
+    if x is None or y is None:
+        return 0
+    try:
+        x = float(x)
+        y = float(y)
+    except (ValueError, TypeError):
+        return 0
     gsvValue = round((x * y), 3)
     return gsvValue
 
@@ -127,11 +143,17 @@ def gsv(x, y):
 def mtv(x, y):
     # x: Value GSV
     # y: Valeur densite a 15
+    if x is None or y is None:
+        return 0
+    try:
+        x = float(x)
+        y = float(y)
+    except (ValueError, TypeError):
+        return 0
     if y > 1:
         y = y
     else:
-        if y < 1:
-            y = y * 1000
+        y = y * 1000
     mtvValue = x * y / 1000
     return round(mtvValue, 3)
 
@@ -140,10 +162,16 @@ def mtv(x, y):
 def mta(x, y):
     # x: Valeur GSV
     # y: Valeur Densite
+    if x is None or y is None:
+        return 0
+    try:
+        x = float(x)
+        y = float(y)
+    except (ValueError, TypeError):
+        return 0
     if y > 1:
         y = y
     else:
-        if y < 1:
-            y = y * 1000
+        y = y * 1000
     mtaValue = ((y) - 1.1) * (x / 1000)
     return round(mtaValue, 3)

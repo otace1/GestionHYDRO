@@ -1,114 +1,1223 @@
-{% extends 'base_entrepot.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
-{% load bootstrap4 %}
 {% load crispy_forms_tags %}
-
+{% load i18n %}
 
 {% block content %}
-    {% render_table cargaison %}
-{% endblock %}
+<style>
+  #meter-after .form-actions { display: none; }
 
-{% block form %}
-    {% crispy form %}
-{% endblock %}
+  /* Wizard Steps Nav */
+  .wizard-steps-nav { counter-reset: step; }
+  .step-item { flex: 1; text-align: center; position: relative; cursor: default; }
+  .step-item:not(:last-child):after {
+      content: ""; position: absolute; top: 15px; left: 50%; width: 100%; height: 2px;
+      background: #dee2e6; z-index: 1; transition: background .3s;
+  }
+  .step-icon {
+      width: 32px; height: 32px; line-height: 32px; border-radius: 50%;
+      background: #dee2e6; color: #6c757d; margin: 0 auto 8px; position: relative;
+      z-index: 2; font-weight: 700; transition: background .3s, color .3s;
+  }
+  .step-label { font-size: 0.75rem; font-weight: 600; color: #6c757d; transition: color .3s; }
+  .step-item.active .step-icon { background: #007bff; color: #fff; }
+  .step-item.active .step-label { color: #007bff; }
+  .step-item.completed .step-icon { background: #28a745; color: #fff; }
+  .step-item.completed .step-label { color: #28a745; }
+  .step-item.completed:after { background: #28a745; }
 
+  /* Table styles in wizard */
+  .wizard-table-container { border-radius: 8px; border: 1px solid #ebedef; background: #fbfbfc; overflow: hidden; }
+  .btn-remove-row { color: #dc3545; cursor: pointer; transition: opacity .2s; }
+  .btn-remove-row:hover { opacity: .7; }
+</style>
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- ================= PAGE HEADER ================= -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="h4 mb-0 font-weight-bold">
+          <i class="fas fa-warehouse mr-2"></i>
+          {% trans "Opérations Entrepôt" %}
+        </h1>
+        <small class="text-muted">
+          {% trans "Gestion opérationnelle des cargaisons et échantillonnage" %}
+        </small>
+      </div>
+    </div>
+
+    <!-- ================= KPI ROW ================= -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card shadow-sm border-left-primary">
+          <div class="card-body">
+            <small class="text-muted text-uppercase">{% trans "Cargaisons du jour" %}</small>
+            <h4 class="font-weight-bold mb-0">{{ stats.today|default:"—" }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card shadow-sm border-left-success">
+          <div class="card-body">
+            <small class="text-muted text-uppercase">{% trans "Échantillonnées" %}</small>
+            <h4 class="font-weight-bold mb-0">{{ stats.sampled|default:"—" }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card shadow-sm border-left-warning">
+          <div class="card-body">
+            <small class="text-muted text-uppercase">{% trans "En attente" %}</small>
+            <h4 class="font-weight-bold mb-0">{{ stats.pending|default:"—" }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card shadow-sm border-left-danger">
+          <div class="card-body">
+            <small class="text-muted text-uppercase">{% trans "Alertes" %}</small>
+            <h4 class="font-weight-bold mb-0">{{ stats.alerts|default:"0" }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MAIN CARD ================= -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom">
+        <ul class="nav nav-tabs card-header-tabs" id="entrepotTabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#pending">
+              <i class="fas fa-clock mr-1"></i>
+              {% trans "En attente d'échantillonnage" %}
+              <span class="badge badge-primary ml-1">{{ stats.pending }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#to_inspect">
+              <i class="fas fa-search mr-1"></i>
+              {% trans "En attente d'inspection" %}
+              <span class="badge badge-warning ml-1">{{ stats.to_inspect }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#inspected">
+              <i class="fas fa-search-plus mr-1"></i>
+              {% trans "Cargaisons inspectées" %}
+              <span class="badge badge-secondary ml-1">{{ stats.inspected }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#to_unload">
+              <i class="fas fa-truck-loading mr-1"></i>
+              {% trans "En attente de déchargement" %}
+              <span class="badge badge-info ml-1">{{ stats.to_unload }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#completed">
+              <i class="fas fa-check-circle mr-1"></i>
+              {% trans "Cargaisons échantillonnées" %}
+              <span class="badge badge-success ml-1">{{ stats.sampled }}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card-body">
+        <!-- Barre de recherche multi-critères -->
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <form method="get" action="" class="form-inline">
+              <div class="input-group shadow-sm w-100">
+                <!-- Recherche QRCode -->
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-primary text-white border-primary">
+                    <i class="fas fa-qrcode"></i>
+                  </span>
+                </div>
+                <input type="text" name="q" class="form-control border-primary" 
+                       placeholder="{% trans 'Scanner le QRCode...' %}" 
+                       value="{{ request.GET.q|default:'' }}" autofocus>
+                
+                <!-- Recherche par Immatriculation / Dossier / Déclaration -->
+                <div class="input-group-prepend ml-md-2">
+                  <span class="input-group-text bg-info text-white border-info">
+                    <i class="fas fa-search"></i>
+                  </span>
+                </div>
+                <input type="text" name="f" class="form-control border-info" 
+                       placeholder="{% trans 'Immatriculation, Num Dossier ou Déclaration...' %}" 
+                       value="{{ request.GET.f|default:'' }}" style="min-width: 300px;">
+
+                <div class="input-group-append">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter mr-1"></i> {% trans "Filtrer" %}
+                  </button>
+                  {% if request.GET.q or request.GET.f %}
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary" title="{% trans 'Effacer la recherche' %}">
+                      <i class="fas fa-times"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="pending">
+            <div class="table-responsive">
+              {% render_table cargaison %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="to_inspect">
+            <div class="table-responsive">
+              {% render_table cargaison3 %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="inspected">
+            <div class="table-responsive">
+              {% render_table cargaison5 %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="to_unload">
+            <div class="table-responsive">
+              {% render_table cargaison4 %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="completed">
+            <div class="table-responsive">
+              {% render_table cargaison2 %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer text-muted small">
+        <i class="fas fa-info-circle mr-1"></i>
+        {% trans "Gérez les opérations quotidiennes de prélèvement et de suivi." %}
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= MODAL : ÉCHANTILLONNAGE ================= -->
+<div class="modal fade" id="modal-sampling" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0">
+
+      <div class="modal-header bg-primary text-white border-0">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-vial mr-2"></i>
+          {% trans "Échantillonnage de la cargaison" %}
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+
+      <form id="sampling-form">
+        {% csrf_token %}
+        <!-- ✅ CRITICAL: PK always sent -->
+        <input type="hidden" name="pk" id="sampling-pk">
+
+        <div class="modal-body p-4" id="sampling-form-container">
+          <div class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+            <p class="mt-3 text-muted">
+              {% trans "Chargement du formulaire..." %}
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 bg-light p-3">
+          <button type="button" class="btn btn-outline-secondary px-4" data-dismiss="modal">
+            <i class="fas fa-times mr-1"></i> {% trans "Annuler" %}
+          </button>
+          <button type="submit" class="btn btn-success px-4 font-weight-bold shadow-sm" id="btn-submit-sampling" disabled>
+            <i class="fas fa-file-signature mr-1"></i>
+            {% trans "Valider et générer le rapport" %}
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL : APPUREMENT (KALEMIE) ================= -->
+<div class="modal fade" id="appurement_volume" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-balance-scale mr-2"></i>
+          {% trans "Inspection Quantitative (Appurement)" %}
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        {% crispy form_inspection %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL : DECHARGEMENT ================= -->
+<div class="modal fade" id="modal-dech" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-truck-loading mr-2"></i>
+          {% trans "OPÉRATION DE DÉCHARGEMENT" %}
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          {% crispy form_dechargement %}
+      </div>
+      <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans "Annuler" %}</button>
+          <button type="button" id="btn-submit-dech" class="btn btn-warning font-weight-bold">
+              <i class="fas fa-check mr-1"></i> {% trans "Valider le déchargement" %}
+          </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL : INSPECTION END-TO-END ================= -->
+<div class="modal fade" id="modal-inspection" tabindex="-1" role="dialog" data-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+
+      <div class="modal-header bg-primary text-white border-0 py-3">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-search mr-2"></i>
+          {% trans "Inspection de la cargaison" %}
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Summary Header (Loaded via Init) -->
+      <div class="bg-light border-bottom px-4 py-2" id="insp-summ-header" style="display: none;">
+          <div class="row small text-muted">
+              <div class="col-md-3"><strong>{% trans "Ref:" %}</strong> <span id="insp-summ-ref"></span></div>
+              <div class="col-md-3"><strong>{% trans "Immat:" %}</strong> <span id="insp-summ-immat"></span></div>
+              <div class="col-md-3"><strong>{% trans "Produit:" %}</strong> <span id="insp-summ-prod"></span></div>
+              <div class="col-md-3 text-right"><strong>{% trans "Date:" %}</strong> <span id="insp-summ-date"></span></div>
+          </div>
+      </div>
+
+      <!-- Wizard Nav -->
+      <div class="px-4 pt-4 pb-2 bg-white" id="insp-wizard-nav" style="display: none;">
+          <div class="d-flex justify-content-between wizard-steps-nav mb-2">
+              <div class="step-item active" data-step="1">
+                  <div class="step-icon">1</div>
+                  <div class="step-label">{% trans "Type" %}</div>
+              </div>
+              <div class="step-item" data-step="2">
+                  <div class="step-icon">2</div>
+                  <div class="step-label">{% trans "Scellés" %}</div>
+              </div>
+              <div class="step-item" data-step="3">
+                  <div class="step-icon">3</div>
+                  <div class="step-label">{% trans "Mesures" %}</div>
+              </div>
+              <div class="step-item" data-step="4">
+                  <div class="step-icon">4</div>
+                  <div class="step-label">{% trans "Détails" %}</div>
+              </div>
+              <div class="step-item" data-step="5">
+                  <div class="step-icon">5</div>
+                  <div class="step-label">{% trans "Résumé" %}</div>
+              </div>
+          </div>
+          <div class="progress" style="height: 4px;">
+              <div class="progress-bar" role="progressbar" style="width: 20%;" id="insp-progress-bar"></div>
+          </div>
+      </div>
+
+      <div class="modal-body p-0" id="insp-wizard-body" style="min-height: 400px; max-height: 70vh; overflow-y: auto;">
+        <!-- Loading State -->
+        <div class="text-center py-5" id="insp-loading">
+          <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+          <p class="mt-3 text-muted">{% trans "Initialisation de l'inspection..." %}</p>
+        </div>
+
+        <!-- Step Containers -->
+        <div id="insp-step-1" class="insp-step-container p-4" style="display: none;">
+            <div class="text-center mb-4">
+                <h5 class="font-weight-bold">{% trans "Type d'Inspection" %}</h5>
+                <p class="text-muted">{% trans "Comment les mesures seront-elles effectuées ?" %}</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card card-outline card-primary shadow-sm">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="font-weight-bold">{% trans "Méthode Principale" %}</label>
+                                <div class="custom-control custom-radio mb-3">
+                                    <input class="custom-control-input" type="radio" id="insp-type-tanker" name="insp_type" value="tanker" checked>
+                                    <label for="insp-type-tanker" class="custom-control-label">
+                                        {% trans "TANKER / METER (Inspection standard sur véhicule)" %}
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-radio">
+                                    <input class="custom-control-input" type="radio" id="insp-type-shore" name="insp_type" value="shore">
+                                    <label for="insp-type-shore" class="custom-control-label">
+                                        {% trans "SHORE (Inspection en réservoir fixe)" %}
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="shore-prod-select" class="form-group mt-4" style="display: none;">
+                                <label for="insp-produit">{% trans "Produit dans le réservoir" %}</label>
+                                <select id="insp-produit" class="form-control"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="insp-step-2" class="insp-step-container p-4" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-weight-bold mb-0">{% trans "Gestion des Scellés (Seals)" %}</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-insp-add-seal">
+                    <i class="fas fa-plus mr-1"></i> {% trans "Ajouter un scellé" %}
+                </button>
+            </div>
+            <div class="wizard-table-container">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>{% trans "Manifold #" %}</th>
+                            <th>{% trans "État" %}</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="insp-seals-body">
+                        <!-- Rows added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="insp-step-3" class="insp-step-container p-4" style="display: none;">
+            <h5 class="font-weight-bold mb-4">{% trans "Mesures d'Inspection" %}</h5>
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>{% trans "DENSITE (Ex. 820.907)" %}</label>
+                            <input type="number" step="any" id="insp-dens" class="form-control" placeholder="0.000">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>{% trans "TEMPERATURE" %}</label>
+                            <input type="number" step="any" id="insp-temp" class="form-control" placeholder="0.0">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3 form-group">
+                            <label>{% trans "INNAGE IN" %}</label>
+                            <select id="insp-innagein" class="form-control"></select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>{% trans "VOLUME IN" %}</label>
+                            <select id="insp-volumein" class="form-control"></select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>{% trans "TEMP IN" %}</label>
+                            <select id="insp-tempin" class="form-control"></select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>{% trans "WEIGHT IN" %}</label>
+                            <select id="insp-weightin" class="form-control"></select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12 form-group">
+                            <label>{% trans "Observations / Remarques" %}</label>
+                            <textarea id="insp-obs" class="form-control" rows="2" placeholder="{% trans 'Commentaires éventuels...' %}"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="insp-step-4" class="insp-step-container p-4" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-weight-bold mb-0" id="insp-details-title">{% trans "Détails" %}</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-insp-add-detail">
+                    <i class="fas fa-plus mr-1"></i> <span id="insp-add-detail-label"></span>
+                </button>
+            </div>
+            <div class="wizard-table-container">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="bg-light" id="insp-details-head">
+                        <!-- Dynamic columns -->
+                    </thead>
+                    <tbody id="insp-details-body">
+                        <!-- Rows added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="insp-step-5" class="insp-step-container p-4" style="display: none;">
+            <div class="text-center mb-4">
+                <div class="display-4 text-primary"><i class="fas fa-file-contract"></i></div>
+                <h5 class="font-weight-bold mt-2">{% trans "Résumé avant validation" %}</h5>
+            </div>
+            <div id="insp-summary-content" class="row">
+                <!-- Summary tables -->
+            </div>
+        </div>
+
+        <!-- Success State -->
+        <div id="insp-success" class="p-4 text-center" style="display: none;">
+            <div class="display-4 text-success mb-3"><i class="fas fa-check-circle"></i></div>
+            <h4 class="font-weight-bold">{% trans "Inspection validée avec succès !" %}</h4>
+            <p class="text-muted mb-4">{% trans "Le rapport a été généré." %}</p>
+
+            <!-- Stats Summary -->
+            <div class="row mb-4" id="insp-res-summary" style="display: none;">
+                <div class="col-md-3">
+                    <div class="card border shadow-sm bg-white">
+                        <div class="card-body p-2">
+                            <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">{% trans "GOV Total" %}</small>
+                            <span class="h6 font-weight-bold mb-0 text-primary" id="res-sum-gov"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border shadow-sm bg-white">
+                        <div class="card-body p-2">
+                            <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">{% trans "GSV Total" %}</small>
+                            <span class="h6 font-weight-bold mb-0 text-success" id="res-sum-gsv"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border shadow-sm bg-white">
+                        <div class="card-body p-2">
+                            <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">{% trans "MTA Total" %}</small>
+                            <span class="h6 font-weight-bold mb-0 text-warning" id="res-sum-mta"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border shadow-sm bg-white">
+                        <div class="card-body p-2">
+                            <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">{% trans "Frais OCC (USD)" %}</small>
+                            <span class="h6 font-weight-bold mb-0 text-danger" id="res-sum-frais"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-2 mb-4">
+                <a href="" id="insp-report-link" target="_blank" class="btn btn-primary btn-lg px-4">
+                    <i class="fas fa-external-link-alt mr-2"></i> {% trans "Ouvrir le rapport" %}
+                </a>
+                <button type="button" class="btn btn-outline-secondary btn-lg px-4" data-dismiss="modal" onclick="location.reload();">
+                    {% trans "Fermer" %}
+                </button>
+            </div>
+        </div>
+
+        <!-- Inline Error Alert -->
+        <div id="insp-error-area" class="px-4 pb-4" style="display: none;">
+            <div class="alert alert-danger mb-0">
+                <h6 class="font-weight-bold mb-1"><i class="fas fa-exclamation-triangle mr-2"></i>{% trans "Veuillez corriger les erreurs suivantes :" %}</h6>
+                <ul id="insp-error-list" class="mb-0 pl-4 small"></ul>
+            </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light border-top py-3 justify-content-between" id="insp-wizard-footer" style="display: none;">
+        <button type="button" class="btn btn-outline-secondary px-4" id="btn-insp-back" disabled>
+          <i class="fas fa-arrow-left mr-1"></i> {% trans "Précédent" %}
+        </button>
+        <div>
+            <button type="button" class="btn btn-primary px-4" id="btn-insp-next">
+              {% trans "Suivant" %} <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+            <button type="button" class="btn btn-success px-4 font-weight-bold shadow-sm" id="btn-insp-submit" style="display: none;">
+              <i class="fas fa-check-circle mr-1"></i> {% trans "Valider & Générer le rapport" %}
+            </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL : PROGRESSION ÉCHANTILLONNAGE ================= -->
+<div class="modal fade" id="modal-sampling-progress" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-cog fa-spin mr-2"></i>
+          {% trans "Traitement de l'échantillonnage" %}
+        </h5>
+      </div>
+      <div class="modal-body py-4">
+        <div id="sampling-step-progress">
+            <p id="sampling-status-text" class="text-muted mb-2">{% trans "Initialisation..." %}</p>
+            <div class="progress mb-3" style="height: 25px; border-radius: 12px;">
+              <div id="sampling-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+        </div>
+        <div id="sampling-result" style="display: none;">
+            <div class="text-center mb-4">
+                <div class="display-4 text-success mb-2">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4 class="font-weight-bold text-dark">{% trans "Échantillonnage Réussi !" %}</h4>
+                <p class="text-muted">{% trans "Les données ont été enregistrées et votre rapport est prêt." %}</p>
+            </div>
+            
+            <div class="alert alert-info border-0 shadow-sm">
+                <i class="fas fa-info-circle mr-2"></i>
+                {% trans "Veuillez télécharger le rapport pour vos dossiers." %}
+            </div>
+
+            <div class="text-center mt-4">
+                <button id="btn-download-report" class="btn btn-success btn-lg px-5 shadow-sm font-weight-bold">
+                    <i class="fas fa-file-download mr-2"></i> {% trans "Télécharger le rapport" %}
+                </button>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center" id="sampling-modal-footer" style="display: none;">
+        <button type="button" class="btn btn-outline-primary px-4" data-dismiss="modal" onclick="location.reload();">
+            {% trans "Fermer" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-    {% block javascript %}
-        function getRowId(button) {
-          var row = button.closest('tr');
+let selectedCargaisonId = null;
+let inspectionRecordId = null;
 
-          if (row) {
-            rowId = row.id;
-            console.log('Row ID:', rowId);
-            // Perform further actions with the row ID, such as making an AJAX request
-          }
-        }
-
-
-        // using jQuery
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
+/* ================= CSRF ================= */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(cookie => {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
             }
-            return cookieValue;
-        }
-
-        var csrftoken = getCookie('csrftoken');
-
-        function csrfSafeMethod(method) {
-            // these HTTP methods do not require CSRF protection
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
-        $.ajaxSetup({
-            beforeSend: function (xhr, settings) {
-        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
-    }
-});
-
-        //script for submitting data in ajax
-        $('.btn.btn-default').click(function () {
-            Id = rowId; //getting the id of the row which equal to the pk into the database
-            console.log(Id); // debug
         });
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
 
-        $('.btn.btn-success').click(function (e) {
-            e.preventDefault()
+/* ================= OPEN SAMPLING MODAL ================= */
+$(document).on('click', '.btn-echantillonner', function () {
+    selectedCargaisonId = $(this).data('id');
+    $('#sampling-pk').val(selectedCargaisonId);
 
-            //Disable Submit button
-            $('.btn.btn-success').attr("disabled", true);
-            var pk = Id;
-            var APIurl = '/entrepot/echantillonage/';
-         $input = $('<input type="hidden" name="pk">').val(pk);
-         $('#sampling-form').append($input);
-         var SerializedData = $("#sampling-form").serialize();
-         console.log(SerializedData);
-         $.ajax({
-    url: APIurl,
-    type: "POST",
-    data: SerializedData,
-    dataType: 'json',
+    const container = $('#sampling-form-container');
+    const submitBtn = $('#btn-submit-sampling');
 
-    success: function (response) {
-        alert("Données sauvegardées");
+    container.html(`
+      <div class="text-center py-5">
+        <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+        <p class="mt-3 text-muted">{% trans "Chargement du formulaire..." %}</p>
+      </div>
+    `);
 
-        // Decode the PDF content from the response
-        var pdfContent = atob(response.pdf_base64);
+    submitBtn.prop('disabled', true);
+    $('#modal-sampling').modal('show');
 
-        // Create a Blob object from the decoded PDF content
-        var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
+    $.get(`/entrepot/sampling-form/${selectedCargaisonId}/`)
+      .done(function (html) {
+          container.html(html);
+          submitBtn.prop('disabled', false);
+      })
+      .fail(function () {
+          container.html(`
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              {% trans "Erreur lors du chargement du formulaire." %}
+            </div>
+          `);
+      });
+});
 
-        // Create a URL for the Blob object
-        var pdfURL = URL.createObjectURL(pdfBlob);
-
-        // Open the PDF in a new browser window
-        window.open(pdfURL);
-
-        location.reload();
+/* ================= NEW INSPECTION WIZARD (END-TO-END) ================= */
+let wizardState = {
+    cargaisonId: null,
+    currentStep: 1,
+    data: {
+        inspection_type: 'tanker',
+        produit_id: null,
+        seals: [],
+        measurements: {
+            dens: null, temp: null, innagein: '', volumein: '', tempin: '', weightin: ''
+        },
+        details: []
     },
+    choices: { produits: [], seal_states: [], units: {} }
+};
 
-    error: function () {
-        console.log('Erreur');
-        alert("An error occurred");
-        $('.btn.btn-success').attr("disabled", false);
-        location.reload();
+$(document).on('click', '.btn-inspection', function() {
+    const id = $(this).data('id');
+    initInspectionWizard(id);
+});
+
+function initInspectionWizard(id) {
+    wizardState.cargaisonId = id;
+    wizardState.currentStep = 1;
+    wizardState.data = {
+        inspection_type: 'tanker',
+        produit_id: null,
+        seals: [],
+        measurements: {
+            dens: null, temp: null, innagein: '', volumein: '', tempin: '', weightin: '', observations: ''
+        },
+        details: []
+    };
+    
+    // Reset UI
+    $('#modal-inspection').modal('show');
+    $('#insp-loading').show();
+    $('.insp-step-container, #insp-summ-header, #insp-wizard-nav, #insp-wizard-footer, #insp-success, #insp-error-area').hide();
+    $('#insp-seals-body, #insp-details-body').empty();
+    $('#insp-dens, #insp-temp, #insp-obs').val('');
+    $('input[name="insp_type"][value="tanker"]').prop('checked', true);
+    $('#shore-prod-select').hide();
+    
+    $.get(`/entrepot/inspection/init/${id}/`)
+        .done(function(res) {
+            if (res.success) {
+                wizardState.choices = res.choices;
+                wizardState.data.produit_id = res.cargaison.produit_id;
+                
+                // Set Header
+                $('#insp-summ-ref').text(res.cargaison.reference);
+                $('#insp-summ-immat').text(res.cargaison.immatriculation);
+                $('#insp-summ-prod').text(res.cargaison.produit);
+                $('#insp-summ-date').text(res.cargaison.date);
+                
+                // Pre-fill selects
+                fillSelect('#insp-produit', res.choices.produits, 'idproduit', 'nomproduit', wizardState.data.produit_id);
+                fillSelect('#insp-innagein', res.choices.units.innagein, 'id', 'text');
+                fillSelect('#insp-volumein', res.choices.units.volumein, 'id', 'text');
+                fillSelect('#insp-tempin', res.choices.units.tempin, 'id', 'text');
+                fillSelect('#insp-weightin', res.choices.units.weightin, 'id', 'text');
+                
+                $('#insp-loading').hide();
+                $('#insp-summ-header, #insp-wizard-nav, #insp-wizard-footer').show();
+                renderStep(1);
+            }
+        })
+        .fail(() => alert("{% trans 'Erreur lors de l’initialisation.' %}"));
+}
+
+function fillSelect(selector, list, valKey, textKey, selectedVal) {
+    const el = $(selector).empty().append('<option value="">---</option>');
+    list.forEach(item => {
+        const selected = item[valKey] == selectedVal ? 'selected' : '';
+        el.append(`<option value="${item[valKey]}" ${selected}>${item[textKey]}</option>`);
+    });
+}
+
+function renderStep(step) {
+    wizardState.currentStep = step;
+    $('.insp-step-container').hide();
+    $(`#insp-step-${step}`).show();
+    $('#insp-error-area').hide();
+    
+    // Update Nav
+    $('.step-item').removeClass('active completed');
+    $('.step-item').each(function() {
+        const s = parseInt($(this).data('step'));
+        if (s === step) $(this).addClass('active');
+        if (s < step) $(this).addClass('completed');
+    });
+    $('#insp-progress-bar').css('width', (step * 20) + '%');
+    
+    // Footer Buttons
+    $('#btn-insp-back').prop('disabled', step === 1);
+    if (step === 5) {
+        $('#btn-insp-next').hide();
+        $('#btn-insp-submit').show();
+        renderSummary();
+    } else {
+        $('#btn-insp-next').show();
+        $('#btn-insp-submit').hide();
+    }
+
+    if (step === 4) {
+        const isShore = $('input[name="insp_type"]:checked').val() === 'shore';
+        $('#insp-details-title').text(isShore ? "{% trans 'Réservoirs (Shore Tanks)' %}" : "{% trans 'Compartiments' %}");
+        $('#insp-add-detail-label').text(isShore ? "{% trans 'Ajouter un réservoir' %}" : "{% trans 'Ajouter un compartiment' %}");
+        renderDetailsHead(isShore);
+        renderDetailsRows();
+    }
+}
+
+// Navigation
+$('#btn-insp-next').click(function() {
+    if (validateStep(wizardState.currentStep)) {
+        saveStepData(wizardState.currentStep);
+        renderStep(wizardState.currentStep + 1);
     }
 });
 
-        })
+$('#btn-insp-back').click(function() {
+    renderStep(wizardState.currentStep - 1);
+});
 
-    {% endblock %}
+$('input[name="insp_type"]').change(function() {
+    const val = $(this).val();
+    wizardState.data.inspection_type = val;
+    $('#shore-prod-select').toggle(val === 'shore');
+});
+
+// Row Management: Seals
+$('#btn-insp-add-seal').click(function() {
+    const rowId = Date.now();
+    const states = wizardState.choices.seal_states;
+    let options = states.map(s => `<option value="${s.idsealstate}">${s.sealstate}</option>`).join('');
+    
+    $('#insp-seals-body').append(`
+        <tr data-id="${rowId}">
+            <td><input type="text" class="form-control form-control-sm seal-num"></td>
+            <td><select class="form-control form-control-sm seal-state">${options}</select></td>
+            <td class="text-center"><i class="fas fa-times-circle btn-remove-row mt-1" onclick="$(this).closest('tr').remove()"></i></td>
+        </tr>
+    `);
+});
+
+// Row Management: Details
+function renderDetailsHead(isShore) {
+    const head = $('#insp-details-head').empty();
+    if (isShore) {
+        head.append(`<tr>
+            <th>{% trans "Dénom." %}</th><th>{% trans "Innage" %}</th><th>{% trans "FW Deep" %}</th>
+            <th>{% trans "GOV" %}</th><th>{% trans "Temp" %}</th><th>{% trans "Dens.15" %}</th><th style="width:40px;"></th>
+        </tr>`);
+    } else {
+        head.append(`<tr>
+            <th>{% trans "Compart." %}</th><th>{% trans "Scellé #" %}</th><th>{% trans "État" %}</th>
+            <th>{% trans "Innage" %}</th><th>{% trans "GOV" %}</th><th>{% trans "Temp" %}</th><th style="width:40px;"></th>
+        </tr>`);
+    }
+}
+
+$('#btn-insp-add-detail').click(function() {
+    const isShore = wizardState.data.inspection_type === 'shore';
+    const rowId = Date.now();
+    const states = wizardState.choices.seal_states;
+    let options = states.map(s => `<option value="${s.idsealstate}">${s.sealstate}</option>`).join('');
+    
+    let html = `<tr data-id="${rowId}">`;
+    if (isShore) {
+        html += `
+            <td><input type="text" class="form-control form-control-sm det-denom"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-innage"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-fw"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-gov"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-temp"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-dens"></td>
+        `;
+    } else {
+        html += `
+            <td><input type="text" class="form-control form-control-sm det-name"></td>
+            <td><input type="text" class="form-control form-control-sm det-seal"></td>
+            <td><select class="form-control form-control-sm det-state">${options}</select></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-innage"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-gov"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm det-temp"></td>
+        `;
+    }
+    html += `<td class="text-center"><i class="fas fa-times-circle btn-remove-row mt-1" onclick="$(this).closest('tr').remove()"></i></td></tr>`;
+    $('#insp-details-body').append(html);
+});
+
+function renderDetailsRows() {
+    // We clear on step enter, but in a real app we might want to preserve 
+    // current rows if they were already added. For now, let's keep it simple.
+}
+
+function saveStepData(step) {
+    if (step === 1) {
+        wizardState.data.inspection_type = $('input[name="insp_type"]:checked').val();
+        wizardState.data.produit_id = $('#insp-produit').val();
+    }
+    if (step === 2) {
+        wizardState.data.seals = [];
+        $('#insp-seals-body tr').each(function() {
+            wizardState.data.seals.push({
+                number: $(this).find('.seal-num').val(),
+                state_id: $(this).find('.seal-state').val()
+            });
+        });
+    }
+    if (step === 3) {
+        wizardState.data.measurements = {
+            dens: $('#insp-dens').val(),
+            temp: $('#insp-temp').val(),
+            innagein: $('#insp-innagein').val(),
+            volumein: $('#insp-volumein').val(),
+            tempin: $('#insp-tempin').val(),
+            weightin: $('#insp-weightin').val(),
+            observations: $('#insp-obs').val()
+        };
+    }
+    if (step === 4) {
+        wizardState.data.details = [];
+        const isShore = wizardState.data.inspection_type === 'shore';
+        $('#insp-details-body tr').each(function() {
+            if (isShore) {
+                wizardState.data.details.push({
+                    denom: $(this).find('.det-denom').val(),
+                    innage: $(this).find('.det-innage').val(),
+                    fw_deep: $(this).find('.det-fw').val(),
+                    gov: $(this).find('.det-gov').val(),
+                    temp: $(this).find('.det-temp').val(),
+                    density: $(this).find('.det-dens').val()
+                });
+            } else {
+                wizardState.data.details.push({
+                    name: $(this).find('.det-name').val(),
+                    seal_number: $(this).find('.det-seal').val(),
+                    seal_state_id: $(this).find('.det-state').val(),
+                    innage: $(this).find('.det-innage').val(),
+                    gov: $(this).find('.det-gov').val(),
+                    temp: $(this).find('.det-temp').val()
+                });
+            }
+        });
+    }
+}
+
+function validateStep(step) {
+    $('#insp-error-area').hide();
+    const errors = [];
+    
+    if (step === 1) {
+        if (wizardState.data.inspection_type === 'shore' && !$('#insp-produit').val()) {
+            errors.push("{% trans 'Veuillez sélectionner un produit pour l’inspection Shore.' %}");
+        }
+    }
+    if (step === 2) {
+        if ($('#insp-seals-body tr').length === 0) {
+            errors.push("{% trans 'Veuillez ajouter au moins un scellé.' %}");
+        }
+    }
+    if (step === 3) {
+        if (!$('#insp-dens').val() || !$('#insp-temp').val()) {
+            errors.push("{% trans 'La densité et la température sont obligatoires.' %}");
+        }
+    }
+    if (step === 4) {
+        if ($('#insp-details-body tr').length === 0) {
+            errors.push("{% trans 'Veuillez ajouter au moins un détail (compartiment ou réservoir).' %}");
+        }
+    }
+
+    if (errors.length > 0) {
+        const list = $('#insp-error-list').empty();
+        errors.forEach(e => list.append(`<li>${e}</li>`));
+        $('#insp-error-area').show();
+        return false;
+    }
+    return true;
+}
+
+function renderSummary() {
+    const cont = $('#insp-summary-content').empty();
+    const d = wizardState.data;
+    const isShore = d.inspection_type === 'shore';
+    
+    let html = `
+        <div class="col-md-6">
+            <h6 class="font-weight-bold border-bottom pb-1">{% trans "Configuration" %}</h6>
+            <table class="table table-sm table-borderless">
+                <tr><td>{% trans "Type:" %}</td><td class="font-weight-bold">${d.inspection_type.toUpperCase()}</td></tr>
+                <tr><td>{% trans "Scellés:" %}</td><td class="font-weight-bold">${d.seals.length}</td></tr>
+                <tr><td>{% trans "Détails:" %}</td><td class="font-weight-bold">${d.details.length}</td></tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h6 class="font-weight-bold border-bottom pb-1">{% trans "Mesures" %}</h6>
+            <table class="table table-sm table-borderless">
+                <tr><td>{% trans "Densité:" %}</td><td class="font-weight-bold">${d.measurements.dens}</td></tr>
+                <tr><td>{% trans "Temp:" %}</td><td class="font-weight-bold">${d.measurements.temp}</td></tr>
+                <tr><td>{% trans "Obs:" %}</td><td class="font-weight-bold">${d.measurements.observations || '-'}</td></tr>
+            </table>
+        </div>
+    `;
+    cont.append(html);
+}
+
+$('#btn-insp-submit').click(function() {
+    const btn = $(this);
+    const original = btn.html();
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Traitement...');
+    $('#insp-error-area').hide();
+
+    $.ajax({
+        url: `/entrepot/inspection/submit/${wizardState.cargaisonId}/`,
+        type: 'POST',
+        data: JSON.stringify(wizardState.data),
+        contentType: 'application/json',
+        headers: { 'X-CSRFToken': csrftoken },
+        success: function(res) {
+            if (res.success) {
+                $('#insp-summ-header, #insp-wizard-nav, #insp-wizard-footer, .insp-step-container').hide();
+                $('#insp-report-link').attr('href', res.report_url);
+                
+                if (res.summary) {
+                    $('#res-sum-gov').text(res.summary.gov);
+                    $('#res-sum-gsv').text(res.summary.gsv);
+                    $('#res-sum-mta').text(res.summary.mta);
+                    $('#res-sum-frais').text(res.summary.frais);
+                    $('#insp-res-summary').show();
+                }
+                
+                $('#insp-success').show();
+            } else {
+                showFinalErrors(res.message, res.errors);
+                btn.prop('disabled', false).html(original);
+            }
+        },
+        error: function(xhr) {
+            let msg = "{% trans 'Une erreur est survenue lors de la soumission.' %}";
+            if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+            showFinalErrors(msg);
+            btn.prop('disabled', false).html(original);
+        }
+    });
+});
+
+function showFinalErrors(msg, errors) {
+    const list = $('#insp-error-list').empty();
+    list.append(`<li class="font-weight-bold">${msg}</li>`);
+    if (errors) {
+        for (let key in errors) {
+            errors[key].forEach(e => list.append(`<li>${key}: ${e}</li>`));
+        }
+    }
+    $('#insp-error-area').show();
+    $('#insp-wizard-body').scrollTop(0);
+}
+
+/* ================= OLD INSPECTION WIZARD (REPLACED) ================= */
+/* We keep the placeholder comment to ensure no breakage if old functions are called elsewhere, 
+   but they should not be triggered as we updated the .btn-inspection handler. */
+
+/* ================= SUBMIT SAMPLING FORM ================= */
+$('#sampling-form').on('submit', function (e) {
+    e.preventDefault();
+
+    const btn = $('#btn-submit-sampling');
+    const original = btn.html();
+
+    btn.prop('disabled', true)
+       .html('<i class="fas fa-spinner fa-spin mr-1"></i> Traitement...');
+
+    $.ajax({
+        url: '/entrepot/echantillonage/',
+        type: 'POST',
+        data: $(this).serialize(),
+        headers: { 'X-CSRFToken': csrftoken },
+        success: function (response) {
+            if (response.status === 'success') {
+                $('#modal-sampling').modal('hide');
+                
+                // Reset and show progress modal
+                $('#sampling-status-text').text("{% trans 'Démarrage du processus...' %}");
+                $('#sampling-progress-bar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+                $('#sampling-step-progress').show();
+                $('#sampling-result').hide();
+                $('#sampling-modal-footer').hide();
+                $('#modal-sampling-progress').modal('show');
+                
+                pollSamplingTaskStatus(response.task_id);
+            } else {
+                alert(response.message);
+                btn.prop('disabled', false).html(original);
+            }
+        },
+        error: function (xhr) {
+            let msg = '{% trans "Une erreur est survenue lors de l’enregistrement." %}';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                msg += " " + xhr.responseJSON.message;
+            }
+            alert(msg);
+            btn.prop('disabled', false).html(original);
+        }
+    });
+});
+
+function pollSamplingTaskStatus(taskId) {
+    const pollInterval = setInterval(function() {
+        $.ajax({
+            url: `/accounts/task-status/${taskId}/`,
+            type: 'GET',
+            success: function(data) {
+                if (data.task_status === 'SUCCESS') {
+                    clearInterval(pollInterval);
+                    const result = data.task_result;
+                    if (result && (result.status === 'success' || result.status === 'warning')) {
+                        showSamplingSummary(result);
+                    } else {
+                        $('#modal-sampling-progress').modal('hide');
+                        alert("{% trans 'Erreur:' %} " + (result ? result.message : "{% trans 'Inconnue' %}"));
+                    }
+                } else if (data.task_status === 'PROGRESS') {
+                    if (data.task_result) {
+                        const progress = data.task_result.progress || 0;
+                        const status = data.task_result.status || "{% trans 'En cours...' %}";
+                        $('#sampling-progress-bar').css('width', progress + '%').attr('aria-valuenow', progress).text(progress + '%');
+                        $('#sampling-status-text').text(status);
+                    }
+                } else if (data.task_status === 'FAILURE') {
+                    clearInterval(pollInterval);
+                    $('#modal-sampling-progress').modal('hide');
+                    alert("{% trans 'Le traitement a échoué.' %} " + (data.task_result || ''));
+                }
+            },
+            error: function() {
+                clearInterval(pollInterval);
+                $('#modal-sampling-progress').modal('hide');
+                alert("{% trans 'Erreur lors de la vérification du statut.' %}");
+            }
+        });
+    }, 1500);
+}
+
+function showSamplingSummary(result) {
+    $('#sampling-step-progress').hide();
+    $('#sampling-result').show();
+    $('#sampling-modal-footer').show();
+    
+    if (result.pdf_base64) {
+        $('#btn-download-report').off('click').on('click', function() {
+            try {
+                const binary = atob(result.pdf_base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Rapport_Echantillonnage_${selectedCargaisonId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+            } catch (e) {
+                console.error("PDF Download error:", e);
+                alert("{% trans 'Erreur lors de la préparation du téléchargement.' %}");
+            }
+        });
+    } else {
+        $('#btn-download-report').prop('disabled', true).text("{% trans 'Rapport non disponible' %}");
+    }
+}
+
+/* ================= APPUREMENT (KALEMIE) ================= */
+$(document).on('click', '.open-modal', function () {
+    inspectionRecordId = $(this).data('id');
+});
+
+$(document).on('submit', '#special-inspection-form', function (e) {
+    e.preventDefault();
+    const btn = $(this).find('button[type="submit"]');
+    const original = btn.html();
+
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Traitement...');
+
+    let formData = $(this).serialize();
+    formData += "&recordId=" + inspectionRecordId;
+
+    $.ajax({
+        type: "POST",
+        url: "{% url 'appurement_vol' %}",
+        data: formData,
+        headers: { 'X-CSRFToken': csrftoken },
+        success: function (response) {
+            alert('{% trans "Données enregistrées avec succès." %}');
+            $("#appurement_volume").modal("hide");
+            location.reload();
+        },
+        error: function (error) {
+            alert('{% trans "Erreur pendant la sauvegarde." %}');
+            btn.prop('disabled', false).html(original);
+        }
+    });
+});
+
+/* ================= DECHARGEMENT ================= */
+$(document).on('click', '.btn-dechargement', function () {
+    selectedCargaisonId = $(this).data('id');
+    $('#modal-dech').modal('show');
+});
+
+$(document).on('submit', '#meter-after', function (e) {
+    e.preventDefault();
+    $('#btn-submit-dech').click();
+});
+
+$('#btn-submit-dech').click(function (e) {
+    e.preventDefault();
+    const btn = $(this);
+    const originalHtml = btn.html();
+
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> {% trans "Traitement..." %}');
+
+    let formData = $("#meter-after").serialize();
+    formData += "&idcargaison=" + selectedCargaisonId;
+
+    $.ajax({
+        url: "{% url 'meterafter' %}",
+        type: "POST",
+        data: formData,
+        headers: { 'X-CSRFToken': csrftoken },
+        success: function(response) {
+            if (response.status === 'success') {
+                alert('{% trans "Déchargement enregistré avec succès." %}');
+                $("#modal-dech").modal("hide");
+                location.reload();
+            } else {
+                alert("{% trans 'Erreur :' %} " + response.message);
+            }
+            btn.prop('disabled', false).html(originalHtml);
+        },
+        error: function(error) {
+            alert("{% trans 'Une erreur est survenue lors de la communication avec le serveur.' %}");
+            btn.prop('disabled', false).html(originalHtml);
+        }
+    });
+});
 </script>
-
+{% endblock %}

@@ -1,0 +1,32 @@
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between mb-4 wizard-steps">
+        <div class="step">1. {% trans "Type" %}</div>
+        <div class="step">2. {% trans "Scellés" %}</div>
+        <div class="step active">3. {% trans "Mesures" %}</div>
+        <div class="step">4. {% trans "Détails" %}</div>
+        <div class="step">5. {% trans "Validation" %}</div>
+    </div>
+
+    <h5 class="mb-3 font-weight-bold">{% trans "Mesures d'Inspection" %}</h5>
+    
+    <form id="inspection-step-form">
+        {% csrf_token %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                {% crispy form %}
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary btn-prev-step" data-prev="seals_or_select">
+                <i class="fas fa-arrow-left mr-1"></i> {% trans "Précédent" %}
+            </button>
+            <button type="button" class="btn btn-primary btn-next-step" data-step="measurements" data-next="details">
+                {% trans "Suivant" %} <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </form>
+</div>

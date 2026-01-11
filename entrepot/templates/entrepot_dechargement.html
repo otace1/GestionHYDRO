@@ -1,27 +1,66 @@
 {% extends 'base_dechargement.html' %}
 {% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
+{% load i18n %}
 
 {% block content %}
-    <div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-<table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-        <tr>
-            <th>DATE ENTREE</th>
-            <th>FOURNISSEUR</th>
-            <th>PRODUIT</th>
-            <th>IMMATR.</th>
-            <th>NUM.DOSSIER</th>
-            <th>ACTION(s)</th>
-        </tr>
-    </thead>
-</table>
-</div>
+<div class="card shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h3 class="card-title font-weight-bold mb-0">
+      <i class="fas fa-truck-loading mr-2"></i>
+      {% trans "Cargaisons en attente de déchargement" %}
+    </h3>
+  </div>
+  
+  <div class="card-body">
+    <!-- Barre de recherche multi-critères -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="input-group shadow-sm">
+          <!-- QRCode -->
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-primary text-white border-primary">
+              <i class="fas fa-qrcode"></i>
+            </span>
+          </div>
+          <input type="text" id="qrSearch" class="form-control border-primary" 
+                 placeholder="{% trans 'Scanner le QRCode...' %}" autofocus>
+          
+          <!-- Filtre Immat/Dossier -->
+          <div class="input-group-prepend ml-md-2">
+            <span class="input-group-text bg-info text-white border-info">
+              <i class="fas fa-search"></i>
+            </span>
+          </div>
+          <input type="text" id="filterSearch" class="form-control border-info" 
+                 placeholder="{% trans 'Immatriculation, Num Dossier ou Déclaration...' %}" style="min-width: 300px;">
 
-<!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+          <div class="input-group-append">
+            <button class="btn btn-primary" id="btnSearch">
+              <i class="fas fa-filter mr-1"></i> {% trans "Filtrer" %}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="data-table-wrapper" style="position: relative;">
+      <div class="loading-spinner"></div>
+      <table id="data-table" class="table table-hover table-bordered display responsive" style="width:100%">
+        <thead>
+          <tr>
+            <th>{% trans "DATE ENTRÉE" %}</th>
+            <th>{% trans "FOURNISSEUR" %}</th>
+            <th>{% trans "PRODUIT" %}</th>
+            <th>{% trans "IMMATR." %}</th>
+            <th>{% trans "NUM. DOSSIER" %}</th>
+            <th class="text-center">{% trans "ACTIONS" %}</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+</div>
 
 <script>
     const csrfToken = '{{ csrf_token }}';
@@ -29,138 +68,126 @@
     let dataTable;
 
     $(document).ready(function () {
-            dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
+        dataTable = $('#data-table').DataTable({
+            lengthChange: true,
             processing: true,
             serverSide: true,
             responsive: true,
+            pageLength: 10,
             ajax: {
                 url: '{% url 'tableauDechargementResponse' %}',
                 type: 'GET',
-                // Show the loading spinner during DataTable processing
-                // Show the loading spinner during DataTable processing
+                data: function(d) {
+                    d.q = $('#qrSearch').val();
+                    d.f = $('#filterSearch').val();
+                },
                 beforeSend: function() {
                   $('#data-table-wrapper .loading-spinner').show();
                 },
-                // Hide the loading spinner after DataTable processing
                 complete: function() {
                   $('#data-table-wrapper .loading-spinner').hide();
                 }
-        },
+            },
             columns: [
                 { data: 'dateheurecargaison__date' },
                 { data: 'importateur__nomimportateur' },
                 { data: 'produit__nomproduit' },
                 { data: 'immatriculation' },
                 { data: 'numdos' },
-                { // New column configuration
+                { 
                     data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
-
-                        // Include a button to submit the JSON data for the row
-                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">DECHARGEMENT</button>';
-                        return  submitButton;
+                    className: 'text-center',
+                    render: function (data) {
+                        return '<button class="btn btn-sm btn-warning btn-dechargement font-weight-bold" data-id="' + data + '">' +
+                               '<i class="fas fa-truck-loading mr-1"></i> {% trans "DÉCHARGER" %}</button>';
                     }
                 }
             ],
-
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
+            }
         });
 
-
-        // Handle form submission on button click
-        $('#data-table').on('click', '.btn-warning', function () {
-            const rowId = $(this).data('row-id');
-            idcargaison = rowId;
-
-            console.log(idcargaison);
-            $('#modal-dech').modal('show');
-
-            // Show the loading icon while waiting for the response
-            $('#loading-icon').show();
+        // Search trigger
+        $('#btnSearch').click(function() {
+            dataTable.ajax.reload();
         });
-
-                // Add a click event handler for the "Submit" button
-        $('.btn.btn-primary').click(function (e) {
-          e.preventDefault()
-          //Disable Submit button
-          $('.btn.btn-primary').attr("disabled", true);
-          var APIurl = "{% url 'meterafter' %}";
-
-          // Serialize the form data into a format that can be sent via AJAX
-          var formData = $("#meter-after").serialize();
-
-          formData += "&idcargaison=" + idcargaison;
-
-          console.log(formData);
-           $.ajax({
-            url: APIurl,
-            type: "POST",
-            data: formData,
-            headers: {
-                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-            },
-            success: function(response) {
-                // Check the response status
-                if (response.status === 'success') {
-                    // Operation was successful
-                    console.log("Form submitted successfully", response);
-                    alert('Données sauvegardées');
-                    // Disable Submit button
-                    $('.btn.btn-primary').attr("disabled", false);
-                    // Close the modal if needed
-                    $("#modal-dech").modal("hide");
-                    dataTable.ajax.reload();
-                } else {
-                    // Operation encountered an error
-                    alert("Error: " + response.message);
-                    // Re-enable Submit button in case of error
-                    $('.btn.btn-primary').attr("disabled", false);
-                    // Close the modal if needed
-                    $("#modal-dech").modal("hide");
-                    dataTable.ajax.reload();
-                }
-            },
-            error: function(error) {
-                // Handle errors here, e.g., show an error message
-                alert("Erreur! La cargaison sélectionnée n'a encore fait l'objet d'aucune inspection");
-                // Re-enable Submit button in case of error
-                $('.btn.btn-primary').attr("disabled", false);
-                console.error("Error submitting form", error);
-                $("#modal-dech").modal("hide");
+        $('#qrSearch, #filterSearch').keypress(function(e) {
+            if(e.which == 13) {
                 dataTable.ajax.reload();
             }
         });
 
-      })
+        // Handle button click
+        $('#data-table').on('click', '.btn-dechargement', function () {
+            idcargaison = $(this).data('id');
+            $('#modal-dech').modal('show');
+        });
 
+        // Handle form submission
+        $('#btn-submit-dech').click(function (e) {
+            e.preventDefault();
+            const btn = $(this);
+            const originalHtml = btn.html();
+            
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> {% trans "Traitement..." %}');
+
+            let formData = $("#meter-after-form").serialize();
+            formData += "&idcargaison=" + idcargaison;
+
+            $.ajax({
+                url: "{% url 'meterafter' %}",
+                type: "POST",
+                data: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert('{% trans "Déchargement enregistré avec succès." %}');
+                        $("#modal-dech").modal("hide");
+                        dataTable.ajax.reload();
+                    } else {
+                        alert("{% trans 'Erreur :' %} " + response.message);
+                    }
+                    btn.prop('disabled', false).html(originalHtml);
+                },
+                error: function(error) {
+                    alert("{% trans 'Une erreur est survenue lors de la communication avec le serveur.' %}");
+                    btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
     });
 </script>
-
 {% endblock %}
 
-
 {% block modal %}
-    <div class="modal fade" id="modal-dech">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">DECHARGEMENT</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-                {% csrf_token %}
-                {% crispy form %}
-            </div>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
+<div class="modal fade" id="modal-dech" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-truck-loading mr-2"></i>
+          {% trans "OPÉRATION DE DÉCHARGEMENT" %}
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
       </div>
-      <!-- /.modal -->
+      <div class="modal-body">
+          <form id="meter-after-form">
+              {% csrf_token %}
+              {% crispy form %}
+          </form>
+      </div>
+      <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans "Annuler" %}</button>
+          <button type="button" id="btn-submit-dech" class="btn btn-warning font-weight-bold">
+              <i class="fas fa-check mr-1"></i> {% trans "Valider le déchargement" %}
+          </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 

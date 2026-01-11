@@ -1,0 +1,119 @@
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between mb-4 wizard-steps">
+        <div class="step">1. {% trans "Type" %}</div>
+        <div class="step">2. {% trans "Scellés" %}</div>
+        <div class="step">3. {% trans "Mesures" %}</div>
+        <div class="step active">4. {% trans "Détails" %}</div>
+        <div class="step">5. {% trans "Validation" %}</div>
+    </div>
+
+    <h5 class="mb-3 font-weight-bold">
+        {% if mode == 'shore' %}
+            {% trans "Gestion des Réservoirs (Shore Tanks)" %}
+        {% else %}
+            {% trans "Gestion des Compartiments" %}
+        {% endif %}
+    </h5>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white font-weight-bold">
+                    {% if mode == 'shore' %}
+                        {% trans "Ajouter un réservoir" %}
+                    {% else %}
+                        {% trans "Ajouter un compartiment" %}
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form id="add-detail-form">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <button type="button" id="btn-add-detail" class="btn btn-success btn-block">
+                            <i class="fas fa-plus mr-1"></i> {% trans "Ajouter" %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover border">
+                    <thead class="bg-light">
+                        {% if mode == 'shore' %}
+                        <tr>
+                            <th>{% trans "Dénomination" %}</th>
+                            <th>{% trans "Innage" %}</th>
+                            <th>{% trans "FW Deep" %}</th>
+                            <th>{% trans "GOV" %}</th>
+                            <th>{% trans "Temp" %}</th>
+                            <th class="text-center">{% trans "Action" %}</th>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <th>{% trans "Compart." %}</th>
+                            <th>{% trans "Scellé #" %}</th>
+                            <th>{% trans "Etat" %}</th>
+                            <th>{% trans "Innage" %}</th>
+                            <th>{% trans "GOV" %}</th>
+                            <th class="text-center">{% trans "Action" %}</th>
+                        </tr>
+                        {% endif %}
+                    </thead>
+                    <tbody id="details-list-body">
+                        {% if mode == 'shore' %}
+                            {% for t in details %}
+                            <tr>
+                                <td>{{ t.tankdenombefore }}</td>
+                                <td>{{ t.prodinnagebefore }}</td>
+                                <td>{{ t.fwdeepbefore }}</td>
+                                <td>{{ t.govbefore }}</td>
+                                <td>{{ t.tempbefore }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-xs btn-danger btn-delete-detail" data-id="{{ t.pk }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">{% trans "Aucun réservoir enregistré." %}</td></tr>
+                            {% endfor %}
+                        {% else %}
+                            {% for c in details %}
+                            <tr>
+                                <td>{{ c.compart }}</td>
+                                <td>{{ c.sealNumber }}</td>
+                                <td>{{ c.sealstate }}</td>
+                                <td>{{ c.innage }}</td>
+                                <td>{{ c.gov }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-xs btn-danger btn-delete-detail" data-id="{{ c.pk }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">{% trans "Aucun compartiment enregistré." %}</td></tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <form id="inspection-step-form">
+        {% csrf_token %}
+        <div class="mt-4 d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary btn-prev-step" data-prev="measurements">
+                <i class="fas fa-arrow-left mr-1"></i> {% trans "Précédent" %}
+            </button>
+            <button type="button" class="btn btn-primary btn-next-step" data-step="details" data-next="finalize">
+                {% trans "Suivant" %} <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </form>
+</div>

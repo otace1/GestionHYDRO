@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 {% load bootstrap4 %}
 {% bootstrap_css %}
 {% bootstrap_javascript jquery='full' %}
@@ -98,6 +99,54 @@
 
         table.dataTable {
             width: 100% !important;
+        }
+
+        /* Unified Pagination Style */
+        .pagination, .dataTables_paginate {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            padding-bottom: 10px;
+        }
+
+        .pagination .page-item .page-link, 
+        .dataTables_paginate .paginate_button .page-link,
+        .dataTables_paginate .paginate_button:not(.page-item) {
+            border-radius: 50px !important;
+            margin: 0 4px;
+            padding: 6px 16px;
+            font-weight: 600;
+            color: #007bff;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .pagination .page-item.active .page-link,
+        .dataTables_paginate .paginate_button.active .page-link,
+        .dataTables_paginate .paginate_button.current {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+            color: #fff !important;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.25);
+        }
+
+        .pagination .page-item.disabled .page-link,
+        .dataTables_paginate .paginate_button.disabled .page-link,
+        .dataTables_paginate .paginate_button.disabled {
+            color: #6c757d !important;
+            background-color: #f8f9fa !important;
+            border-color: #dee2e6 !important;
+            cursor: not-allowed !important;
+        }
+
+        .pagination .page-item .page-link:hover:not(.disabled),
+        .dataTables_paginate .paginate_button:hover:not(.disabled):not(.active):not(.current) {
+            background-color: #e9ecef;
+            color: #0056b3;
+            text-decoration: none;
         }
     </style>
 
@@ -360,6 +409,36 @@
 
     <aside class="control-sidebar control-sidebar-dark"></aside>
 
+    {% if user.is_authenticated %}
+    <!-- Session Expiring Modal -->
+    <div class="modal fade" id="session-timeout-modal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 9999;">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-warning text-dark border-0">
+                    <h5 class="modal-title font-weight-bold">
+                        <i class="fas fa-shield-alt mr-2"></i> {% trans "Session Expiring Soon" %}
+                    </h5>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <p class="mb-3">{% trans "For security reasons, your session will expire in" %}</p>
+                    <div id="session-timeout-countdown" class="badge badge-danger p-3 h3 mb-3" style="font-size: 2rem;">60</div>
+                    <p class="mb-0">{% trans "seconds due to inactivity." %}</p>
+                    <hr>
+                    <p class="text-muted small mb-0">{% trans "Any unsaved changes might be lost. Would you like to stay logged in?" %}</p>
+                </div>
+                <div class="modal-footer border-0 bg-light justify-content-center">
+                    <button type="button" class="btn btn-outline-danger px-4 mx-2" id="session-timeout-logout">
+                        <i class="fas fa-sign-out-alt mr-1"></i> {% trans "Logout" %}
+                    </button>
+                    <button type="button" class="btn btn-primary px-4 mx-2 font-weight-bold" id="session-timeout-continue">
+                        <i class="fas fa-sync-alt mr-1"></i> {% trans "Continue Session" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 
 {# ✅ JS ORDER (Bootstrap 4 stack) #}
@@ -399,6 +478,119 @@
 {% endif %}
 
 {% block extra_js %}{% endblock %}
+
+{# Session timeout logic #}
+{% if user.is_authenticated %}
+<script>
+    (function($) {
+        var sessionTimeout = 300; // Total duration in seconds (matches settings.py)
+        var warningTimeout = 60; // Countdown duration in seconds
+        var lastActivityKey = 'trackflow_last_activity_ts';
+        var checkInterval = 2000; // How often to check for inactivity
+        
+        function setLastActivity() {
+            localStorage.setItem(lastActivityKey, Date.now());
+        }
+        
+        function getLastActivity() {
+            return parseInt(localStorage.getItem(lastActivityKey) || Date.now());
+        }
+
+        var modalShown = false;
+        var countdownInterval;
+        var warningThreshold = (sessionTimeout - warningTimeout) * 1000;
+
+        function showModal() {
+            if (modalShown) return;
+            modalShown = true;
+            $('#session-timeout-modal').modal('show');
+            startCountdown();
+        }
+
+        function hideModal() {
+            if (!modalShown) return;
+            modalShown = false;
+            $('#session-timeout-modal').modal('hide');
+            clearInterval(countdownInterval);
+        }
+
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(function() {
+                var now = Date.now();
+                var inactiveTime = now - getLastActivity();
+                
+                // If another tab reset the timer, hide modal
+                if (inactiveTime < warningThreshold) {
+                    hideModal();
+                    return;
+                }
+
+                var timeLeft = Math.max(0, sessionTimeout - Math.floor(inactiveTime / 1000));
+                $('#session-timeout-countdown').text(timeLeft);
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    window.location.href = "{% url 'logout' %}?next={{ request.path }}";
+                }
+            }, 1000);
+        }
+
+        function keepAlive() {
+            $.ajax({
+                url: "{% url 'session_keep_alive' %}",
+                type: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                success: function() {
+                    setLastActivity();
+                    hideModal();
+                },
+                error: function() {
+                    window.location.href = "{% url 'login' %}";
+                }
+            });
+        }
+
+        // Reset inactivity on user interaction
+        $(document).on('mousemove keydown click scroll mousedown', function() {
+            if (!modalShown) {
+                setLastActivity();
+            }
+        });
+
+        // Initialize activity if missing
+        if (!localStorage.getItem(lastActivityKey)) {
+            setLastActivity();
+        }
+
+        // Monitor inactivity
+        setInterval(function() {
+            if (!modalShown) {
+                var inactiveTime = Date.now() - getLastActivity();
+                if (inactiveTime >= warningThreshold) {
+                    showModal();
+                }
+            }
+        }, checkInterval);
+
+        // Sync across tabs via localStorage events
+        window.addEventListener('storage', function(e) {
+            if (e.key === lastActivityKey && modalShown) {
+                var inactiveTime = Date.now() - parseInt(e.newValue);
+                if (inactiveTime < warningThreshold) {
+                    hideModal();
+                }
+            }
+        });
+
+        $('#session-timeout-continue').on('click', keepAlive);
+        $('#session-timeout-logout').on('click', function() {
+            window.location.href = "{% url 'logout' %}";
+        });
+
+    })(jQuery);
+</script>
+{% endif %}
 
 {# Keep your page specific JS hook #}
 <script>

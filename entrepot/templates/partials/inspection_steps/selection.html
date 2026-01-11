@@ -1,0 +1,71 @@
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+<div class="p-4">
+    <!-- Header Summary -->
+    <div class="card bg-light border-0 mb-4 shadow-sm">
+        <div class="card-body p-3">
+            <h6 class="text-primary font-weight-bold mb-3">
+                <i class="fas fa-info-circle mr-2"></i>{% trans "Résumé de la Cargaison" %}
+            </h6>
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <span class="text-muted small d-block">{% trans "N° Enregistrement" %}</span>
+                    <span class="font-weight-bold text-dark">#{{ c.idcargaison }}</span>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <span class="text-muted small d-block">{% trans "Produit" %}</span>
+                    <span class="badge badge-info">{{ c.produit.nomproduit }}</span>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <span class="text-muted small d-block">{% trans "Fournisseur" %}</span>
+                    <span class="font-weight-bold text-dark">{{ c.importateur.nomimportateur }}</span>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <span class="text-muted small d-block">{% trans "Immatriculation" %}</span>
+                    <span class="font-weight-bold text-dark">{{ c.immatriculation }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step Progress -->
+    <div class="d-flex justify-content-between mb-4 wizard-steps">
+        <div class="step active">1. {% trans "Type" %}</div>
+        <div class="step">2. {% trans "Scellés" %}</div>
+        <div class="step">3. {% trans "Mesures" %}</div>
+        <div class="step">4. {% trans "Détails" %}</div>
+        <div class="step">5. {% trans "Validation" %}</div>
+    </div>
+
+    <form id="inspection-step-form">
+        {% csrf_token %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle mr-2"></i>
+            {% trans "Sélectionnez les éléments à inspecter pour cette cargaison." %}
+        </div>
+        
+        {% crispy form %}
+        
+        <div class="mt-4 text-right">
+            <button type="button" class="btn btn-primary btn-next-step" data-step="select_type" data-next="seals_or_measurements">
+                {% trans "Suivant" %} <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+.wizard-steps .step {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-bottom: 3px solid #dee2e6;
+    color: #6c757d;
+    font-weight: bold;
+}
+.wizard-steps .step.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+}
+</style>

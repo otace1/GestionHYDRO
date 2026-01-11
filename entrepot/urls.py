@@ -17,6 +17,7 @@ urlpatterns = [
     path('c2/', views.GestionEchantillonage.c2, name='c2'),
 
     path('echantillonage/', views.echantillonage, name='echantillonage'),  # Echantillonnage nouveau formulaire
+    path('sampling-form/<int:pk>/', views.get_sampling_form, name='get_sampling_form'),
     # path('decharger/<int:pk>', views.dechargement, name='decharger'),  # Echantillonnage nouveau formulaire
 
     # Rapport d'echantillonage
@@ -78,6 +79,14 @@ urlpatterns = [
 
     #Inspection
     path('inspection/<int:pk>', views.inspection, name='inspection'),
+    path('inspection-wizard/<int:pk>/<str:step>/', views.get_inspection_wizard, name='get_inspection_wizard'),
+    path('inspection-wizard/<int:pk>/add-seal/', views.add_inspection_seal, name='add_inspection_seal'),
+    path('inspection-wizard/delete-seal/<int:seal_pk>/', views.delete_inspection_seal, name='delete_inspection_seal'),
+    path('inspection-wizard/<int:pk>/add-detail/', views.add_inspection_detail, name='add_inspection_detail'),
+    path('inspection-wizard/delete-detail/<int:detail_pk>/', views.delete_inspection_detail, name='delete_inspection_detail'),
+    path('inspection-wizard/<int:pk>/finalize/', views.finalize_inspection_wizard, name='finalize_inspection_wizard'),
+    path('inspection/init/<int:pk>/', views.inspection_init, name='inspection_init'),
+    path('inspection/submit/<int:pk>/', views.inspection_submit, name='inspection_submit'),
     path('affichageInspection/', views.affichageInspection, name='affichageInspection'), #En Attente d'inspection
     path('marquageInspectionWeb/', views.marquageInspectionWeb, name='marquageInspectionWeb'), #Marquer comme Inspecter
 

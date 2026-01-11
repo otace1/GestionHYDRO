@@ -1042,4 +1042,14 @@ def get_task_status(request, task_id):
     return JsonResponse(result, status=200)
 
 
+@login_required(login_url='login')
+@require_POST
+def session_keep_alive(request):
+    """
+    Refreshes the session to prevent expiration.
+    SESSION_SAVE_EVERY_REQUEST = True ensures the session cookie is updated.
+    """
+    return JsonResponse({'status': 'ok'})
+
+
 

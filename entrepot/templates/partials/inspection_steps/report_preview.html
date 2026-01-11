@@ -1,0 +1,34 @@
+{% load i18n %}
+
+<div class="p-4 text-center">
+    <div class="display-4 text-success mb-3">
+        <i class="fas fa-check-circle"></i>
+    </div>
+    <h4 class="font-weight-bold">{% trans "Inspection validée avec succès !" %}</h4>
+    <p class="text-muted mb-4">
+        {% trans "Le rapport d'inspection a été généré. Vous pouvez le consulter ou le télécharger ci-dessous." %}
+    </p>
+
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-8">
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="{{ report_url }}" target="_blank" class="btn btn-primary btn-lg px-4 font-weight-bold">
+                    <i class="fas fa-external-link-alt mr-2"></i> {% trans "Ouvrir le rapport" %}
+                </a>
+                <button type="button" class="btn btn-outline-secondary btn-lg px-4" data-dismiss="modal" onclick="location.reload();">
+                    <i class="fas fa-times mr-2"></i> {% trans "Fermer" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional: Iframe preview if supported by browser -->
+    <div class="card border shadow-sm">
+        <div class="card-header bg-light py-2 small font-weight-bold text-left">
+            <i class="fas fa-file-pdf mr-1"></i> {% trans "Aperçu du rapport" %}
+        </div>
+        <div class="card-body p-0">
+            <iframe src="{{ report_url }}" width="100%" height="500px" style="border: none;"></iframe>
+        </div>
+    </div>
+</div>

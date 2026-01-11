@@ -2,9 +2,48 @@
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
+{% load i18n %}
 
 
 {% block content %}
+    <!-- Barre de recherche multi-critères -->
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <form method="get" action="" class="form-inline">
+          <div class="input-group shadow-sm w-100">
+            <div class="input-group-prepend">
+              <span class="input-group-text bg-primary text-white border-primary">
+                <i class="fas fa-qrcode"></i>
+              </span>
+            </div>
+            <input type="text" name="q" class="form-control border-primary" 
+                   placeholder="{% trans 'Scanner le QRCode...' %}" 
+                   value="{{ request.GET.q|default:'' }}" autofocus>
+            
+            <div class="input-group-prepend ml-md-2">
+              <span class="input-group-text bg-info text-white border-info">
+                <i class="fas fa-search"></i>
+              </span>
+            </div>
+            <input type="text" name="f" class="form-control border-info" 
+                   placeholder="{% trans 'Immatriculation, Num Dossier ou Déclaration...' %}" 
+                   value="{{ request.GET.f|default:'' }}" style="min-width: 300px;">
+
+            <div class="input-group-append">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter mr-1"></i> {% trans "Filtrer" %}
+              </button>
+              {% if request.GET.q or request.GET.f %}
+                <a href="{{ request.path }}" class="btn btn-outline-secondary">
+                  <i class="fas fa-times"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div class="modal fade" id="appurement_volume" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg"> <!-- Added modal-md class here -->
         <div class="modal-content">

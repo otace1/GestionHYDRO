@@ -5,68 +5,85 @@ from enreg.models import Cargaison, Dechargement
 
 
 TEMPLATE6 = """
-            <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-dech">
-                  DECHARGEMENT
-                </button>
-           """
+    <button type="button" class="btn btn-sm btn-info btn-dechargement" data-id="{{ record.pk }}">
+          <i class="fas fa-truck-loading mr-1"></i> DECHARGEMENT
+    </button>
+"""
 
 TEMPLATE = """  
-                <button type="button" onclick="getRowId(this)" class="btn btn-default" id="sample" data-toggle="modal" data-target="#modal-lg">
-                  ECHANTILLONNAGE
-                </button>
-           """
+    <button type="button" class="btn btn-sm btn-primary btn-echantillonner" data-id="{{ record.pk }}">
+        <i class="fas fa-vial mr-1"></i> ÉCHANTILLONNER
+    </button>
+"""
 
 TEMPLATE1 = """
-            {% if record.status == "Pending" %}
-                <a href="{% url 'choiceoftype' record.pk %}" class="btn btn-primary">INSPECTION</a>
-            {% elif record.status == "Appurement" %}
-                <button 
-                    class="btn btn-warning open-modal" 
-                    data-id="{{ record.pk }}" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#appurement_volume">
-                    APPUREMENT
-                </button>
-            {% else %}
-                <span>No Actions Available</span>
-            {% endif %}
-            """
+    {% if record.status == "Pending" %}
+        <button type="button" class="btn btn-sm btn-primary btn-inspection" data-id="{{ record.pk }}">
+            <i class="fas fa-search mr-1"></i> INSPECTION
+        </button>
+    {% elif record.status == "Appurement" %}
+        <button class="btn btn-sm btn-warning open-modal" data-id="{{ record.pk }}" data-toggle="modal" data-target="#appurement_volume">
+            <i class="fas fa-balance-scale mr-1"></i> APPUREMENT
+        </button>
+    {% else %}
+        <span class="badge badge-secondary">Aucune action</span>
+    {% endif %}
+"""
 
 #
 # <a href="{% url 'appurement_vol' record.pk %}" class="btn btn-warning">APPUREMENT</a>
 
 TEMPLATE4 = """
-            <a href="{%url 'choiceoftype' record.pk%}" class="btn btn-primary">INSPECTION AFTER</a>
-           """
+    <a href="{% url 'choiceoftype' record.pk %}" class="btn btn-sm btn-primary">
+        <i class="fas fa-search-plus mr-1"></i> INSPECTION AFTER
+    </a>
+"""
 
 TEMPLATE2 = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RAPPORT D'INSPECTION</a>
-    <a href="{%url 'printcert' record.pk%}" class="btn btn-primary">CERTIFICAT DE QUALITE</a>
-            """
+    <div class="btn-group">
+        <a href="{% url 'rapport' record.pk %}" class="btn btn-sm btn-outline-danger" title="Rapport d'inspection">
+            <i class="fas fa-file-pdf mr-1"></i> RI
+        </a>
+        <a href="{% url 'printcert' record.pk %}" class="btn btn-sm btn-outline-primary" title="Certificat de Qualité">
+            <i class="fas fa-certificate mr-1"></i> CQ
+        </a>
+    </div>
+"""
 
 TEMPLATE3 = """
-    <a href="{%url 'rapportechantillonage' record.pk%}" class="btn btn-danger">RAPPORT D'ECHANTILLONNAGE</a>
-            """
+    <a href="{% url 'rapportechantillonage' record.pk %}" class="btn btn-sm btn-outline-danger">
+        <i class="fas fa-vial mr-1"></i> RAPPORT ECH.
+    </a>
+"""
 #
 TEMPLATE5 = """
-    <a href="{%url 'impressionRe' record.pk%}" class="btn btn-danger">RE</a>
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
-            """
+    <div class="btn-group">
+        <a href="{% url 'impressionRe' record.pk %}" class="btn btn-sm btn-outline-danger" title="RE">
+            <i class="fas fa-file-alt mr-1"></i> RE
+        </a>
+        <a href="{% url 'rapport' record.pk %}" class="btn btn-sm btn-outline-danger" title="RI">
+            <i class="fas fa-file-pdf mr-1"></i> RI
+        </a>
+    </div>
+"""
 
 A = """
-    <a href="{%url 'correctionConformiteProduit' record.pk%}" class="btn btn-danger">CORRECTION</a>
-            """
-
+    <a href="{% url 'correctionConformiteProduit' record.pk %}" class="btn btn-sm btn-danger">
+        <i class="fas fa-tools mr-1"></i> CORRECTION
+    </a>
+"""
 
 NONCONFORME = """
-    <a href="{%url 'consignatedOk' record.pk%}" class="btn btn-success">CONSIGNATION</a>
-            """
-
-
+    <a href="{% url 'consignatedOk' record.pk %}" class="btn btn-sm btn-success">
+        <i class="fas fa-lock mr-1"></i> CONSIGNATION
+    </a>
+"""
 
 NONCONFORME1 = """
-    <a href="{%url 'refouleOk' record.pk%}" class="btn btn-success">REFOULEMENT</a>
-            """
+    <a href="{% url 'refouleOk' record.pk %}" class="btn btn-sm btn-danger">
+        <i class="fas fa-ban mr-1"></i> REFOULEMENT
+    </a>
+"""
 
 
 
@@ -358,4 +375,22 @@ class NonConformeLaboratoire(tables.Table):
             "id": "example1"
         }
         # template_name = "django_tables2/bootstrap4.html"
+
+
+class CargaisonInspecteeTable(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    numreq = tables.Column(verbose_name='REF.REQ.')
+    numdos = tables.Column(verbose_name='NUM.DOSSIER')
+    idcargaison = tables.Column(verbose_name='N.ENR.')
+    declaration = tables.Column(verbose_name='N.DECL.')
+    actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+        }
+        template_name = "django_tables2/bootstrap4.html"
 

@@ -24,10 +24,15 @@ types = [
 ]
 
 methodes = [
-    ('', ''),
-    ('running sampling', 'RUNNING SAMPLING'),
-    ('all level sampling', 'ALL LEVEL SAMPLING'),
-    ('other', 'OTHER'),
+    ('', '--- Choisir une méthode ---'),
+    ('Running Sampling (Prélèvement continu)', 'Running Sampling (Prélèvement continu)'),
+    ('All-level Sampling (Prélèvement à tous les niveaux)', 'All-level Sampling (Prélèvement à tous les niveaux)'),
+    ('Upper-Middle-Lower Sampling (Prélèvement Supérieur-Moyen-Inférieur)', 'Upper-Middle-Lower Sampling (Prélèvement Supérieur-Moyen-Inférieur)'),
+    ('Spot Sampling (Prélèvement ponctuel)', 'Spot Sampling (Prélèvement ponctuel)'),
+    ('Bottom Sampling (Prélèvement en fond de réservoir)', 'Bottom Sampling (Prélèvement en fond de réservoir)'),
+    ('Tap Sampling (Prélèvement au robinet)', 'Tap Sampling (Prélèvement au robinet)'),
+    ('Core Sampling (Prélèvement à la sonde)', 'Core Sampling (Prélèvement à la sonde)'),
+    ('Other (Autre)', 'Other (Autre)'),
 ]
 
 unites_mesure_innagein = [
@@ -74,61 +79,75 @@ class NatureProduit(forms.Form):
         )
 
 
+conformite_sampling = [
+    ('', '--- Choisir un aspect ---'),
+    ('CONFORME (Bon aspect)', 'CONFORME (Bon aspect)'),
+    ('NON CONFORME (Présence d\'impuretés/eau)', 'NON CONFORME (Présence d\'impuretés/eau)'),
+]
+
+
 class Echantilloner(forms.Form):
-    matricule = forms.CharField(label="MATRICULE ECHANTILLONEUR")
-    methodeutilisee = forms.CharField(widget=forms.Select(choices=methodes), label="METHODE UTILISEE", required=True)
-    qte = forms.FloatField(label="QUANTITE PRELEVEE", required=True)
+    matricule = forms.CharField(
+        label="MATRICULE DE L'ÉCHANTILLONNEUR",
+        widget=forms.TextInput(attrs={'placeholder': 'Entrez le matricule'})
+    )
+    methodeutilisee = forms.ChoiceField(
+        choices=methodes,
+        label="MÉTHODE UTILISÉE",
+        required=True
+    )
+    qte = forms.FloatField(
+        label="QUANTITÉ PRÉLEVÉE (L)",
+        required=True,
+        widget=forms.NumberInput(attrs={'placeholder': 'Ex: 1.5', 'step': '0.1'})
+    )
+    conformite = forms.ChoiceField(
+        choices=conformite_sampling,
+        label="ASPECT ORGANOLEPTIQUE",
+        required=True
+    )
 
     def __init__(self, *args, **kwargs):
         super(Echantilloner, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.helper.form_class = 'form-horizontal'
-        self.helper.form_id = 'sampling-form'
-        # self.helper.form_action = 'echantillonage'
-        self.helper.label_class = 'col-md-12'
-        self.helper.field_class = 'col-md-12'
+        self.helper.form_tag = False
         self.helper.layout = Layout(
             Row(
-                Column('matricule', css_class='form-group col-md-4 mb-0'),
-                Column('methodeutilisee', css_class='form-group col-md-4 mb-0'),
-                Column('qte', css_class='form-group col-md-4 mb-0'),
+                Column('matricule', css_class='form-group col-md-12 mb-3'),
             ),
-            FormActions(
-                Submit('VALIDER', 'VALIDER', css_class='btn btn-success'),
-                Reset('CLEAR', 'CLEAR', css_class='btn btn-danger'),
+            Row(
+                Column('methodeutilisee', css_class='form-group col-md-8 mb-3'),
+                Column('qte', css_class='form-group col-md-4 mb-3'),
+            ),
+            Row(
+                Column('conformite', css_class='form-group col-md-12 mb-3'),
             ),
         )
 
 class Decharger(forms.Form):
-    densite = forms.FloatField(label="Densité:", required=True)
-    types = forms.CharField(widget=forms.Select(choices=types), label="Types :", required=True)
-    indexinit = forms.FloatField(label="Index Compteur Initial (si applicable):", required=False)
-    indexfin = forms.FloatField(label="Index Compteur Fin (si applicable):", required=False)
-    temperature = forms.FloatField(label="Température °C:", required=True, min_value=1)
-    gov = forms.FloatField(label="GOV jaugé en Mètre cube:", required=False, min_value=1)
+    densite = forms.FloatField(label="Densité", required=True)
+    types = forms.CharField(widget=forms.Select(choices=types), label="Type de mesure", required=True)
+    indexinit = forms.FloatField(label="Index Initial", required=False)
+    indexfin = forms.FloatField(label="Index Final", required=False)
+    temperature = forms.FloatField(label="Température (°C)", required=True, min_value=1)
+    gov = forms.FloatField(label="GOV (m³)", required=False, min_value=0)
 
     def __init__(self, *args, **kwargs):
         super(Decharger, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
+        self.helper.form_tag = False
         self.helper.layout = Layout(
-            Row("",
-                Column('types', css_class='form-group col-md-4 mb-0'),
-                css_class='form-row'
-                ),
             Row(
-                Column('indexinit', css_class='form-group col-md-6 mb-0'),
-                Column('indexfin', css_class='form-group col-md-6 mb-0'),
-                css_class='form-row'
+                Column('types', css_class='form-group col-md-12 mb-3'),
             ),
-            Field('gov', placeholder=""),
             Row(
-                Column('densite', css_class='form-group col-md-6 mb-0'),
-                Column('temperature', css_class='form-group col-md-6 mb-0'),
-                css_class='form-row'
+                Column('indexinit', css_class='form-group col-md-6 mb-3'),
+                Column('indexfin', css_class='form-group col-md-6 mb-3'),
             ),
-            FormActions(
-                Submit('valider', 'valider', css_class='btn btn-primary'),
-                Reset('annuler', 'annuler', css_class='btn btn-danger'),
+            Row(
+                Column('densite', css_class='form-group col-md-4 mb-3'),
+                Column('temperature', css_class='form-group col-md-4 mb-3'),
+                Column('gov', css_class='form-group col-md-4 mb-3'),
             ),
         )
 

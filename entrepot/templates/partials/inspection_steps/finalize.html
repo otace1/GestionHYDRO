@@ -1,0 +1,44 @@
+{% load i18n %}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between mb-4 wizard-steps">
+        <div class="step">1. {% trans "Type" %}</div>
+        <div class="step">2. {% trans "Scellés" %}</div>
+        <div class="step">3. {% trans "Mesures" %}</div>
+        <div class="step">4. {% trans "Détails" %}</div>
+        <div class="step active">5. {% trans "Validation" %}</div>
+    </div>
+
+    <div class="text-center py-4">
+        <div class="display-4 text-primary mb-3">
+            <i class="fas fa-file-signature"></i>
+        </div>
+        <h4 class="font-weight-bold">{% trans "Prêt à valider l'inspection ?" %}</h4>
+        <p class="text-muted">
+            {% trans "Toutes les données nécessaires ont été saisies. Vous pouvez maintenant finaliser l'inspection et générer le rapport." %}
+        </p>
+    </div>
+
+    <div class="card border-0 bg-light mb-4">
+        <div class="card-body">
+            <h6 class="font-weight-bold">{% trans "Résumé des données saisies" %} :</h6>
+            <ul class="list-unstyled mb-0">
+                <li><i class="fas fa-check text-success mr-2"></i> {% trans "Type d'inspection" %} : <strong>{{ inspection_type }}</strong></li>
+                <li><i class="fas fa-check text-success mr-2"></i> {% trans "Nombre de scellés" %} : <strong>{{ seals_count }}</strong></li>
+                <li><i class="fas fa-check text-success mr-2"></i> {% trans "Nombre de compartiments/réservoirs" %} : <strong>{{ details_count }}</strong></li>
+                {% if inspection.dens %}
+                <li><i class="fas fa-check text-success mr-2"></i> {% trans "Densité" %} : <strong>{{ inspection.dens }}</strong></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-between">
+        <button type="button" class="btn btn-outline-secondary btn-prev-step" data-prev="details">
+            <i class="fas fa-arrow-left mr-1"></i> {% trans "Précédent" %}
+        </button>
+        <button type="button" class="btn btn-success btn-lg px-5 font-weight-bold shadow-sm" id="btn-finalize-inspection">
+            <i class="fas fa-check-circle mr-1"></i> {% trans "Valider et Terminer" %}
+        </button>
+    </div>
+</div>

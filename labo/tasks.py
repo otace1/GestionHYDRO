@@ -11,7 +11,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db.models.functions import ExtractMonth, ExtractYear
 from openpyxl import Workbook
-from pypdf import PdfWriter
+from pypdf import PdfWriter, PdfReader
 
 from enreg.models import (
     Cargaison, ResultatAnalyse, ImpressionResultat, Produit,
@@ -39,21 +39,19 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
     for pk in selected_ids:
         try:
             # Re-fetch objects to ensure fresh data in worker
+            cargaison = Cargaison.objects.select_related('produit').get(idcargaison=pk)
+            produit = cargaison.produit.nomproduit
+
             impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
             
-            d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
-                mois=ExtractMonth('datereceptionlabo'),
-                annee=ExtractYear('datereceptionlabo')
-            ).values('idcargaison_id', 'mois', 'annee')
+            reception_qs = LaboReception.objects.filter(idcargaison_id=pk).annotate(
+                mois_extracted=ExtractMonth('datereceptionlabo'),
+                annee_extracted=ExtractYear('datereceptionlabo')
+            ).first()
 
-            for entry in d:
-                mois = entry['mois']
-                annee = entry['annee']
+            mois = reception_qs.mois_extracted if reception_qs else None
+            annee = reception_qs.annee_extracted if reception_qs else None
 
-            p = Produit.objects.get(cargaison=pk)
-            produit = p.nomproduit
-
-            cargaison = Cargaison.objects.get(idcargaison=pk)
             echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
             laboratoire = LaboReception.objects.get(idcargaison=pk)
 
@@ -262,7 +260,7 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
             if template:
                 pdf_content = render_to_pdf_content(template, context)
                 if pdf_content:
-                    writer.add_page(writer.read(io.BytesIO(pdf_content)).pages[0])
+                    writer.append(io.BytesIO(pdf_content))
             
             processed_count += 1
             percent = round((processed_count / total) * 100, 2)

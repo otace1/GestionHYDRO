@@ -31,7 +31,7 @@ from .codeLabo import generate_labo_code
 from .forms import *
 from .numCq import numCq
 from .tables import *
-from .tasks import export_reception_rapports_to_xlsx
+from .tasks import export_reception_rapports_to_xlsx, generate_certificates_pdf_task
 import os
 
 
@@ -150,6 +150,7 @@ def affichageenchantillonResponse(request):
     num_re = _s("num_re")
     immat = _s("immatriculation")
     qrcode = _s("qrcode")
+    f = _s("f")
 
     entrepot_id_param = _s("entrepot_id")
     try:
@@ -167,6 +168,8 @@ def affichageenchantillonResponse(request):
         qs = qs.filter(immatriculation__iexact=immat)
     if qrcode:
         qs = qs.filter(qrcode__iexact=qrcode)
+    if f:
+        qs = qs.filter(Q(immatriculation=f) | Q(numdos=f) | Q(declaration=f))
     if entrepot_id_selected > 0:
         qs = qs.filter(entrepot_id=entrepot_id_selected)
 
@@ -229,15 +232,15 @@ def affichageenchantillonResponse(request):
     # - DataTables: start/length
     # - Page style: page/page_size
     start = max(_i("start", 0), 0)
-    length = _i("length", 15)
+    length = _i("length", 10)
 
     if "page" in params or "page_size" in params:
         page = max(_i("page", 1), 1)
-        length = _i("page_size", 15)
+        length = _i("page_size", 10)
         start = (page - 1) * length
 
     if length <= 0:
-        length = 15
+        length = 10
     length = min(length, 200)  # hard cap for safety
 
     # ---------------------------
@@ -6557,58 +6560,64 @@ def bulkRefaire2(request):
 
 # Fonction pour impression Certificat
 @login_required(login_url='login')
+@require_POST
 def impressionCertificatBulk(request):
     user = request.user
-    id = user.id
-    name = user.last_name + ' ' + user.first_name
-    poste = user.poste
-    ville = AffectationVille.objects.get(username_id=id)
-    ville = ville.ville_id
-    province = Ville.objects.get(idville=ville)
-    province = province.province
-    province = province.upper()
     role = user.role_id
 
-    selectedRows = request.POST.getlist('selectedRowIds[]')
+    # Check authorized roles (Admin or Labo)
+    if role not in (1, 5):
+        return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
-    # Recuperation des donnees liees aux signataires
-    affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
-    affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
-    signDroite = MyUser.objects.get(username=affect1.userId)
-    signGauche = MyUser.objects.get(username=affect2.userId)
+    selected_ids = request.POST.getlist('selectedRowIds[]')
+    if not selected_ids:
+        return JsonResponse({'status': 'failure', 'message': 'No certificates selected'}, status=400)
 
-    signGauche_data = {
-        'first_name': signGauche.first_name,
-        'last_name': signGauche.last_name,
-        # Add any other required fields
-    }
+    try:
+        # Get user's assigned ville and province
+        try:
+            aff_ville = AffectationVille.objects.get(username_id=user.id)
+            ville_id = aff_ville.ville_id
+            ville_obj = Ville.objects.get(idville=ville_id)
+            province = (ville_obj.province or "").upper()
+        except (AffectationVille.DoesNotExist, Ville.DoesNotExist):
+            return JsonResponse({'status': 'failure', 'message': 'User not assigned to a city or city not found.'}, status=400)
 
-    signDroite_data = {
-        'first_name': signDroite.first_name,
-        'last_name': signDroite.last_name,
-        # Add any other required fields
-    }
+        # Get signers and lab data
+        try:
+            affect1 = AffectationLaboratoire.objects.get(ville_id=ville_id, signGauche=False)
+            affect2 = AffectationLaboratoire.objects.get(ville_id=ville_id, signGauche=True)
+            
+            signDroite = affect1.userId
+            signGauche = affect2.userId
+            
+            lab_data = affect1.idLaboratoire
+            lab_name = lab_data.denominationLaboratoire
+        except AffectationLaboratoire.DoesNotExist:
+            return JsonResponse({'status': 'failure', 'message': 'Laboratory signatories not configured for this city.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'failure', 'message': f'Config error: {str(e)}'}, status=400)
 
-    # Recuperation du Laboratoire asssocie a la ville
-    laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+        sign_gauche_payload = {
+            'first_name': signGauche.first_name,
+            'last_name': signGauche.last_name,
+        }
+        sign_droite_payload = {
+            'first_name': signDroite.first_name,
+            'last_name': signDroite.last_name,
+        }
 
-    laboratoireName = laboratoireData.denominationLaboratoire
-    #
-    #     {
-    #     'laboratoireName': laboratoireData.denominationLaboratoire,
-    #     'laboratoireType': laboratoireData.typeLaboratoire,
-    # }
-    #
-    # print("Print BULK")
-    # print(laboratoireData['laboratoireName'])
-    # print(laboratoireData['laboratoireType'])
+        # Start Celery task to export report asynchronously
+        # We use the imported task and .delay() for robustness
+        result = generate_certificates_pdf_task.delay(
+            selected_ids, 
+            province, 
+            sign_gauche_payload, 
+            sign_droite_payload, 
+            lab_name
+        )
 
-    # Start Celery task to export report asynchronously
-    result = app.send_task('labo.tasks.generate_bulk_pdf',
-                           args=[selectedRows, province, signGauche_data, signDroite_data, laboratoireName])
+        return JsonResponse({'task_id': result.id})
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    except Exception as e:
+        return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)

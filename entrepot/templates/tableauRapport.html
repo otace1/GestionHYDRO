@@ -5,6 +5,35 @@
 
 {% block content %}
 
+<!-- Barre de recherche multi-critères -->
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="input-group shadow-sm">
+      <div class="input-group-prepend">
+        <span class="input-group-text bg-primary text-white border-primary">
+          <i class="fas fa-qrcode"></i>
+        </span>
+      </div>
+      <input type="text" id="qrSearch" class="form-control border-primary" 
+             placeholder="Scanner le QRCode..." autofocus>
+      
+      <div class="input-group-prepend ml-md-2">
+        <span class="input-group-text bg-info text-white border-info">
+          <i class="fas fa-search"></i>
+        </span>
+      </div>
+      <input type="text" id="filterSearch" class="form-control border-info" 
+             placeholder="Immatriculation, Num Dossier ou Déclaration..." style="min-width: 300px;">
+
+      <div class="input-group-append">
+        <button class="btn btn-primary" id="btnSearch">
+          <i class="fas fa-filter mr-1"></i> Filtrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="data-table-wrapper" style="position: relative; overflow-x: auto;">
   <div class="loading-spinner"></div>
   <table id="data-table" class="table table-bordered display responsive" style="width: 100%; border-collapse: collapse;">
@@ -44,9 +73,14 @@ $(document).ready(function () {
         processing: true,    // Show the processing indicator
         serverSide: true,    // Enable server-side processing
         responsive: true,    // Enable responsive features
+        pageLength: 10,
         ajax: {
             url: '{% url 'responseTableauRapports' %}', // Backend URL for data
             type: 'GET',
+            data: function(d) {
+                d.q = $('#qrSearch').val();
+                d.f = $('#filterSearch').val();
+            },
             beforeSend: function() {
                 $('#data-table-wrapper .loading-spinner').show(); // Show spinner before processing
             },
@@ -88,6 +122,16 @@ $(document).ready(function () {
                 }
             }
         ],
+    });
+
+    // Search trigger
+    $('#btnSearch').click(function() {
+        dataTable.ajax.reload();
+    });
+    $('#qrSearch, #filterSearch').keypress(function(e) {
+        if(e.which == 13) {
+            dataTable.ajax.reload();
+        }
     });
 });
 </script>
