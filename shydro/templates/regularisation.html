@@ -612,14 +612,22 @@
             <!-- AJOUT IMPORTATEUR -->
             <div class="modal fade" id="modal-imp" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">AJOUT IMPORTATEUR</h5>
-                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <div class="modal-content result-modal rm-warning">
+                        <div class="modal-header result-modal__header">
+                            <div class="result-modal__icon">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="result-modal__titles">
+                                <h5 class="modal-title mb-0">AJOUT IMPORTATEUR</h5>
+                                <div class="result-modal__subtitle">Ajouter un nouveau fournisseur/importateur.</div>
+                            </div>
+                            <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
                         <form action="{% url 'regularisationImportateur' %}" method="post">
                             {% csrf_token %}
-                            <div class="modal-body">
+                            <div class="modal-body px-4 pb-4">
                                 {% crispy form3 %}
                             </div>
                         </form>
@@ -630,14 +638,22 @@
             <!-- AJOUT ENTREPOT -->
             <div class="modal fade" id="modal-entrepot" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">AJOUT ENTREPOT</h5>
-                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <div class="modal-content result-modal rm-danger">
+                        <div class="modal-header result-modal__header">
+                            <div class="result-modal__icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <div class="result-modal__titles">
+                                <h5 class="modal-title mb-0">AJOUT ENTREPOT</h5>
+                                <div class="result-modal__subtitle">Ajouter un nouvel entrepôt de destination.</div>
+                            </div>
+                            <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
                         <form action="{% url 'regularisationEntrepot' %}" method="post">
                             {% csrf_token %}
-                            <div class="modal-body">
+                            <div class="modal-body px-4 pb-4">
                                 {% crispy form4 %}
                             </div>
                         </form>
@@ -648,14 +664,22 @@
             <!-- AJOUT CARGAISON -->
             <div class="modal fade" id="modal-enreg" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">AJOUT CARGAISON</h5>
-                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <div class="modal-content result-modal rm-success">
+                        <div class="modal-header result-modal__header">
+                            <div class="result-modal__icon">
+                                <i class="fas fa-trailer"></i>
+                            </div>
+                            <div class="result-modal__titles">
+                                <h5 class="modal-title mb-0">AJOUT CARGAISON</h5>
+                                <div class="result-modal__subtitle">Enregistrer une nouvelle cargaison pour régularisation.</div>
+                            </div>
+                            <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
                         <form action="{% url 'regularisationCargaison' %}" method="post">
                             {% csrf_token %}
-                            <div class="modal-body">
+                            <div class="modal-body px-4 pb-4">
                                 {% crispy form5 %}
                             </div>
                         </form>

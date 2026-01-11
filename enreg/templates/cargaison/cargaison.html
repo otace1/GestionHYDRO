@@ -1,185 +1,373 @@
-{% extends 'base_carg_layout.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
-{% load qr_code %}
+{% load i18n %}
 
+{% block extra_css %}
+<style>
+    .kpi-card { transition: transform 0.2s; border: none; border-radius: 12px; }
+    .kpi-card:hover { transform: translateY(-5px); }
+    .border-left-primary { border-left: 5px solid #007bff !important; }
+    .border-left-success { border-left: 5px solid #28a745 !important; }
+    .border-left-info { border-left: 5px solid #17a2b8 !important; }
+    .border-left-warning { border-left: 5px solid #ffc107 !important; }
+    
+    .table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .btn-add { border-radius: 30px; padding: 10px 25px; font-weight: 700; box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3); }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .page-header { flex-direction: column; align-items: flex-start !important; }
+        .btn-add { width: 100%; margin-top: 15px; }
+    }
 
-{% block extra_js %}
-    <script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>
-    <script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
+    /* Form redesign styles */
+    .form-section-title {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 8px;
+        margin-top: 15px;
+    }
+    .form-group label {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    .form-control, .custom-select {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px 15px;
+        height: auto;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+    .form-control:focus, .custom-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+    }
+    .modal-content {
+        border-radius: 15px;
+    }
+    .modal-header {
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+    .modal-footer {
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+    }
+</style>
 {% endblock %}
 
-
 {% block content %}
+<section class="content">
+    <div class="container-fluid pt-4">
 
-    {% render_table table %}
+        <!-- ================= PAGE HEADER ================= -->
+        <div class="d-flex justify-content-between align-items-center mb-4 page-header">
+            <div>
+                <h1 class="h3 mb-0 font-weight-bold text-dark">
+                    <i class="fas fa-truck-moving mr-2 text-primary"></i>
+                    {% trans "Enregistrement Cargaisons" %}
+                </h1>
+                <p class="text-muted mb-0">{% trans "Gérez et suivez l'enregistrement des nouvelles cargaisons à la frontière." %}</p>
+            </div>
+            <button class="btn btn-success btn-add" id="btn-open-create-modal">
+                <i class="fas fa-plus-circle mr-2"></i> {% trans "Ajouter Cargaison" %}
+            </button>
+        </div>
 
-    <div class="modal fade" id="modal-xl">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">FORMULAIRE D'ENREGISTREMENT</h4>
-                    <button type="button" class="close" data-dismiss="modal-xl" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="post-form" method="post" action="">
-                    <div class="modal-body">
-                        {% csrf_token %}
-                        {% crispy form %}
+        <!-- ================= KPI CARDS ================= -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card kpi-card shadow-sm border-left-primary h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <small class="text-muted text-uppercase font-weight-bold">{% trans "Aujourd'hui" %}</small>
+                                <h3 class="font-weight-bold mb-0">{{ stats.today|default:"0" }}</h3>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar-day fa-2x text-primary opacity-25"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div id="submit-control" class="modal-footer justify-content-between">
-                        <button type="reset" id="closemodal" class="btn btn-danger" data-dismiss="modal">FERMER</button>
-                        <button id="submitButton" class="btn btn-success">ENREGISTRER</button>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card kpi-card shadow-sm border-left-success h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <small class="text-muted text-uppercase font-weight-bold">{% trans "Ce Mois" %}</small>
+                                <h3 class="font-weight-bold mb-0">{{ stats.month|default:"0" }}</h3>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar-alt fa-2x text-success opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card kpi-card shadow-sm border-left-warning h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <small class="text-muted text-uppercase font-weight-bold">{% trans "Attente Réquisition" %}</small>
+                                <h3 class="font-weight-bold mb-0">{{ stats.pending_req|default:"0" }}</h3>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-clock fa-2x text-warning opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MAIN CONTENT ================= -->
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-header bg-white py-3">
+                <form method="get" action="" class="form-inline">
+                    <div class="input-group shadow-sm w-100">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light border-right-0 rounded-left">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                        </div>
+                        <input type="text" name="f" class="form-control border-left-0 border-right-0" 
+                               placeholder="{% trans 'Immatriculation, Num Dossier ou Déclaration...' %}" 
+                               value="{{ request.GET.f|default:'' }}">
+                        
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light border-left-0 border-right-0">
+                                <i class="fas fa-qrcode text-muted"></i>
+                            </span>
+                        </div>
+                        <input type="text" name="q" class="form-control border-left-0" 
+                               placeholder="{% trans 'Scanner le QRCode...' %}" 
+                               value="{{ request.GET.q|default:'' }}">
+
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary px-4">
+                                {% trans "Filtrer" %}
+                            </button>
+                            {% if request.GET.q or request.GET.f %}
+                                <a href="{{ request.path }}" class="btn btn-outline-secondary" title="{% trans 'Effacer' %}">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </form>
             </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal_qrcode">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">QR Code</h4>
-                </div>
-                <div class="modal-body">
-                    <div id="codeQR"></div>
-                </div>
-                <div class="modal-footer justify-content-between">
-
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    {% if table %}
+                        {% render_table table %}
+                    {% else %}
+                        {% render_table cargaison %}
+                    {% endif %}
                 </div>
             </div>
-            <!-- /.modal-content -->
         </div>
-        <!-- /.modal-dialog -->
+
     </div>
+</section>
 
+<!-- ================= MODALS ================= -->
+<!-- Modal Création -->
+<div class="modal fade" id="modal-create-cargaison" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-file-signature mr-2"></i>
+                    {% trans "Nouveau Formulaire d'Enregistrement" %}
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="create-cargaison-form" method="post">
+                <div class="modal-body p-4" id="create-modal-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                        <p class="mt-3 text-muted">{% trans "Chargement du formulaire..." %}</p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-dismiss="modal">{% trans "Annuler" %}</button>
+                    <button type="submit" id="btn-save-cargaison" class="btn btn-success px-5 font-weight-bold shadow-sm">
+                        {% trans "Enregistrer" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- Modal Détails -->
+<div class="modal fade" id="modal-details-cargaison" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-info text-white border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-eye mr-2"></i>
+                    {% trans "Détails de la Cargaison" %}
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4" id="details-modal-body">
+                <div class="text-center py-5">
+                    <i class="fas fa-spinner fa-spin fa-3x text-info"></i>
+                    <p class="mt-3 text-muted">{% trans "Chargement des détails..." %}</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-dismiss="modal">{% trans "Fermer" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-{% endblock %}
+<!-- Modal QR Code -->
+<div class="modal fade" id="modal_qrcode" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content text-center p-4 shadow-lg border-0">
+            <h4 class="modal-title mb-4 font-weight-bold">QR CODE GÉNÉRÉ</h4>
+            <div id="codeQR" class="d-flex justify-content-center mb-4"></div>
+            <button type="button" class="btn btn-primary btn-block" onclick="window.location.reload();">
+                {% trans "Terminer" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>
+<script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-
-</script>
-
-<script>
-
-    {% block javascript %}
- // Function to get CSRF token
-function getCSRFToken() {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
-                break;
+$(document).ready(function() {
+    // CSRF Token setup
+    function getCSRFToken() {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
 
-// AJAX setup for CSRF token
-$.ajaxSetup({
-    beforeSend: function(xhr, settings) {
-        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-            xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+            }
         }
-    }
-});
-
-
-// Click handler for submit button
-$('.btn.btn-success').click(function(e) {
-    e.preventDefault();
-    // Disable the button to prevent multiple submissions
-    $(this).attr("disabled", true);
-
-    // Create FormData object
-    var formData = new FormData();
-
-    // Serialize the form data and append to FormData
-    var form = $('#post-form')[0];
-    var formDataSerialized = $(form).serializeArray();
-    $.each(formDataSerialized, function(_, kv) {
-        formData.append(kv.name, kv.value);
     });
 
-{% comment %}    // Get the selected file
-    var file = $('#id_files')[0].files[0];
-    if (!file) {
-        alert('Please select a file.');
-        // Re-enable the button
-        $(this).attr("disabled", false);
-        return;
-    } else if (file.type !== 'application/pdf') {
-        alert('Please select a PDF file.');
-        // Re-enable the button
-        $(this).attr("disabled", false);
-        return;
-    }
+    // Handle Open Create Modal
+    $('#btn-open-create-modal').click(function() {
+        $('#modal-create-cargaison').modal('show');
+        $('#create-modal-body').html('<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-3x text-primary"></i><p class="mt-3 text-muted">{% trans "Chargement du formulaire..." %}</p></div>');
+        
+        $.get("{% url 'cargaison_create_form' %}")
+            .done(function(data) {
+                $('#create-modal-body').html(data.html);
+            })
+            .fail(function() {
+                $('#create-modal-body').html('<div class="alert alert-danger">Erreur lors du chargement du formulaire.</div>');
+            });
+    });
 
-    // Append the file to FormData
-    formData.append('files', file);
+    // Handle Open Details Modal
+    $(document).on('click', '.btn-cargaison-details', function() {
+        var id = $(this).data('id');
+        $('#modal-details-cargaison').modal('show');
+        $('#details-modal-body').html('<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-3x text-info"></i><p class="mt-3 text-muted">{% trans "Chargement des détails..." %}</p></div>');
+        
+        var url = "{% url 'cargaison_details_partial' 0 %}".replace('0', id);
+        $.get(url)
+            .done(function(data) {
+                $('#details-modal-body').html(data.html);
+            })
+            .fail(function() {
+                $('#details-modal-body').html('<div class="alert alert-danger">Erreur lors du chargement des détails.</div>');
+            });
+    });
 
-    // Read the file as text using FileReader
-    var reader = new FileReader();
-    reader.onload = function(event) {
-        // File content as Base64
-        var fileContent = event.target.result;
+    // Handle Form Submission
+    $('#create-cargaison-form').on('submit', function(e) {
+        e.preventDefault();
+        var $btn = $('#btn-save-cargaison');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> {% trans "Enregistrement..." %}');
 
-        // Append the file content to the FormData
-        formData.append('file_content', fileContent);{% endcomment %}
+        var formData = $(this).serialize();
 
-        // Send AJAX request
         $.ajax({
-            url: "{% url 'nouvelle' %}",
+            url: "{% url 'cargaison_create' %}",
             type: "POST",
             data: formData,
-            processData: false, // Prevent jQuery from processing the data
-            contentType: false, // Prevent jQuery from setting contentType
             success: function(data) {
-                console.log(data);
-                var qrcode = new QRCode(document.getElementById("codeQR"), {
-                    text: data,
-                    width: 250,
-                    height: 250,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
+                if (data.success) {
+                    $('#modal-create-cargaison').modal('hide');
+                    
+                    // Show QR Code
+                    $('#codeQR').empty();
+                    new QRCode(document.getElementById("codeQR"), {
+                        text: data.qrcode,
+                        width: 250,
+                        height: 250,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
 
-                $('#modal-xl').modal('hide');
-                alert("Data saved successfully");
-
-                $('#modal_qrcode').modal('show');
-                var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Close</button>';
-                $('.modal-footer').html(modalFooter);
+                    Swal.fire({
+                        icon: 'success',
+                        title: '{% trans "Succès !" %}',
+                        text: '{% trans "Cargaison enregistrée avec succès." %}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $('#modal_qrcode').modal({backdrop: 'static', keyboard: false, show: true});
+                    });
+                }
             },
-            error: function(xhr, status, error) {
-                console.log(xhr.responseText);
-                alert('Error! Please check the mandatory fields and volume values entered');
-                // Re-enable the button on error
-                $('.btn.btn-success').attr("disabled", false);
+            error: function(xhr) {
+                if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.html) {
+                    $('#create-modal-body').html(xhr.responseJSON.html);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: 'Une erreur est survenue. Veuillez vérifier les champs obligatoires.'
+                    });
+                }
+                $btn.prop('disabled', false).text('{% trans "Enregistrer" %}');
             }
         });
-{% comment %}    };{% endcomment %}
-{% comment %}
-    // Read the file as text
-    reader.readAsDataURL(file);{% endcomment %}
+    });
 });
-
-
-    {% endblock %}
 </script>
-
+{% endblock %}
 
 
 

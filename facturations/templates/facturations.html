@@ -1,202 +1,417 @@
-{% extends 'base_facturations_layout.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
-{% block extrahead %}
-    {{ form.media }}
+
+{% block extra_css %}
+    <style>
+        #data-table-wrapper {
+            position: relative;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 4px solid rgba(0, 0, 0, .15);
+            border-top-color: #3498db;
+            animation: spin .9s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -17px 0 0 -17px;
+            z-index: 10;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .action-tiles {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .action-tile {
+            border: 0;
+            border-radius: 12px;
+            background: #fff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
+            cursor: pointer;
+            transition: all .2s ease;
+            min-width: 240px;
+            border: 1px solid rgba(0, 0, 0, .05);
+        }
+
+        .action-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .1);
+            border-color: rgba(0, 123, 255, .2);
+        }
+
+        .action-tile .icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .action-tile .title {
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.2;
+        }
+
+        .action-tile .sub {
+            font-size: .8rem;
+            color: #6b7280;
+        }
+
+        .bg-info-gradient {
+            background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+        }
+
+        .result-modal {
+            border: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, .2);
+        }
+
+        .result-modal__header {
+            border: 0;
+            padding: 24px 24px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            background: #fff;
+        }
+
+        .result-modal__icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .result-modal__icon i {
+            font-size: 22px;
+        }
+
+        .result-modal__titles {
+            flex: 1;
+        }
+
+        .result-modal__titles .modal-title {
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 2px;
+            font-size: 1.25rem;
+        }
+
+        .result-modal__subtitle {
+            color: #6b7280;
+            font-size: .9rem;
+        }
+
+        .rm-primary .result-modal__icon {
+            background: rgba(0, 123, 255, .1);
+            color: #007bff;
+        }
+
+        .rm-success .result-modal__icon {
+            background: rgba(40, 167, 69, .1);
+            color: #28a745;
+        }
+
+        .table-card {
+            border: 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.05);
+        }
+        
+        .table thead th {
+            background-color: #f8f9fa;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            border-top: 0;
+            color: #4b5563;
+        }
+    </style>
 {% endblock %}
 
-
 {% block content %}
-    {#    {% render_table facturations %}#}
-
-    <div class="modal fade" id="appurement-modal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Informations du BL</h4>
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 page-title">PAIEMENTS</h1>
+                    <div class="text-muted small">Suivi et appurement des cargaisons</div>
                 </div>
-                <div class="modal-body">
-                    <form method="post" action="" id="post-form">
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                        <li class="breadcrumb-item active">Paiements</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            {# ===== ACTIONS ===== #}
+            <div class="action-tiles">
+                <div class="action-tile" data-toggle="modal" data-target="#upload-modal">
+                    <div class="icon bg-info-gradient"><i class="fas fa-file-upload"></i></div>
+                    <div>
+                        <div class="title">Chargement Paiements</div>
+                        <div class="sub">Importer un fichier Excel</div>
+                    </div>
+                </div>
+            </div>
+
+            {# ===== TABLE CARD ===== #}
+            <div class="card table-card">
+                <div class="card-body p-0">
+                    <div id="data-table-wrapper" class="p-3">
+                        <div class="loading-spinner"></div>
+                        <div class="table-responsive">
+                            <table id="data-table" class="table table-hover table-striped w-100 mb-0">
+                                <thead>
+                                <tr>
+                                    <th>DATE D'ENTRÉE</th>
+                                    <th>FRONTIÈRE</th>
+                                    <th>#DECL. T1E</th>
+                                    <th>IMPORTATEUR</th>
+                                    <th>ENTREPÔT</th>
+                                    <th>PRODUIT</th>
+                                    <th>VOL. DECL</th>
+                                    <th>DATE DECH.</th>
+                                    <th>VOL. À 15 (GSV)</th>
+                                    <th class="text-center">ACTION</th>
+                                </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# ===== MODAL: APPUREMENT ===== #}
+    <div class="modal fade" id="appurement-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content result-modal rm-success">
+                <div class="modal-header result-modal__header">
+                    <div class="result-modal__icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="result-modal__titles">
+                        <h5 class="modal-title">Appurement du BL</h5>
+                        <div class="result-modal__subtitle">Saisir les informations de liquidation et paiement.</div>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body px-4 pb-4">
+                    {% crispy form %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ===== MODAL: UPLOAD ===== #}
+    <div class="modal fade" id="upload-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content result-modal rm-primary">
+                <div class="modal-header result-modal__header">
+                    <div class="result-modal__icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="result-modal__titles">
+                        <h5 class="modal-title">Chargement Paiements</h5>
+                        <div class="result-modal__subtitle">Sélectionner le fichier des paiements (Excel).</div>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body px-4">
+                    <form method="post" action="" id="upload-form" enctype="multipart/form-data">
                         {% csrf_token %}
-                        {% crispy form %}
-                        <div class="modal-footer justify-content-between">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>
-                            <button type="button" class="btn btn-primary">Enregistrer</button>
+                        <div class="form-group mb-4">
+                            <label for="id_excel_file" class="font-weight-bold">Fichier des paiements</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="id_excel_file" name="excel_file" required>
+                                <label class="custom-file-label" for="id_excel_file">Choisir le fichier...</label>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info py-2 small mb-4">
+                            <i class="fas fa-info-circle mr-2"></i> 
+                            Utilisez le modèle officiel pour garantir l'importation.
                         </div>
 
+                        <div class="text-center mb-4">
+                            <a href="#" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                                <i class="fas fa-download mr-1"></i> Télécharger le modèle
+                            </a>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between pb-3">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-5 font-weight-bold">
+                                <i class="fas fa-upload mr-1"></i> ENREGISTRER
+                            </button>
+                        </div>
                     </form>
                 </div>
-                <!-- /.modal-content -->
             </div>
-            <!-- /.modal-dialog -->
         </div>
-        <!-- /.modal -->
     </div>
 
+{% endblock %}
 
-    <div class="modal fade" id="upload-modal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Chargement du fichier des paiements</h4>
-                </div>
-                <div class="modal-body">
-                    <form method="post" action="" id="post-form" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="id_excel_file">Sélectionner le fichier</label>
-                            <input type="file" class="form-control-file" id="id_excel_file" name="excel_file">
-                        </div>
-                        <div class="text-center mb-3">
-                            <a href="" class="btn btn-primary" role="button">Télécharger un modèle</a>
-                        </div>
-                        <div class="modal-footer justify-content-between">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>
-                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
-                <!-- /.modal-content -->
-            </div>
-            <!-- /.modal-dialog -->
-        </div>
-        <!-- /.modal -->
-    </div>
-
-
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-                <thead>
-                <tr>
-                    <th>DATE D'ENTREE</th>
-                    <th>FRONTIERE</th>
-                    <th>#DECL.T1E</th>
-                    <th>IMPORTATEUR</th>
-                    <th>ENTREPOT</th>
-                    <th>PRODUIT</th>
-                    <th>VOL.DECL</th>
-                    <th>DATE DECH.</th>
-                    <th>VOL.A 15 (GSV)</th>
-                    <th></th>
-                </tr>
-                </thead>
-
-                <script>
-                    $(document).ready(function () {
-                        // Reinitialize the DataTable with updated data
-                        $('#data-table').DataTable({
-                            lengthChange: false,
-                            searching: true,
-                            ordering: false,
-                            processing: true,
-                            serverSide: true,
-                            responsive: true,
-                            paging: true,
-                            caption: false,
-                            info: false,
-                            ajax: {
-                                url: "{% url 'facturationsResponse' %}",
-                                type: 'GET',
-                                beforeSend: function () {
-                                    $('#data-table-wrapper .loading-spinner').show();
-                                },
-                                complete: function () {
-                                    $('#data-table-wrapper .loading-spinner').hide();
-                                }
-                            },
-                            columns: [
-                                {data: 'dateheurecargaison'},
-                                {data: 'frontiere__nomville'},
-                                {data: 'declaration'},
-                                {data: 'importateur__nomimportateur'},
-                                {data: 'entrepot__nomentrepot'},
-                                {data: 'produit__nomproduit'},
-                                {data: 'volume'},
-                                {data: 'dateDechargement'},
-                                {data: 'gsvTotal'},
-                                { // New column configuration
-                                    data: 'idcargaison',
-                                    render: function (data, type, row) {
-                                        const appurerImportation = '<button class="btn btn-info appurement-btn" data-row-id="' + data + '">APPURER</button> ';
-                                        return appurerImportation;
-                                    }
-                                }
-
-                            ],
-                        });
-                    })
-
-                </script>
-            </table>
-
-        </div>
-        <!-- /.table-responsive -->
-    </div>
-
-
+{% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 
     <script>
         var dataRow;
         const csrfToken = '{{ csrf_token }}';
 
-        // Event listener for opening the modal
-        $('#data-table').on('click', '.appurement-btn', function () {
-            var rowId = $(this).data('row-id');
-            dataRow = rowId;
-            // Show the modal
-            $('#appurement-modal').modal('show');
-        });
-
-
-        $('.btn.btn-primary').click((function (e) {
-            e.preventDefault()
-            var pk = dataRow;
-            var APIurl = "{% url 'saisiebl' %}";
-            $input = $('<input type="hidden" name="pk">').val(pk);
-            $('#post-form').append($input);
-            var SerializedData = $("#post-form").serialize();
-            console.log(SerializedData);
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+        $(document).ready(function () {
+            // Initialize the DataTable
+            const table = $('#data-table').DataTable({
+                lengthChange: false,
+                searching: true,
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                paging: true,
+                info: true,
+                ajax: {
+                    url: "{% url 'facturationsResponse' %}",
+                    type: 'GET',
+                    beforeSend: function () {
+                        $('.loading-spinner').show();
+                    },
+                    complete: function () {
+                        $('.loading-spinner').hide();
+                    }
                 },
-                success: function (response) {
-                    // Display success SweetAlert
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Your operation was successful!',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $('#appurement-modal').modal('hide');
-                            $('#data-table').DataTable().ajax.reload(); // Reload the table
+                columns: [
+                    {data: 'dateheurecargaison'},
+                    {data: 'frontiere__nomville'},
+                    {data: 'declaration'},
+                    {data: 'importateur__nomimportateur'},
+                    {data: 'entrepot__nomentrepot'},
+                    {data: 'produit__nomproduit'},
+                    {data: 'volume'},
+                    {data: 'dateDechargement'},
+                    {data: 'gsvTotal'},
+                    {
+                        data: 'idcargaison',
+                        className: 'text-center',
+                        render: function (data, type, row) {
+                            return '<button class="btn btn-sm btn-info appurement-btn rounded-pill px-3" data-row-id="' + data + '"><i class="fas fa-check-circle mr-1"></i> APPURER</button>';
                         }
-                    });
-                },
-                error: function (error) {
-                    // Display error SweetAlert
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'An error occurred while processing your request!',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $('#appurement-modal').modal('hide');
-                            $('#data-table').DataTable().ajax.reload(); // Reload the table
-                        }
-                    });
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
+                    }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Rechercher...",
+                    paginate: {
+                        previous: '<i class="fas fa-chevron-left"></i>',
+                        next: '<i class="fas fa-chevron-right"></i>'
+                    }
                 }
             });
-        }))
 
+            // Handle custom file input label
+            $('.custom-file-input').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+
+            // Event listener for opening the modal
+            $('#data-table').on('click', '.appurement-btn', function () {
+                dataRow = $(this).data('row-id');
+                $('#appurement-modal').modal('show');
+            });
+
+            // Submit appurement form via AJAX
+            $('#post-form').submit(function (e) {
+                e.preventDefault();
+                var pk = dataRow;
+                var APIurl = "{% url 'saisiebl' %}";
+                
+                // Ensure hidden PK is added if not present
+                if ($(this).find('input[name="pk"]').length === 0) {
+                    $(this).append($('<input type="hidden" name="pk">').val(pk));
+                } else {
+                    $(this).find('input[name="pk"]').val(pk);
+                }
+
+                var SerializedData = $(this).serialize();
+                
+                Swal.fire({
+                    title: 'Traitement en cours...',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    onBeforeOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: APIurl,
+                    type: "POST",
+                    data: SerializedData,
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Succès',
+                            text: 'L\'opération a été effectuée avec succès !',
+                        }).then((result) => {
+                            $('#appurement-modal').modal('hide');
+                            table.ajax.reload();
+                        });
+                    },
+                    error: function (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erreur',
+                            text: 'Une erreur est survenue lors du traitement !',
+                        });
+                    }
+                });
+            });
+        });
     </script>
-
-
 {% endblock %}

@@ -89,8 +89,8 @@ NONCONFORME1 = """
 
 class EchantillonTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit = tables.Column(verbose_name='PRODUIT')
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     numreq = tables.Column(verbose_name='REF.REQ.')
     numdos = tables.Column(verbose_name='NUM.DOSSIER')
@@ -114,9 +114,9 @@ class CargaisonEnAttenteRequisition(tables.Table):
     idcargaison = tables.Column(verbose_name='N.Enr.')
     declaration = tables.Column(verbose_name='N.DECL.')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION.')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
-    produit = tables.Column(verbose_name='PRODUIT')
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    frontiere = tables.Column(accessor='nom_frontiere', verbose_name="FRONTIERE D'ENT.")
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     volume = tables.Column(verbose_name='VOL.DECL.(Cu.MTrs)')
 
     class Meta:
@@ -153,8 +153,8 @@ class RapportEchantillonage(tables.Table):
 
 
 class CargaisonDechargement(tables.Table):
-    importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
     actions = tables.TemplateColumn(TEMPLATE6, verbose_name='')
@@ -171,8 +171,8 @@ class CargaisonDechargement(tables.Table):
 
 class EnAttenteInspection(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit = tables.Column(verbose_name='PRODUIT')
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     numreq = tables.Column(verbose_name='REF.REQ.')
     numdos = tables.Column(verbose_name='NUM.DOSSIER')
@@ -190,9 +190,9 @@ class EnAttenteInspection(tables.Table):
 
 class CargaisonDechargement2(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
-    produit = tables.Column(verbose_name='PRODUIT')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
 
     class Meta:
@@ -219,9 +219,9 @@ class CargaisonDechargement2(tables.Table):
 
 class TankerCabotteur(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE4, verbose_name='')
-    produit = tables.Column(verbose_name='PRODUIT')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
 
     class Meta:
@@ -247,6 +247,9 @@ class TankerCabotteur(tables.Table):
 
 
 class EchantillonEnregistrer(tables.Table):
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
+
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
@@ -282,8 +285,8 @@ class CargaisonDechargee(tables.Table):
 
 
 class RapportInspectionCamion(tables.Table):
-    importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     declaration = tables.Column(verbose_name='#.DECL.T1D')
     # dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
@@ -307,8 +310,8 @@ class RapportInspectionCamion(tables.Table):
 
 
 class RapportInspectionTanker(tables.Table):
-    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit = tables.Column(verbose_name='PRODUIT')
+    nomimportateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
     dateechantillonage = tables.Column(verbose_name='DATE ECH.')
@@ -337,11 +340,11 @@ class NonConformeOrganoleptique(tables.Table):
     dateechantillonage = tables.Column(verbose_name="DATE ECH.")
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
-    idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
-    idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
-    idcargaison__provenance = tables.Column(verbose_name="PROVENANCE")
+    idcargaison__importateur = tables.Column(accessor='idcargaison.nom_importateur', verbose_name="FOURNISSEUR")
+    idcargaison__entrepot = tables.Column(accessor='idcargaison.nom_entrepot', verbose_name="ENTREPOT")
+    idcargaison__provenance = tables.Column(accessor='idcargaison.nom_frontiere', verbose_name="PROVENANCE")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION.")
-    idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__produit = tables.Column(accessor='idcargaison.nom_produit', verbose_name="PRODUIT")
     idcargaison__volume = tables.Column(verbose_name='VOL. DECL.')
     actions = tables.TemplateColumn(NONCONFORME1, verbose_name='')
 
@@ -360,11 +363,11 @@ class NonConformeLaboratoire(tables.Table):
     dateechantillonage = tables.Column(verbose_name="DATE ECH.")
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
-    idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
-    idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
-    idcargaison__provenance = tables.Column(verbose_name="PROVENANCE")
+    idcargaison__importateur = tables.Column(accessor='idcargaison.nom_importateur', verbose_name="FOURNISSEUR")
+    idcargaison__entrepot = tables.Column(accessor='idcargaison.nom_entrepot', verbose_name="ENTREPOT")
+    idcargaison__provenance = tables.Column(accessor='idcargaison.nom_frontiere', verbose_name="PROVENANCE")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION.")
-    idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__produit = tables.Column(accessor='idcargaison.nom_produit', verbose_name="PRODUIT")
     idcargaison__volume = tables.Column(verbose_name='VOL. DECL.')
     actions = tables.TemplateColumn(NONCONFORME, verbose_name='')
 
@@ -379,8 +382,8 @@ class NonConformeLaboratoire(tables.Table):
 
 class CargaisonInspecteeTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit = tables.Column(verbose_name='PRODUIT')
+    importateur = tables.Column(accessor='nom_importateur', verbose_name='FOURNISSEUR')
+    produit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     numreq = tables.Column(verbose_name='REF.REQ.')
     numdos = tables.Column(verbose_name='NUM.DOSSIER')

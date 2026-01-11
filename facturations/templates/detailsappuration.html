@@ -1,10 +1,113 @@
-{% extends 'facturations/layout1.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load django_tables2 %}
 
+{% block extra_css %}
+    <style>
+        .table-card {
+            border: 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.05);
+            background: #fff;
+        }
+        
+        .action-tiles {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
 
+        .action-tile {
+            border: 0;
+            border-radius: 12px;
+            background: #fff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
+            cursor: pointer;
+            transition: all .2s ease;
+            min-width: 240px;
+            border: 1px solid rgba(0, 0, 0, .05);
+        }
+
+        .action-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .1);
+            border-color: rgba(0, 123, 255, .2);
+        }
+
+        .action-tile .icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .action-tile .title {
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.2;
+        }
+
+        .action-tile .sub {
+            font-size: .8rem;
+            color: #6b7280;
+        }
+
+        .bg-info-gradient {
+            background: linear-gradient(135deg, #17a2b8, #117a8b);
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 page-title">DÉTAILS DE L'APPUREMENT</h1>
+                    <div class="text-muted small">Informations détaillées sur les encaissements</div>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'facturations' %}">Paiements</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'appuration' %}">Appurements</a></li>
+                        <li class="breadcrumb-item active">Détails</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
 
-{%render_table detailsappuration%}
+    <section class="content">
+        <div class="container-fluid">
+            {# ===== ACTIONS ===== #}
+            <div class="action-tiles">
+                <a href="{% url 'appuration' %}" class="action-tile text-decoration-none">
+                    <div class="icon bg-info-gradient"><i class="fas fa-chevron-left"></i></div>
+                    <div>
+                        <div class="title">Retour</div>
+                        <div class="sub">Vers la liste des appurements</div>
+                    </div>
+                </a>
+            </div>
 
+            {# ===== TABLE CARD ===== #}
+            <div class="card table-card">
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        {% render_table detailsappuration %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {% endblock %}

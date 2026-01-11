@@ -1,0 +1,308 @@
+{% extends 'base_template/base_template.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark page-title font-weight-bold">GUIDE D'UTILISATION</h1>
+                <div class="text-muted small">Documentation et Aide • TrackFlow+</div>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right mb-0">
+                    <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                    <li class="breadcrumb-item active">Aide</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar Navigation -->
+            <div class="col-md-3 d-none d-md-block">
+                <div class="card card-primary card-outline sticky-top" style="top: 20px; z-index: 100;">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold">Sommaire</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="nav nav-pills flex-column nav-help">
+                            <li class="nav-item"><a href="#intro" class="nav-link"><i class="fas fa-info-circle mr-2"></i> Introduction</a></li>
+                            <li class="nav-item"><a href="#getting-started" class="nav-link"><i class="fas fa-rocket mr-2"></i> Prise en main</a></li>
+                            <li class="nav-item"><a href="#features" class="nav-link"><i class="fas fa-list-ul mr-2"></i> Fonctionnalités clés</a></li>
+                            <li class="nav-item"><a href="#workflow" class="nav-link"><i class="fas fa-project-diagram mr-2"></i> Flux opérationnel</a></li>
+                            <li class="nav-item"><a href="#forms" class="nav-link"><i class="fas fa-edit mr-2"></i> Formulaires & Modals</a></li>
+                            <li class="nav-item"><a href="#reports" class="nav-link"><i class="fas fa-file-pdf mr-2"></i> Rapports & Documents</a></li>
+                            <li class="nav-item"><a href="#settings" class="nav-link"><i class="fas fa-user-cog mr-2"></i> Profil & Paramètres</a></li>
+                            <li class="nav-item"><a href="#troubleshooting" class="nav-link"><i class="fas fa-tools mr-2"></i> Dépannage</a></li>
+                            <li class="nav-item"><a href="#best-practices" class="nav-link"><i class="fas fa-shield-alt mr-2"></i> Bonnes pratiques</a></li>
+                            <li class="nav-item"><a href="#support" class="nav-link"><i class="fas fa-headset mr-2"></i> Support & Contact</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="col-md-9 col-sm-12">
+                <!-- Introduction -->
+                <div id="intro" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-info-circle text-info mr-2"></i> 1. Introduction</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Bienvenue dans le guide d'utilisation de <strong>TrackFlow+</strong>. Cette application est une solution centralisée conçue pour le suivi rigoureux des cargaisons d'hydrocarbures, le contrôle qualité en laboratoire et la gestion administrative des dossiers.</p>
+                        <p><strong>Objectifs principaux :</strong></p>
+                        <ul>
+                            <li>Tracer chaque mouvement de cargaison depuis la frontière jusqu'à la destination finale.</li>
+                            <li>Garantir la conformité des produits via des analyses de laboratoire certifiées.</li>
+                            <li>Automatiser la génération de rapports et la gestion des paiements.</li>
+                        </ul>
+                        <p class="text-muted small italic">L'application est optimisée pour une utilisation sur ordinateurs, tablettes et smartphones.</p>
+                    </div>
+                </div>
+
+                <!-- Getting Started -->
+                <div id="getting-started" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-rocket text-info mr-2"></i> 2. Prise en main</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5><strong>Connexion</strong></h5>
+                        <p>Utilisez vos identifiants fournis par l'administrateur. En cas d'oubli, veuillez contacter le support technique.</p>
+                        
+                        <h5><strong>Interface et Navigation</strong></h5>
+                        <ul>
+                            <li><strong>Barre latérale (Sidebar) :</strong> Accédez à tous les modules selon votre rôle.</li>
+                            <li><strong>Tableau de Bord :</strong> Une vue d'ensemble en temps réel des activités et statistiques.</li>
+                            <li><strong>Pillule Utilisateur :</strong> Située en haut à droite, elle affiche votre nom et permet de se déconnecter.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Core Features -->
+                <div id="features" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-list-ul text-info mr-2"></i> 3. Fonctionnalités clés par module</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded bg-light h-100">
+                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-truck-moving mr-2"></i> FRONTIÈRE (Enregistrement)</h6>
+                                    <p class="small">Permet d'enregistrer chaque nouvelle entrée de cargaison. Saisissez les informations du véhicule, de l'importateur et du produit.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded bg-light h-100">
+                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-industry mr-2"></i> ENTREPÔT</h6>
+                                    <p class="small">Gestion de la réception en entrepôt et réalisation de l'échantillonnage pour analyse.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded bg-light h-100">
+                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-flask mr-2"></i> LABORATOIRE (Certification)</h6>
+                                    <p class="small">Réception des échantillons, encodage des résultats d'analyse et validation multiniveaux (Niveau 1 et 2) avant impression du certificat.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded bg-light h-100">
+                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-building mr-2"></i> CELLULE HYDRO</h6>
+                                    <p class="small">Gestion des réquisitions, régularisation des dossiers et suivi des rapports d'activité globaux.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow -->
+                <div id="workflow" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-project-diagram text-info mr-2"></i> 4. Flux opérationnel type</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline timeline-inverse">
+                            <div>
+                                <i class="fas fa-sign-in-alt bg-primary"></i>
+                                <div class="timeline-item shadow-none border">
+                                    <h3 class="timeline-header font-weight-bold">1. Enregistrement</h3>
+                                    <div class="timeline-body small">Saisie des données à la frontière.</div>
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-vial bg-info"></i>
+                                <div class="timeline-item shadow-none border">
+                                    <h3 class="timeline-header font-weight-bold">2. Échantillonnage</h3>
+                                    <div class="timeline-body small">Prélèvement en entrepôt et envoi au laboratoire.</div>
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-microscope bg-warning"></i>
+                                <div class="timeline-item shadow-none border">
+                                    <h3 class="timeline-header font-weight-bold">3. Analyse & Validation</h3>
+                                    <div class="timeline-body small">Tests de conformité et double validation hiérarchique.</div>
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-check-double bg-success"></i>
+                                <div class="timeline-item shadow-none border">
+                                    <h3 class="timeline-header font-weight-bold">4. Régularisation & Paiement</h3>
+                                    <div class="timeline-body small">Codification finale et acquittement des taxes.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Forms & Modals -->
+                <div id="forms" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-edit text-info mr-2"></i> 5. Formulaires & Fenêtres surgissantes</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Les formulaires sont conçus pour être simples et intuitifs :</p>
+                        <ul>
+                            <li><strong>Champs obligatoires :</strong> Ils doivent être remplis pour pouvoir valider l'action.</li>
+                            <li><strong>Modals (Fenêtres) :</strong> Utilisées pour les actions rapides (Ajout d'importateur, nouvel entrepôt) sans quitter la page actuelle.</li>
+                            <li><strong>Validation :</strong> En cas d'erreur, un message rouge s'affiche sous le champ concerné.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Reports -->
+                <div id="reports" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-file-pdf text-info mr-2"></i> 6. Rapports & Documents</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Le système permet de générer divers documents officiels :</p>
+                        <ul>
+                            <li><strong>Certificat de Qualité :</strong> Généré après validation finale des analyses.</li>
+                            <li><strong>Rapports d'Activité :</strong> Exportables au format Excel ou PDF avec filtres personnalisés.</li>
+                            <li><strong>Codes QR :</strong> Présents sur certains documents pour une vérification rapide de l'authenticité.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div id="settings" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-user-cog text-info mr-2"></i> 7. Profil & Paramètres</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Accédez aux <strong>PARAMÈTRES</strong> dans le menu pour :</p>
+                        <ul>
+                            <li>Mettre à jour vos informations personnelles (Nom, fonction, poste).</li>
+                            <li>Changer votre mot de passe dans l'onglet <strong>Sécurité</strong>.</li>
+                            <li>Visualiser les statistiques système (pour les administrateurs).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting -->
+                <div id="troubleshooting" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-tools text-info mr-2"></i> 8. Dépannage</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl>
+                            <dt>Expiration de session</dt>
+                            <dd>Pour votre sécurité, le système vous déconnecte automatiquement après une période d'inactivité. Un message d'avertissement s'affiche 60 secondes avant.</dd>
+                            
+                            <dt>Affichage incorrect ou données obsolètes</dt>
+                            <dd>Les administrateurs peuvent vider le cache système dans l'onglet Maintenance des paramètres pour résoudre les problèmes de synchronisation.</dd>
+                            
+                            <dt>Action échouée</dt>
+                            <dd>Vérifiez votre connexion internet et assurez-vous que tous les champs requis sont correctement remplis.</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Best Practices -->
+                <div id="best-practices" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-shield-alt text-info mr-2"></i> 9. Bonnes pratiques</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success mr-2"></i> <strong>Précision :</strong> Prenez le temps de vérifier les volumes et immatriculations lors de la saisie.</li>
+                            <li class="mb-2"><i class="fas fa-lock text-warning mr-2"></i> <strong>Confidentialité :</strong> Ne partagez jamais vos identifiants d'accès.</li>
+                            <li class="mb-2"><i class="fas fa-sign-out-alt text-danger mr-2"></i> <strong>Déconnexion :</strong> Déconnectez-vous systématiquement à la fin de votre session de travail.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Support -->
+                <div id="support" class="card card-outline card-info shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-headset text-info mr-2"></i> 10. Support & Contact</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>Besoin d'une assistance supplémentaire ?</p>
+                        <a href="mailto:support@cgworldwide.org" class="btn btn-primary px-4 py-2 font-weight-bold">
+                            <i class="fas fa-envelope mr-2"></i> Contacter le Support Technique
+                        </a>
+                        <p class="mt-3 text-muted small">Veuillez préciser votre nom d'utilisateur et décrire précisément le problème rencontré.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+    .sticky-top {
+        transition: all 0.3s ease-in-out;
+    }
+    .nav-help .nav-link {
+        color: #4b545c;
+        border-radius: 0;
+        border-left: 3px solid transparent;
+    }
+    .nav-help .nav-link:hover {
+        background-color: rgba(0,0,0,.05);
+        color: #007bff;
+    }
+    .nav-help .nav-link.active {
+        background-color: #f8f9fa;
+        color: #007bff;
+        border-left-color: #007bff;
+        font-weight: bold;
+    }
+    .timeline::before {
+        border-radius: 0.25rem;
+        background-color: #dee2e6;
+        bottom: 0;
+        content: "";
+        left: 31px;
+        margin: 0;
+        position: absolute;
+        top: 0;
+        width: 4px;
+    }
+    @media (max-width: 768px) {
+        .sticky-top {
+            position: relative !important;
+            top: 0 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block javascript %}
+    // Highlight active nav item on scroll
+    $(window).scroll(function() {
+        var scrollDistance = $(window).scrollTop() + 100;
+        $('.card-outline').each(function(i) {
+            if ($(this).position().top <= scrollDistance) {
+                $('.nav-help a.active').removeClass('active');
+                $('.nav-help a').eq(i).addClass('active');
+            }
+        });
+    }).scroll();
+{% endblock %}

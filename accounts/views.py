@@ -864,6 +864,13 @@ def detailsAffectationRole(request, pk):
 
 
 @login_required(login_url='login')
+def help_guide(request):
+    template = 'accounts/help_guide.html'
+    context = {}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
 def privacyPolicy(request):
     template = 'privacyPolicy.html'
     context = {}

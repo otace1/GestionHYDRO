@@ -1,14 +1,18 @@
 import base64
+import io
 import os
 import uuid
 from datetime import date, datetime
-
 import pyqrcode
 from PIL import Image
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import render, HttpResponse, redirect
-from django_tables2 import RequestConfig, LazyPaginator
+from django.db.models import Q
+from django.http import JsonResponse, FileResponse
+from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
+from django.template.loader import render_to_string
+from django.views.decorators.http import require_POST
+from django_tables2 import RequestConfig
+from django_tables2.paginators import LazyPaginator
 
 from accounts.models import UserActivityLog, MyUser
 from .forms import Ajoutcargaison
@@ -34,16 +38,82 @@ def getCargaison(request):
 def showTableauTemplate(request):
     user = request.user
     today = date.today()
-    qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=user.id, dateheurecargaison__year=today.year)
+    q = request.GET.get('q')
+    f = request.GET.get('f')
+
+    base_qs = Cargaison.objects.filter(user=user.id)
+
+    stats = {
+        'today': base_qs.filter(dateheurecargaison__date=today).count(),
+        'month': base_qs.filter(dateheurecargaison__year=today.year, dateheurecargaison__month=today.month).count(),
+        'pending_req': base_qs.filter(etat="En attente requisition").count(),
+    }
+
+    qs = base_qs.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison')
+
+    if q:
+        qs = qs.filter(qrcode__icontains=q)
+
+    if f:
+        qs = qs.filter(Q(immatriculation=f) | Q(numdossier=f) | Q(declaration=f))
+
     form = Ajoutcargaison()
     table = CargaisonTable(qs)
     template = 'cargaison/cargaison.html'
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
     context = {
         'table': table,
         'form': form,
+        'stats': stats,
     }
     return render(request, template, context)
+
+
+@login_required(login_url='login')
+def cargaison_create_form(request):
+    form = Ajoutcargaison()
+    html = render_to_string('cargaison/partial_create_form.html', {'form': form}, request=request)
+    return JsonResponse({'html': html})
+
+
+@login_required(login_url='login')
+@require_POST
+def cargaison_create(request):
+    user = request.user
+    form = Ajoutcargaison(request.POST)
+    if form.is_valid():
+        instance = Cargaison(
+            voie=form.cleaned_data['voie'],
+            frontiere=form.cleaned_data['frontiere'],
+            typeunitetransport=form.cleaned_data['typeunitetransport'],
+            provenance=form.cleaned_data['provenance'],
+            importateur=form.cleaned_data['importateur'],
+            produit=form.cleaned_data['produit'],
+            entrepot=form.cleaned_data['entrepot'],
+            immatriculation=form.cleaned_data['immatriculation'],
+            transitaire=form.cleaned_data['transitaire'],
+            declaration=form.cleaned_data['declaration'],
+            volume=form.cleaned_data['volume'],
+            volume15=form.cleaned_data['volume15'],
+            volume20=form.cleaned_data['volume20'],
+            tonnagevide=form.cleaned_data['tonnagevide'],
+            tonnageair=form.cleaned_data['tonnageair'],
+        )
+        instance.qrcode = str(uuid.uuid4())
+        instance.user = str(user.id)
+        instance.etat = "En attente requisition"
+        instance.save()
+
+        # Activity Log
+        UserActivityLog.objects.create(
+            user=user,
+            action="Data creation",
+            description="User has created new import record successfully via AJAX",
+        )
+        return JsonResponse({'success': True, 'qrcode': instance.qrcode})
+    else:
+        html = render_to_string('cargaison/partial_create_form.html', {'form': form}, request=request)
+        return JsonResponse({'success': False, 'html': html}, status=400)
 
 
 # Create your views here.
@@ -77,9 +147,18 @@ class GestionCargaison():
         template='cargaison/cargaison.html'
         form = Ajoutcargaison()
         today = date.today()
-        qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u, dateheurecargaison__year=today.year).select_related('user')
+        q = request.GET.get('q')
+        f = request.GET.get('f')
+        qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u, dateheurecargaison__year=today.year)
+        
+        if q:
+            qs = qs.filter(qrcode__icontains=q)
+        
+        if f:
+            qs = qs.filter(Q(immatriculation=f) | Q(numdossier=f) | Q(declaration=f))
+            
         table = CargaisonTable(qs)
-        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
         context={
             'cargaison': table,
             'form': form,
@@ -242,3 +321,32 @@ class GestionCargaison():
 
         else:
             return redirect('logout')
+
+
+@login_required(login_url='login')
+def cargaison_details_partial(request, pk):
+    cargaison = get_object_or_404(Cargaison, pk=pk)
+
+    # Generate QR Code as base64 for preview
+    qr = pyqrcode.create(cargaison.qrcode, encoding='utf-8')
+    buffer = io.BytesIO()
+    qr.png(buffer, scale=10)
+    qrcode_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    html = render_to_string('cargaison/partial_details.html', {
+        'cargaison': cargaison,
+        'qrcode_base64': qrcode_base64
+    }, request=request)
+    return JsonResponse({'html': html})
+
+
+@login_required(login_url='login')
+def cargaison_qrcode_download(request, pk):
+    cargaison = get_object_or_404(Cargaison, pk=pk)
+    qr = pyqrcode.create(cargaison.qrcode, encoding='utf-8')
+    buffer = io.BytesIO()
+    qr.png(buffer, scale=10)
+    buffer.seek(0)
+
+    filename = f"qrcode_{cargaison.immatriculation or cargaison.pk}.png"
+    return FileResponse(buffer, as_attachment=True, filename=filename)

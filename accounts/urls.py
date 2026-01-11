@@ -41,6 +41,7 @@ urlpatterns = [
 
     #Privacy Policy
     path('privacy/', views.privacyPolicy, name='privacyPolicy'),
+    path('help/', views.help_guide, name='help_guide'),
 
     path('activityLog/', views.activityLog, name='activityLog'),
     path('activityLogResponse/', views.activityLogResponse, name='activityLogResponse'),

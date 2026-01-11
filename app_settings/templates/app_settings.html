@@ -1,0 +1,249 @@
+{% extends 'base_template/base_template.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark page-title font-weight-bold">PARAMÈTRES</h1>
+                <div class="text-muted small">Configuration du système et profil utilisateur</div>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right mb-0">
+                    <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                    <li class="breadcrumb-item active">Paramètres</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <!-- Settings Menu -->
+                <div class="card card-primary card-outline shadow-sm">
+                    <div class="card-body box-profile">
+                        <div class="text-center">
+                            <div class="user-avatar-placeholder mb-3">
+                                <i class="fas fa-user-circle fa-4x text-secondary"></i>
+                            </div>
+                        </div>
+                        <h3 class="profile-username text-center font-weight-bold">{{ user.get_full_name }}</h3>
+                        <p class="text-muted text-center">{{ user.role.role|default:"Utilisateur" }}</p>
+
+                        <ul class="nav nav-pills flex-column mt-4" id="settingsTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" id="profile-tab" data-toggle="pill" href="#profile" role="tab" aria-selected="true">
+                                    <i class="fas fa-user mr-2"></i> Mon Profil
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if active_tab == 'security' %}active{% endif %}" id="security-tab" data-toggle="pill" href="#security" role="tab" aria-selected="false">
+                                    <i class="fas fa-shield-alt mr-2"></i> Sécurité
+                                </a>
+                            </li>
+                            {% if user.is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if active_tab == 'maintenance' %}active{% endif %}" id="maintenance-tab" data-toggle="pill" href="#maintenance" role="tab" aria-selected="false">
+                                    <i class="fas fa-tools mr-2"></i> Maintenance
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if active_tab == 'referentials' %}active{% endif %}" id="referentials-tab" data-toggle="pill" href="#referentials" role="tab" aria-selected="false">
+                                    <i class="fas fa-database mr-2"></i> Référentiels
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if active_tab == 'system' %}active{% endif %}" id="system-tab" data-toggle="pill" href="#system" role="tab" aria-selected="false">
+                                    <i class="fas fa-info-circle mr-2"></i> Système
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="tab-content" id="settingsTabsContent">
+                            <!-- Profile Tab -->
+                            <div class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}" id="profile" role="tabpanel">
+                                <h5 class="mb-4 font-weight-bold"><i class="fas fa-user text-primary mr-2"></i> Informations du profil</h5>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="update_profile" value="1">
+                                    {% crispy profile_form %}
+                                </form>
+                            </div>
+
+                            <!-- Security Tab -->
+                            <div class="tab-pane fade {% if active_tab == 'security' %}show active{% endif %}" id="security" role="tabpanel">
+                                <h5 class="mb-4 font-weight-bold"><i class="fas fa-shield-alt text-warning mr-2"></i> Sécurité du compte</h5>
+                                <div class="card border">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0 font-weight-bold">Changer le mot de passe</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="change_password" value="1">
+                                            {{ password_form|crispy }}
+                                            <div class="mt-3">
+                                                <button type="submit" class="btn btn-warning px-4 font-weight-bold">
+                                                    <i class="fas fa-key mr-2"></i> Mettre à jour le mot de passe
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Maintenance Tab -->
+                            {% if user.is_admin %}
+                            <div class="tab-pane fade {% if active_tab == 'maintenance' %}show active{% endif %}" id="maintenance" role="tabpanel">
+                                <h5 class="mb-4 font-weight-bold"><i class="fas fa-tools text-danger mr-2"></i> Outils de maintenance</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card border">
+                                            <div class="card-body">
+                                                <h6>Vider le cache système</h6>
+                                                <p class="text-muted small">Ceci videra tous les fichiers mis en cache par Django. Utile si vous constatez des incohérences d'affichage.</p>
+                                                <form method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="clear_cache" value="1">
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="fas fa-broom mr-2"></i> Vider le cache
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Additional tools can be added here -->
+                                </div>
+                            </div>
+
+                            <!-- System Tab -->
+                            <div class="tab-pane fade {% if active_tab == 'system' %}show active{% endif %}" id="system" role="tabpanel">
+                                <h5 class="mb-4 font-weight-bold"><i class="fas fa-info-circle text-info mr-2"></i> Informations Système & Statistiques</h5>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-3 col-sm-6 col-12">
+                                        <div class="info-box shadow-none border">
+                                            <span class="info-box-icon bg-info elevation-0"><i class="fas fa-truck-moving"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Cargaisons</span>
+                                                <span class="info-box-number">{{ stats.cargaisons_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 col-12">
+                                        <div class="info-box shadow-none border">
+                                            <span class="info-box-icon bg-success elevation-0"><i class="fas fa-user-tie"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Importateurs</span>
+                                                <span class="info-box-number">{{ stats.importateurs_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 col-12">
+                                        <div class="info-box shadow-none border">
+                                            <span class="info-box-icon bg-warning elevation-0"><i class="fas fa-warehouse"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Entrepôts</span>
+                                                <span class="info-box-number">{{ stats.entrepots_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 col-12">
+                                        <div class="info-box shadow-none border">
+                                            <span class="info-box-icon bg-danger elevation-0"><i class="fas fa-users"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Utilisateurs</span>
+                                                <span class="info-box-number">{{ stats.users_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive mt-4">
+                                    <table class="table table-bordered table-striped">
+                                        <tbody>
+                                            <tr>
+                                                <th style="width: 30%">Version Django</th>
+                                                <td><code>{{ system_info.django_version }}</code></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Version Python</th>
+                                                <td><code>{{ system_info.python_version }}</code></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Système d'exploitation</th>
+                                                <td>{{ system_info.os }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Heure du serveur</th>
+                                                <td>{{ system_info.server_time }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <h6 class="mt-4 font-weight-bold">Gestion des données de référence</h6>
+                                <p class="text-muted small">Liens rapides vers l'administration pour gérer les entités du système.</p>
+                                <div class="d-flex flex-wrap gap-2" style="gap: 10px;">
+                                    <a href="/admin/enreg/importateur/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-user-tie mr-1"></i> Importateurs</a>
+                                    <a href="/admin/enreg/entrepot/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-warehouse mr-1"></i> Entrepôts</a>
+                                    <a href="/admin/enreg/ville/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-city mr-1"></i> Villes</a>
+                                    <a href="/admin/enreg/produit/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-flask mr-1"></i> Produits</a>
+                                    <a href="/admin/enreg/voie/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-road mr-1"></i> Voies</a>
+                                    <a href="/admin/accounts/myuser/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-users mr-1"></i> Utilisateurs</a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .page-title {
+        letter-spacing: -0.5px;
+    }
+    .box-profile .nav-pills .nav-link {
+        color: #495057;
+        margin-bottom: 5px;
+        transition: all 0.3s;
+    }
+    .box-profile .nav-pills .nav-link.active {
+        background-color: #007bff;
+        color: #fff;
+    }
+    .box-profile .nav-pills .nav-link:not(.active):hover {
+        background-color: #f8f9fa;
+    }
+    .user-avatar-placeholder {
+        opacity: 0.8;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Handle tab persistence
+        $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+            var tabId = $(e.target).attr('href').replace('#', '');
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabId);
+            window.history.replaceState({}, '', url);
+        });
+    });
+</script>
+{% endblock %}

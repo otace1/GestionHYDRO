@@ -101,8 +101,8 @@ class LaboratoireReception(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='ACTIONS')
     idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE D'ENTREE")
     dateechantillonage = tables.Column(verbose_name="DATE D'ECHANTILLONNAGE")
-    idcargaison__entrepot = tables.Column(verbose_name='ENTREPOT')
-    idcargaison__produit = tables.Column(verbose_name="NATURE PRODUIT")
+    idcargaison__entrepot = tables.Column(accessor='idcargaison.nom_entrepot', verbose_name='ENTREPOT')
+    idcargaison__produit = tables.Column(accessor='idcargaison.nom_produit', verbose_name="NATURE PRODUIT")
     idcargaison__immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     idcargaison__numdos = tables.Column(verbose_name="NUM. DOSSIER")
     # idcargaison__codecargaison = tables.Column(verbose_name='# Hydro')
@@ -132,7 +132,7 @@ class TableauEchantillonRecu(tables.Table):
     idcargaison__idcargaison__immatriculation = tables.Column(verbose_name='Immatriculation')
     idcargaison__idcargaison__numdos = tables.Column(verbose_name="Numéro Dossier")
     idcargaison__codecargaison = tables.Column(verbose_name='# Hydro')
-    idcargaison__produit__nomproduit = tables.Column(verbose_name='Produit')
+    idcargaison__produit__nomproduit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name='Produit')
     idcargaison__numrappech = tables.Column(verbose_name='# RE')
     codelabo = tables.Column(verbose_name="Code Labo")
     numcertificatqualite = tables.Column(verbose_name="Numéro CQ Attribué")
@@ -154,7 +154,7 @@ class AffichageAnalyse(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='ACTIONS')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
     codelabo = tables.Column(verbose_name='CODE LABO')
-    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
+    produit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name='NATURE PRODUIT.')
     datereceptionlabo = tables.Column(verbose_name='DATE RECEPT.')
     # natureProduitLabo = tables.Column(verbose_name='Produit CONST.')
     numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
@@ -173,7 +173,7 @@ class AffichageAnalyseRefaire(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='ACTIONS')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
     codelabo = tables.Column(verbose_name='CODE LABO')
-    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
+    produit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name='NATURE PRODUIT.')
     datereceptionlabo = tables.Column(verbose_name='DATE RECEPT.')
     numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
 
@@ -193,8 +193,8 @@ class AffichageValidation1(tables.Table):
     datereceptionlabo = tables.Column(verbose_name='DATE REC.')
     codelabo = tables.Column(verbose_name="CODE LABO")
     numcertificatqualite = tables.Column(verbose_name="NUM.CQ")
-    idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
-    idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__idcargaison__produit__nomproduit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name="PRODUIT")
+    idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(accessor='idcargaison.idcargaison.nom_entrepot', verbose_name="ENTREPOT")
 
     class Meta:
         attrs = {
@@ -240,8 +240,8 @@ class AffichageValidation2(tables.Table):
     datereceptionlabo = tables.Column(verbose_name='DATE REC.')
     codelabo = tables.Column(verbose_name="CODE LABO")
     numcertificatqualite = tables.Column(verbose_name="NUM.CQ")
-    idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
-    idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__idcargaison__produit__nomproduit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name="PRODUIT")
+    idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(accessor='idcargaison.idcargaison.nom_entrepot', verbose_name="ENTREPOT")
 
     class Meta:
         attrs = {
@@ -259,8 +259,8 @@ class AffichageValidation2Go(tables.Table):
     numrappech = tables.Column(accessor='idcargaison.numrappech', verbose_name='Numéro RE')
     codelabo = tables.Column(accessor='codelabo')
     numcertificatqualite = tables.Column(accessor='numcertificatqualite', verbose_name='Numéro CQ')
-    produit = tables.Column(accessor='idcargaison.idcargaison.produit')
-    importateur = tables.Column(accessor='idcargaison.idcargaison.importateur')
+    produit = tables.Column(accessor='idcargaison.idcargaison.nom_produit')
+    importateur = tables.Column(accessor='idcargaison.idcargaison.nom_importateur')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
@@ -304,8 +304,8 @@ class AffichageTableauReImpression(tables.Table):
     numrappech = tables.Column(accessor='idcargaison.idcargaison.numrappech', verbose_name='# RE')
     codelabo = tables.Column(accessor='idcargaison.codelabo', verbose_name='Code Labo')
     numcertificatqualite = tables.Column(accessor='idcargaison.numcertificatqualite', verbose_name='# CQ')
-    produit = tables.Column(accessor='idcargaison.idcargaison.idcargaison.produit')
-    importateur = tables.Column(accessor='idcargaison.idcargaison.idcargaison.importateur')
+    produit = tables.Column(accessor='idcargaison.idcargaison.idcargaison.nom_produit')
+    importateur = tables.Column(accessor='idcargaison.idcargaison.idcargaison.nom_importateur')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
@@ -332,8 +332,8 @@ class TableEnvoiGo(tables.Table):
     numrappech = tables.Column(accessor='idcargaison.idcargaison.numrappech', verbose_name='Num. RE')
     codelabo = tables.Column(accessor='idcargaison.codelabo')
     numcertificatqualite = tables.Column(accessor='idcargaison.numcertificatqualite', verbose_name='Num. CQ')
-    produit = tables.Column(accessor='idcargaison.idcargaison.idcargaison.produit')
-    importateur = tables.Column(accessor='idcargaison.idcargaison.idcargaison.importateur')
+    produit = tables.Column(accessor='idcargaison.idcargaison.idcargaison.nom_produit')
+    importateur = tables.Column(accessor='idcargaison.idcargaison.idcargaison.nom_importateur')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
@@ -380,11 +380,11 @@ class RapportLaboTable(tables.Table):
 
 class EchantReception(tables.Table):
     datereceptionlabo = tables.Column(verbose_name='Date Récep.')
-    idcargaison__idcargaison__entrepot = tables.Column(verbose_name='Entrepot')
-    idcargaison__idcargaison__importateur = tables.Column(verbose_name='Importateur')
+    idcargaison__idcargaison__entrepot = tables.Column(accessor='idcargaison.idcargaison.nom_entrepot', verbose_name='Entrepot')
+    idcargaison__idcargaison__importateur = tables.Column(accessor='idcargaison.idcargaison.nom_importateur', verbose_name='Importateur')
     codelabo = tables.Column(verbose_name='Code Labo')
     idcargaison__idcargaison__numrappech = tables.Column(verbose_name='# RE')
-    idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name='Produit')
+    idcargaison__idcargaison__produit__nomproduit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name='Produit')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped",
@@ -446,10 +446,10 @@ class RapportsLaboratoireReception(tables.Table):
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto',verbose_name="NUM.RE")
     idcargaison__dateechantillonage = tables.Column(verbose_name='DATE ECHANT.')
     datereceptionlabo = tables.Column(verbose_name="DATE RECEP.")
-    idcargaison__idcargaison__entrepot = tables.Column(verbose_name='ENTREPOT')
-    idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__idcargaison__entrepot = tables.Column(accessor='idcargaison.idcargaison.nom_entrepot', verbose_name='ENTREPOT')
+    idcargaison__idcargaison__importateur = tables.Column(accessor='idcargaison.idcargaison.nom_importateur', verbose_name="FOURNISSEUR")
     idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION")
-    idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__idcargaison__produit = tables.Column(accessor='idcargaison.idcargaison.nom_produit', verbose_name="PRODUIT")
     codelabo = tables.Column(verbose_name="CODE LABO")
 
     class Meta:
@@ -461,9 +461,9 @@ class RapportsLaboratoireReception(tables.Table):
 
 class RapportLaboratoireEnAttenteReception(tables.Table):
     entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE PRELEVEMENT.")
-    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
-    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
-    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    entrepot__nomentrepot = tables.Column(accessor='nom_entrepot', verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name="PRODUIT")
     numdos = tables.Column(verbose_name="NUM.DOSSIER")
     entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RAPPORT ECHANT.")
     entrepot_echantillon__qte = tables.Column(verbose_name="QTE ECHANT.")
@@ -479,9 +479,9 @@ class RapportLaboratoireEnAttenteResultat(tables.Table):
     numdos = tables.Column(verbose_name="NUM.DOSSIER")
     entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
     entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
-    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
-    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
-    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    entrepot__nomentrepot = tables.Column(accessor='nom_entrepot', verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name="PRODUIT")
     entrepot_echantillon__qte = tables.Column(verbose_name="QTE")
 
     class Meta:
@@ -497,9 +497,9 @@ class RapportLaboratoireEnAttenteValidation(tables.Table):
     entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
     entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
     entrepot_echantillon__laboreception__numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
-    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
-    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
-    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    entrepot__nomentrepot = tables.Column(accessor='nom_entrepot', verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name="PRODUIT")
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
@@ -514,9 +514,9 @@ class RapportLaboratoireEnchPrintedCert(tables.Table):
     entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
     entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
     entrepot_echantillon__laboreception__numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
-    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
-    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
-    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    entrepot__nomentrepot = tables.Column(accessor='nom_entrepot', verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name="PRODUIT")
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
@@ -531,10 +531,10 @@ class rapportActiviteCQ(tables.Table):
     entrepot_echantillon__numrappechauto = tables.Column(verbose_name='NUM.RE')
     entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
     entrepot_echantillon__laboreception__numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
-    entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
-    importateur__nomimportateur = tables.Column(verbose_name='IMPORTATEUR')
+    entrepot__nomentrepot = tables.Column(accessor='nom_entrepot', verbose_name='ENTREPOT')
+    importateur__nomimportateur = tables.Column(accessor='nom_importateur', verbose_name='IMPORTATEUR')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
+    produit__nomproduit = tables.Column(accessor='nom_produit', verbose_name='PRODUIT')
     conformiteProduit = tables.Column(verbose_name='CONFORMITE')
 
     class Meta:

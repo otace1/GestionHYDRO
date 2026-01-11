@@ -1,40 +1,26 @@
 import django_tables2 as tables
-
+from django.utils.translation import gettext_lazy as _
 from .models import Cargaison
 
-TEMPLATE = """
-<a href="{%url 'showqrcode' record.pk%}" class="btn btn-warning" aria-hidden="true" target=_blank>IMPRESSION QRCODE</a> 
-      
- """
-
-
+ACTIONS_TEMPLATE = """
+{% load i18n %}
+<button class="btn btn-info btn-sm btn-cargaison-details" data-id="{{ record.pk }}" title="{% trans 'Détails' %}">
+    <i class="fas fa-eye mr-1"></i> {% trans "Détails" %}
+</button>
+"""
 
 class CargaisonTable(tables.Table):
-    print = tables.TemplateColumn(TEMPLATE, verbose_name='ACTIONS')
-    importateur = tables.Column(verbose_name='IMPORTATEUR')
-    user = tables.Column(verbose_name='USER')
-    volume = tables.Column(verbose_name='VOL.AMBIANT')
-    # volume15 = tables.Column(verbose_name='VOL.15°C')
-    # volume20 = tables.Column(verbose_name='VOL.20°C')
-    # tonnagevide = tables.Column(verbose_name='TONNAGE VIDE')
-    # tonnageair = tables.Column(verbose_name='TONNAGE AIR')
-    entrepot = tables.Column(verbose_name='ENTREPOT DE DEST.')
-    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
-    produit = tables.Column(verbose_name='PRODUIT')
+    dateheurecargaison = tables.DateTimeColumn(format='d M Y, H:i', verbose_name=_('DATE & HEURE'))
+    declaration = tables.Column(verbose_name=_('DÉCLARATION'))
+    importateur = tables.Column(accessor='nom_importateur', verbose_name=_('IMPORTATEUR'))
+    entrepot = tables.Column(accessor='nom_entrepot', verbose_name=_('ENTREPÔT'))
+    immatriculation = tables.Column(verbose_name=_('IMMATRICULATION'))
+    produit = tables.Column(accessor='nom_produit', verbose_name=_('PRODUIT'))
+    volume = tables.TemplateColumn('{{ record.volume }} L', verbose_name=_('VOLUME'))
+    actions = tables.TemplateColumn(ACTIONS_TEMPLATE, verbose_name=_('ACTIONS'), orderable=False)
 
     class Meta:
-        # attrs = {
-        #     "class": "table table-bordered table-striped",
-        #     "id": "example1"
-        # }
-        template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume','print']
-        exclude = ['files_path','dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport', 'controlOrganoleptique','dateDechargement','volume15',
-                    'volume20', 'tonnagevide','toBeRefouler','toBeConsignated','isConsignated','isRefouler',
-                    'tonnageair','transitaire','controlLiquidation','partialLiquidattion',
-                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
-                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration','numCertInspection']
+        template_name = "django_tables2/bootstrap4.html"
+        fields = ('dateheurecargaison', 'declaration', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume', 'actions')
+        sequence = ('dateheurecargaison', 'declaration', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume', 'actions')

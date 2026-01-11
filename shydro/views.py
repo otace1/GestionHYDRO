@@ -4677,12 +4677,7 @@ def _rapport_base_qs(request):
 
     qs = (
         Cargaison.objects
-        .select_related(
-            # single-valued FKs/O2O:
-            'entrepot', 'entrepot__ville',
-            'frontiere', 'importateur', 'produit',
-            'inspection',  # OneToOne from Inspection to Cargaison
-        )
+        .select_related('inspection')
         .prefetch_related(
             # reverse O2O + its O2O:
             'entrepot_echantillon',
@@ -4738,16 +4733,16 @@ def rapportActiviteData(request):
         'idcargaison',
         'numdos',
         'declaration',
-        'frontiere__nomville',
+        'nom_frontiere',
         'inspection__dens',
         'inspection__temp',
         'mtaTotal',
         'mtvTotal',
-        'entrepot__nomentrepot',
+        'nom_entrepot',
         'inspection__dateinspection',
-        'importateur__nomimportateur',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit',
+        'nom_produit',
         'dateheurecargaison',
         'requisitiondackdate',
         'echantillon_date',

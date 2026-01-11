@@ -269,8 +269,8 @@ class RegularisationNouvelleEntree(forms.ModelForm):
 
             ),
             FormActions(
-                Submit('VALIDER', 'VALIDER', css_class='btn btn-outline-warning'),
-                Reset('CLEAR', 'CLEAR', css_class='btn btn-danger'),
+                Submit('VALIDER', 'ENREGISTRER', css_class='btn btn-success px-5 font-weight-bold'),
+                Reset('CLEAR', 'ANNULER', css_class='btn btn-outline-secondary px-5'),
             ),
         )
 
@@ -305,8 +305,8 @@ class ImportateurRegularisationForm(forms.Form):
                         css_class='form-row'
                         ),
             FormActions(
-                Submit('ENREGISTRER', 'ENREGISTRER', css_class='btn btn-primary'),
-                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
+                Submit('ENREGISTRER', 'ENREGISTRER', css_class='btn btn-primary px-5 font-weight-bold'),
+                Reset('ANNULER', 'ANNULER', css_class='btn btn-outline-secondary px-5'),
             ),
         )
 
@@ -336,8 +336,8 @@ class EntrepotRegularisationForm(forms.Form):
                 css_class='form-row'
                 ),
             FormActions(
-                Submit('ENREGISTRER', 'ENREGISTRER', css_class='btn btn-outlined-warning'),
-                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
+                Submit('ENREGISTRER', 'ENREGISTRER', css_class='btn btn-primary px-5 font-weight-bold'),
+                Reset('ANNULER', 'ANNULER', css_class='btn btn-outline-secondary px-5'),
             ),
         )
 

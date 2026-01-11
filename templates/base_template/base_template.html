@@ -182,219 +182,23 @@
     </nav>
 
     <!-- Sidebar -->
-    <aside class="main-sidebar sidebar-dark-secondary elevation-4">
-        <a href="#" class="brand-link">
-            <span class="brand-text text-warning">TrackFlow+</span>
-        </a>
-
-        <div class="sidebar">
-            <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
-                    data-accordion="false">
-
-                    {# ======= YOUR MENU (cleaned, logic unchanged) ======= #}
-
-                    {% if user.role_id == 1 or user.role_id == 8 %}
-                        <li class="nav-header text-danger">DÉPARTEMENT</li>
-                        <li class="nav-item">
-                            <a href="{% url 'dashboard' %}"
-                               class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                                <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>TABLEAU DE BORD</p>
-                            </a>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 2 or user.role_id == 1 %}
-                        <li class="nav-header text-danger">FRONTIÈRE</li>
-                        <li class="nav-item">
-                            <a href="{% url 'cargaison' %}"
-                               class="nav-link {% if request.resolver_match.url_name == 'cargaison' %}active{% endif %}">
-                                <i class="nav-icon fas fa-truck-moving"></i>
-                                <p>ENREGISTREMENT</p>
-                            </a>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
-                        <li class="nav-header text-danger">ENTREPÔT</li>
-                        <li class="nav-item">
-                            <a href="{% url 'entrepot' %}"
-                               class="nav-link {% if request.resolver_match.url_name == 'entrepot' %}active{% endif %}">
-                                <i class="nav-icon fas fa-industry"></i>
-                                <p>ENTREPÔT</p>
-                            </a>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
-                        <li class="nav-header text-danger">CERTIFICATION</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fas fa-flask"></i>
-                                <p>LABORATOIRE <i class="right fas fa-angle-left"></i></p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                {% if user.role_id == 4 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'labo' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'labo' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>RÉCEPTION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 5 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'analyse' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'analyse' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>ENCODAGE & IMPR.</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation1' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'validation1' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION - NIVEAU 1</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 10 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation2' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'validation2' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION - NIVEAU 2</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'impression' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'impression' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>IMPRESSION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 7 or user.role_id == 1 or user.role_id == 11 or user.role_id == 13 %}
-                        <li class="nav-header text-danger">CELLULE HYDRO</li>
-                        <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fas fa-building"></i>
-                                <p>HYDRO <i class="right fas fa-angle-left"></i></p>
-                            </a>
-
-                            <ul class="nav nav-treeview">
-                                {% if user.role_id == 1 or user.role_id == 7 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'tableaudeBordHydro' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'tableaudeBordHydro' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>TABLEAU DE BORD</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-
-                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 7 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'codification' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'codification' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>GESTION REQUISITION</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{% url 'regularisation' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'regularisation' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>REGULARISATION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-
-                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'rapportActivite' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'rapportActivite' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>RAPPORT D'ACTIVITÉ</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-
-                                {% if user.role_id == 1 or user.role_id == 13 or user.role_id == 7 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'facturations' %}"
-                                           class="nav-link {% if request.resolver_match.url_name == 'facturations' %}active{% endif %}">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>PAIEMENTS</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 1 %}
-                        <li class="nav-header text-danger">ADMINISTRATION</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fas fa-user"></i>
-                                <p>USERS <i class="right fas fa-angle-left"></i></p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'userslist' %}"
-                                       class="nav-link {% if request.resolver_match.url_name == 'userslist' %}active{% endif %}">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'UTILISATEURS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="{% url 'activityLog' %}"
-                               class="nav-link {% if request.resolver_match.url_name == 'activityLog' %}active{% endif %}">
-                                <i class="nav-icon fas fa-file"></i>
-                                <p>JOURNAL D'ACTIVITÉS</p>
-                            </a>
-                        </li>
-
-
-                        <li class="nav-item">
-                            <a href="{% url 'activityLog' %}"
-                               class="nav-link {% if request.resolver_match.url_name == 'app_settings' %}active{% endif %}">
-                                <i class="nav-icon fas fa-file"></i>
-                                <p>PARAMÈTRES</p>
-                            </a>
-                        </li>
-                    {% endif %}
-
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-hands-helping"></i>
-                            <p>AIDE</p>
-                        </a>
-                    </li>
-
-                </ul>
-            </nav>
-        </div>
-    </aside>
+   {% include 'base_template/menus/menus.html' %}
 
     <!-- Content -->
     <div class="content-wrapper">
+        <div class="container-fluid mt-2">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="icon fas {% if message.tags == 'success' %}fa-check{% elif message.tags == 'danger' %}fa-ban{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info{% endif %} mr-2"></i>
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
         {% block content %}{% endblock %}
     </div>
 
