@@ -616,25 +616,42 @@
 
 <!-- CORRECTION MODAL -->
 <div class="modal fade" id="correctionModal" tabindex="-1" role="dialog" aria-labelledby="correctionModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="correctionModalLabel">
-          <i class="fas fa-wand-magic-sparkles mr-2"></i>CORRECTION NATURE PRODUIT
-        </h5>
+        <div class="d-flex align-items-center" style="gap:.75rem;">
+          <div class="tf-icon warn" style="width:44px;height:44px;border-radius:14px;">
+            <i class="fas fa-wand-magic-sparkles"></i>
+          </div>
+          <div>
+            <h5 class="modal-title mb-0" id="correctionModalLabel">CORRECTION NATURE PRODUIT</h5>
+            <div class="small text-muted">Ajuster le référentiel produit pour cet échantillon</div>
+          </div>
+        </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
 
-      <div class="modal-body">
-        {% crispy form %}
+      <div class="modal-body p-4">
+        <div class="alert alert-info border-0 shadow-sm mb-4" style="border-radius:12px; background: rgba(13,202,240,.08); color: #087990;">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-circle-info"></i>
+            <div>
+              <strong>Information :</strong> Modifier la nature du produit adaptera la liste des paramètres d'analyse pour cette cargaison.
+            </div>
+          </div>
+        </div>
+        
+        <div class="px-2">
+          {% crispy form %}
+        </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Fermer</button>
+      <div class="modal-footer bg-light border-0">
+        <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Annuler</button>
         <button type="button" class="btn btn-primary btn-pill validation-correction-btn">
-          <i class="fas fa-check mr-1"></i> Valider
+          <i class="fas fa-check mr-1"></i> Confirmer le changement
         </button>
       </div>
     </div>
@@ -856,12 +873,12 @@ $(document).ready(function () {
       complete: function(){ hideLoadbar(); }
     },
     columns: [
-      { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
-      { data: 'entrepot_echantillon__laboreception__codelabo' },
-      { data: 'entrepot_echantillon__numrappechauto' },
-      { data: 'numdos' },
-      { data: 'immatriculation' },
-      { data: 'produit__nomproduit' },
+      { data: 'date_reception_labo__date', defaultContent: '' },
+      { data: 'code_labo', defaultContent: '' },
+      { data: 'entrepot_echantillon__numrappechauto', defaultContent: '' },
+      { data: 'numdos', defaultContent: '' },
+      { data: 'immatriculation', defaultContent: '' },
+      { data: 'nom_produit', defaultContent: '' },
       {
         data: 'completion_percent',
         render: function(data, type, row) {
@@ -952,7 +969,11 @@ $(document).ready(function () {
 
   // Validate correction
   $(document).on('click','.validation-correction-btn', function (){
+    const $btn = $(this);
+    const $modal = $("#correctionModal");
     const formData = $("#correctionForm").serialize() + "&idcargaison=" + idcargaison;
+
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> En cours...');
 
     $.ajax({
       type: "POST",
@@ -960,11 +981,16 @@ $(document).ready(function () {
       data: formData,
       headers: { 'X-CSRFToken': csrfToken },
       success: function() {
-        $("#correctionModal").modal("hide");
+        $modal.modal("hide");
+        
+        // Brute force removal of backdrop if it stays
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+
         dataTable.ajax.reload(null, false);
-        // optional: refresh redo table if visible
         if(redoTable) redoTable.ajax.reload(null, false);
         fetchRedoCount();
+
         Swal.fire({
           icon: 'success',
           title: 'Succès',
@@ -973,13 +999,18 @@ $(document).ready(function () {
           showConfirmButton: false
         });
       },
-      error: function() {
-        dataTable.ajax.reload(null, false);
+      error: function(xhr) {
+        let msg = 'Une erreur est survenue lors de la correction';
+        if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+        
         Swal.fire({
           icon: 'error',
           title: 'Erreur',
-          text: 'Une erreur est survenue lors de la correction'
+          text: msg
         });
+      },
+      complete: function() {
+        $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Confirmer le changement');
       }
     });
   });
@@ -1173,7 +1204,8 @@ $(document).ready(function () {
   // Save changes (validate)
   $('#saveChanges').on('click', function() {
     const $btn = $(this);
-    $btn.prop('disabled', true);
+    const $modal = $('#modal-xl');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Validation...');
 
     $.ajax({
       type: 'POST',
@@ -1181,18 +1213,23 @@ $(document).ready(function () {
       data: { idcargaison: idcargaison },
       headers: { 'X-CSRFToken': csrfToken },
       success: function () {
+        $modal.modal('hide');
+        
+        // Ensure backdrop is gone
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+
         Swal.fire({
           icon: 'success',
           title: 'Enregistré',
           text: 'Données sauvegardées avec succès',
           timer: 2000,
           showConfirmButton: false
-        }).then(() => {
-          $('#modal-xl').modal('hide');
-          dataTable.ajax.reload(null, false);
-          if(redoTable) redoTable.ajax.reload(null, false);
-          fetchRedoCount();
         });
+
+        dataTable.ajax.reload(null, false);
+        if(redoTable) redoTable.ajax.reload(null, false);
+        fetchRedoCount();
       },
       error: function () {
         Swal.fire({
@@ -1202,7 +1239,9 @@ $(document).ready(function () {
         });
       },
       complete: function(){
-        setTimeout(function(){ $btn.prop('disabled', false); }, 400);
+        setTimeout(function(){ 
+          $btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Valider le dossier'); 
+        }, 400);
       }
     });
   });

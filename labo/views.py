@@ -5292,13 +5292,18 @@ def responseAffichageanalyse(request):
 
         # Rename keys for frontend compatibility
         for r in data:
-            if r.get("date_reception_labo"):
-                r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = r.pop("date_reception_labo").date()
+            # Date handling
+            dt_rec = r.pop("date_reception_labo", None)
+            if dt_rec:
+                r["date_reception_labo__date"] = dt_rec.date()
+                r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt_rec.date()
             else:
-                r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = r.pop("date_reception_labo", None)
+                r["date_reception_labo__date"] = None
+                r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = None
 
-            r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
-            r["produit__nomproduit"] = r.pop("nom_produit", None)
+            # Keep both original and legacy keys for compatibility
+            r["entrepot_echantillon__laboreception__codelabo"] = r.get("code_labo")
+            r["produit__nomproduit"] = r.get("nom_produit")
 
             # Completion Percentage
             total = r.pop("total_params", 0) or 0
@@ -5616,20 +5621,26 @@ def echantillonRecusResponse(request):
 @login_required(login_url='login')
 def correctionNature(request):
     if request.method == 'POST':
-        produit = request.POST['produit']
-        idcargaison = request.POST['idcargaison']
-        c = Cargaison.objects.get(idcargaison=idcargaison)
-        p = Produit.objects.get(idproduit=produit)
-        c.produit = p
-        c.save(update_fields=['produit'])
-        # print(produit)
-        # print(idcargaison)
-        response_data = {"message": "Form submitted successfully"}
-        return JsonResponse(response_data, status=200)
+        produit_id = request.POST.get('produit')
+        idcargaison = request.POST.get('idcargaison')
+        
+        if not produit_id or not idcargaison:
+            return JsonResponse({"message": "Données manquantes"}, status=400)
+            
+        try:
+            c = Cargaison.objects.get(idcargaison=idcargaison)
+            p = Produit.objects.get(idproduit=produit_id)
+            c.produit = p
+            # We don't use update_fields to let the custom save() handle denormalization
+            c.save()
+            
+            return JsonResponse({"message": "Changement de produit effectué avec succès"}, status=200)
+        except (Cargaison.DoesNotExist, Produit.DoesNotExist):
+            return JsonResponse({"message": "Cargaison ou Produit introuvable"}, status=404)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
     else:
-        # Handle other HTTP methods or errors if needed
-        response_data = {"message": "Invalid request method"}
-        return JsonResponse(response_data, status=400)
+        return JsonResponse({"message": "Méthode non autorisée"}, status=405)
 
 
 @login_required(login_url='login')
