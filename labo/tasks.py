@@ -3,6 +3,7 @@
 import os
 import io
 import importlib
+import tempfile
 
 from celery import shared_task
 from django.db.models import Q
@@ -473,10 +474,10 @@ def export_reception_rapports_to_xlsx(self, user_id: int, filters: dict):
         # We return the actual path returned by save() to be safe
         storage_key = storage_path
 
-        # Legacy fallback: also save to /tmp for local serving if needed
+        # Legacy fallback: also save to system temp dir for local serving if needed
         try:
             tmp_fname = f"rapport_reception_{user_id}_{self.request.id}.xlsx"
-            tmp_path = os.path.join("/tmp", tmp_fname)
+            tmp_path = os.path.join(tempfile.gettempdir(), tmp_fname)
             bio.seek(0)
             with open(tmp_path, "wb") as f:
                 f.write(bio.read())

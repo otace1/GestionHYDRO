@@ -33,6 +33,7 @@ from .numCq import numCq
 from .tables import *
 from .tasks import export_reception_rapports_to_xlsx, generate_certificates_pdf_task
 import os
+import tempfile
 
 
 # Sending email
@@ -3621,9 +3622,9 @@ def receptionRapportsExportStatus(request, task_id: str):
 def receptionRapportsExportDownload(request, task_id: str):
     """Serve the generated XLSX for a completed export task if owned by the current user."""
     user_id = request.user.id
-    # Our task saves file to /tmp with pattern rapport_reception_{user_id}_{task_id}.xlsx
+    # Our task saves file to system temp dir with pattern rapport_reception_{user_id}_{task_id}.xlsx
     fname = f"rapport_reception_{user_id}_{task_id}.xlsx"
-    fpath = os.path.join("/tmp", fname)
+    fpath = os.path.join(tempfile.gettempdir(), fname)
     if not os.path.exists(fpath):
         return JsonResponse({"error": "File not found or not ready yet"}, status=404)
 

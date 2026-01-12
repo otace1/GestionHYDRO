@@ -9,7 +9,8 @@ def check_token(token):
     kid_claim = n_decoded['kid']
 
     response = requests.get(
-        "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-r5wop%40cgw-mobile-apps.iam.gserviceaccount.com")
+        "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-r5wop%40cgw-mobile-apps.iam.gserviceaccount.com",
+        timeout=10)
     x509_key = response.json()[kid_claim]
     key = x509.load_pem_x509_certificate(x509_key.encode('utf-8'), backend=default_backend())
     public_key = key.public_key()

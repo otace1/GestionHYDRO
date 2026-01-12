@@ -1673,7 +1673,7 @@ def regularisation_response(request):
             'impt': flt_importateur, 'ent': flt_entrepot, 'prd': flt_produit,
             'imm': flt_immat, 'dec': flt_declaration, 'dos': flt_numdos,
         }
-        total_key = 'reg:tot:' + hashlib.md5(json.dumps(total_cache_payload, sort_keys=True).encode()).hexdigest()
+        total_key = 'reg:tot:' + hashlib.sha256(json.dumps(total_cache_payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()
         records_total = cache.get(total_key)
         if records_total is None:
             records_total = base_qs.count()
@@ -1696,7 +1696,7 @@ def regularisation_response(request):
     # 7. recordsFiltered (Count after global search, cached)
     try:
         filtered_cache_payload = {**total_cache_payload, 'q': search_value}
-        filtered_key = 'reg:fil:' + hashlib.md5(json.dumps(filtered_cache_payload, sort_keys=True).encode()).hexdigest()
+        filtered_key = 'reg:fil:' + hashlib.sha256(json.dumps(filtered_cache_payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()
         records_filtered = cache.get(filtered_key)
         if records_filtered is None:
             records_filtered = base_qs.count()
