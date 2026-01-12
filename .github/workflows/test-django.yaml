@@ -90,6 +90,33 @@ jobs:
           python manage.py check
           python manage.py migrate --noinput
 
+      - name: Django security check (deploy)
+        run: |
+          python manage.py check --deploy
+
       - name: Run tests
         run: |
           python manage.py test -v 2
+
+  security_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install security tools
+        run: pip install bandit safety
+
+      - name: Bandit Scan
+        # -r: recursive, -ll: medium/high severity, -x: exclude directories
+        run: bandit -r . -ll -x ./tests,./venv,./migrations
+
+      - name: Safety Check
+        # Checks dependencies for known vulnerabilities
+        run: safety check -r requirements.txt

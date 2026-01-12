@@ -17,6 +17,7 @@ jobs:
     uses: otace1/GestionHYDRO/.github/workflows/test-django.yaml@Dockerized
 
   build:
+    needs: [test_django_job]
     runs-on: ubuntu-latest
 
     env:
