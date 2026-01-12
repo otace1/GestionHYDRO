@@ -18,3 +18,5 @@ docs
 __pycache__/
 *.py[cod]
 
+/enreg/migrations/
+/accounts/migrations/
