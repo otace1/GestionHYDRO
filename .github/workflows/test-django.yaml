@@ -116,7 +116,7 @@ jobs:
 
       - name: Bandit Scan
         # -r: recursive, -ll: medium/high severity, -x: exclude directories
-        run: bandit -r . -ll -x ./tests,./venv,./migrations
+        run: bandit -r . -ll -x ./tests,./venv,./migrations,./staticfiles,./staticfiles-cdn,./static,./assets
 
       - name: Safety Check
         # Checks dependencies for known vulnerabilities
