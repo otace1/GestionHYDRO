@@ -18,7 +18,7 @@ spec:
           mountPath: /vol/web/media
         - name: db-data
           mountPath: /var/lib/mysql
-      command: ["/bin/sh", "-c", "python manage.py collectstatic --noinput; python manage.py migrate --noinput; python manage.py migrate django_celery_results; gunicorn hydrocarbures.wsgi --bind 0.0.0.0:8000 --worker-tmp-dir /dev/shm"]
+      command: ["/bin/sh", "-c", "python manage.py collectstatic --noinput; python manage.py makemigrations --noinput; python manage.py migrate --noinput; python manage.py migrate django_celery_results; gunicorn hydrocarbures.wsgi --bind 0.0.0.0:8000 --worker-tmp-dir /dev/shm"]
     - name: celery-server
       image: otace1/gestionhydro:latest
       envFrom:
