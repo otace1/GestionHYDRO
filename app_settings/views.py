@@ -4,8 +4,14 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash, get_user_model
-from .forms import UserProfileForm, BureauDGDAForm, BanqueForm, LiquidationModelForm
-from enreg.models import Cargaison, Importateur, Entrepot, BureauDGDA, Banques, LiquidationModel
+from .forms import (
+    UserProfileForm, BureauDGDAForm, BanqueForm, LiquidationModelForm,
+    ImportateurForm, EntrepotForm, VilleForm, ProduitForm, VoieForm
+)
+from enreg.models import (
+    Cargaison, Importateur, Entrepot, BureauDGDA, Banques, LiquidationModel,
+    Ville, Produit, Voie
+)
 import django
 import sys
 import platform
@@ -21,6 +27,11 @@ def app_settings(request):
     bureau_form = BureauDGDAForm()
     banque_form = BanqueForm()
     modele_form = LiquidationModelForm()
+    importateur_form = ImportateurForm()
+    entrepot_form = EntrepotForm()
+    ville_form = VilleForm()
+    produit_form = ProduitForm()
+    voie_form = VoieForm()
     
     if request.method == 'POST':
         if 'update_profile' in request.POST:
@@ -121,6 +132,131 @@ def app_settings(request):
                 messages.success(request, "Modèle supprimé.")
             return redirect('/settings/?tab=referentials')
 
+        # Importateur CRUD
+        elif 'add_importateur' in request.POST:
+            if user.is_admin:
+                form = ImportateurForm(request.POST)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Importateur ajouté.")
+                return redirect('/settings/?tab=referentials')
+        
+        elif 'edit_importateur' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Importateur, pk=request.POST.get('pk'))
+                form = ImportateurForm(request.POST, instance=instance)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Importateur mis à jour.")
+                return redirect('/settings/?tab=referentials')
+
+        elif 'delete_importateur' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Importateur, pk=request.POST.get('pk'))
+                instance.delete()
+                messages.success(request, "Importateur supprimé.")
+            return redirect('/settings/?tab=referentials')
+
+        # Entrepot CRUD
+        elif 'add_entrepot' in request.POST:
+            if user.is_admin:
+                form = EntrepotForm(request.POST)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Entrepôt ajouté.")
+                return redirect('/settings/?tab=referentials')
+        
+        elif 'edit_entrepot' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Entrepot, pk=request.POST.get('pk'))
+                form = EntrepotForm(request.POST, instance=instance)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Entrepôt mis à jour.")
+                return redirect('/settings/?tab=referentials')
+
+        elif 'delete_entrepot' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Entrepot, pk=request.POST.get('pk'))
+                instance.delete()
+                messages.success(request, "Entrepôt supprimé.")
+            return redirect('/settings/?tab=referentials')
+
+        # Ville CRUD
+        elif 'add_ville' in request.POST:
+            if user.is_admin:
+                form = VilleForm(request.POST)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Ville ajoutée.")
+                return redirect('/settings/?tab=referentials')
+        
+        elif 'edit_ville' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Ville, pk=request.POST.get('pk'))
+                form = VilleForm(request.POST, instance=instance)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Ville mise à jour.")
+                return redirect('/settings/?tab=referentials')
+
+        elif 'delete_ville' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Ville, pk=request.POST.get('pk'))
+                instance.delete()
+                messages.success(request, "Ville supprimée.")
+            return redirect('/settings/?tab=referentials')
+
+        # Produit CRUD
+        elif 'add_produit' in request.POST:
+            if user.is_admin:
+                form = ProduitForm(request.POST)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Produit ajouté.")
+                return redirect('/settings/?tab=referentials')
+        
+        elif 'edit_produit' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Produit, pk=request.POST.get('pk'))
+                form = ProduitForm(request.POST, instance=instance)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Produit mis à jour.")
+                return redirect('/settings/?tab=referentials')
+
+        elif 'delete_produit' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Produit, pk=request.POST.get('pk'))
+                instance.delete()
+                messages.success(request, "Produit supprimé.")
+            return redirect('/settings/?tab=referentials')
+
+        # Voie CRUD
+        elif 'add_voie' in request.POST:
+            if user.is_admin:
+                form = VoieForm(request.POST)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Voie ajoutée.")
+                return redirect('/settings/?tab=referentials')
+        
+        elif 'edit_voie' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Voie, pk=request.POST.get('pk'))
+                form = VoieForm(request.POST, instance=instance)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Voie mise à jour.")
+                return redirect('/settings/?tab=referentials')
+
+        elif 'delete_voie' in request.POST:
+            if user.is_admin:
+                instance = get_object_or_404(Voie, pk=request.POST.get('pk'))
+                instance.delete()
+                messages.success(request, "Voie supprimée.")
+            return redirect('/settings/?tab=referentials')
+
     # System info
     system_info = {
         'django_version': django.get_version(),
@@ -134,6 +270,11 @@ def app_settings(request):
     bureaus = []
     banques = []
     modeles = []
+    importateurs = []
+    entrepots = []
+    villes = []
+    produits = []
+    voies = []
     
     if user.is_admin:
         stats = {
@@ -145,6 +286,11 @@ def app_settings(request):
         bureaus = BureauDGDA.objects.all().order_by('codebureau')
         banques = Banques.objects.all().order_by('nombanque')
         modeles = LiquidationModel.objects.all().order_by('liquidationModel')
+        importateurs = Importateur.objects.all().order_by('nomimportateur')
+        entrepots = Entrepot.objects.all().order_by('nomentrepot')
+        villes = Ville.objects.all().order_by('nomville')
+        produits = Produit.objects.all().order_by('nomproduit')
+        voies = Voie.objects.all().order_by('nomvoie')
     
     context = {
         'profile_form': profile_form,
@@ -152,9 +298,19 @@ def app_settings(request):
         'bureau_form': bureau_form,
         'banque_form': banque_form,
         'modele_form': modele_form,
+        'importateur_form': importateur_form,
+        'entrepot_form': entrepot_form,
+        'ville_form': ville_form,
+        'produit_form': produit_form,
+        'voie_form': voie_form,
         'bureaus': bureaus,
         'banques': banques,
         'modeles': modeles,
+        'importateurs': importateurs,
+        'entrepots': entrepots,
+        'villes': villes,
+        'produits': produits,
+        'voies': voies,
         'system_info': system_info,
         'stats': stats,
         'active_tab': request.GET.get('tab', 'profile')

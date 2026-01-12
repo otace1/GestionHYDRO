@@ -313,7 +313,10 @@ def numreq(request):
         # 1. Fetch cargo and related warehouse in a single hit
         # We need the warehouse's ville_id for numDossier
         c = Cargaison.objects.select_related('entrepot').get(idcargaison=pk)
-        
+
+        if (c.nom_importateur or '').strip().upper() == "AUTRES":
+            return JsonResponse({'error': "Veuillez envoyer a la regularisation pour correction du nom d'importateur."}, status=400)
+
         ville_id = c.entrepot.ville_id
         td = timezone.now()
         username = user.username # Already available on request.user

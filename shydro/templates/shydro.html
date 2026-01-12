@@ -676,7 +676,7 @@
                              oninput="this.value=this.value.toUpperCase()" />
                       <div class="input-group-append">
                         <button class="btn btn-primary" type="button"
-                                onclick="envoyerNumreq('${id}','${inputId}',this)">Envoyer</button>
+                                onclick="envoyerNumreq('${id}','${inputId}',this, '${escapeHtml(row.importateur__nomimportateur)}')">Envoyer</button>
                       </div>
                     </div>
                   `;
@@ -851,7 +851,11 @@
           window.location.reload();
         });
 
-        async function envoyerNumreq(rowId, inputId, btn){
+        async function envoyerNumreq(rowId, inputId, btn, importateur){
+          if(String(importateur || '').toUpperCase() === 'AUTRES'){
+            showResultModal('Attention', "Veuillez envoyer a la regularisation pour correction du nom d'importateur.");
+            return;
+          }
           const input = document.getElementById(inputId);
           if(!input){ showResultModal('Erreur', "Champ introuvable."); return; }
 

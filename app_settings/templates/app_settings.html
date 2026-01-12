@@ -252,6 +252,224 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Importateurs Section -->
+                                    <div class="col-md-12 mb-4">
+                                        <div class="card card-outline card-primary shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">IMPORTATEURS</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-primary btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-importateur">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">NOM</th>
+                                                                <th class="border-0">NIF</th>
+                                                                <th class="border-0">EMAIL</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for importateur in importateurs %}
+                                                            <tr>
+                                                                <td class="px-3 border-top font-weight-bold">{{ importateur.nomimportateur }}</td>
+                                                                <td class="border-top">{{ importateur.nifimportateur }}</td>
+                                                                <td class="border-top">{{ importateur.email }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-importateur-btn" 
+                                                                        data-pk="{{ importateur.pk }}" 
+                                                                        data-name="{{ importateur.nomimportateur }}"
+                                                                        data-nif="{{ importateur.nifimportateur }}"
+                                                                        data-addr="{{ importateur.adresseimportateur }}"
+                                                                        data-email="{{ importateur.email }}">
+                                                                        <i class="fas fa-edit"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-importateur-btn" data-pk="{{ importateur.pk }}" data-name="{{ importateur.nomimportateur }}" data-type="importateur"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="4" class="text-center text-muted py-3">Aucun importateur enregistré</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Entrepôts Section -->
+                                    <div class="col-md-12 mb-4">
+                                        <div class="card card-outline card-warning shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">ENTREPÔTS</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-warning btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-entrepot">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">NOM</th>
+                                                                <th class="border-0">VILLE</th>
+                                                                <th class="border-0">ADRESSE</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for entrepot in entrepots %}
+                                                            <tr>
+                                                                <td class="px-3 border-top font-weight-bold">{{ entrepot.nomentrepot }}</td>
+                                                                <td class="border-top">{{ entrepot.ville.nomville }}</td>
+                                                                <td class="border-top">{{ entrepot.adresseentrepot }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-entrepot-btn" 
+                                                                        data-pk="{{ entrepot.pk }}" 
+                                                                        data-name="{{ entrepot.nomentrepot }}"
+                                                                        data-ville="{{ entrepot.ville.pk }}"
+                                                                        data-addr="{{ entrepot.adresseentrepot }}">
+                                                                        <i class="fas fa-edit"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-entrepot-btn" data-pk="{{ entrepot.pk }}" data-name="{{ entrepot.nomentrepot }}" data-type="entrepot"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="4" class="text-center text-muted py-3">Aucun entrepôt enregistré</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Villes Section -->
+                                    <div class="col-md-4 mb-4">
+                                        <div class="card card-outline card-secondary shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">VILLES</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-secondary btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-ville">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">NOM</th>
+                                                                <th class="border-0">PROVINCE</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for ville in villes %}
+                                                            <tr>
+                                                                <td class="px-3 border-top">{{ ville.nomville }}</td>
+                                                                <td class="border-top">{{ ville.province }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-ville-btn" data-pk="{{ ville.pk }}" data-name="{{ ville.nomville }}" data-province="{{ ville.province }}"><i class="fas fa-edit"></i></button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-ville-btn" data-pk="{{ ville.pk }}" data-name="{{ ville.nomville }}" data-type="ville"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="3" class="text-center text-muted py-3">Aucune ville</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Produits Section -->
+                                    <div class="col-md-4 mb-4">
+                                        <div class="card card-outline card-danger shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">PRODUITS</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-danger btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-produit">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">PRODUIT</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for produit in produits %}
+                                                            <tr>
+                                                                <td class="px-3 border-top">{{ produit.nomproduit }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-produit-btn" data-pk="{{ produit.pk }}" data-name="{{ produit.nomproduit }}"><i class="fas fa-edit"></i></button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-produit-btn" data-pk="{{ produit.pk }}" data-name="{{ produit.nomproduit }}" data-type="produit"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="2" class="text-center text-muted py-3">Aucun produit</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Voies Section -->
+                                    <div class="col-md-4 mb-4">
+                                        <div class="card card-outline card-dark shadow-none border h-100">
+                                            <div class="card-header d-flex align-items-center">
+                                                <h6 class="card-title font-weight-bold mb-0">VOIES</h6>
+                                                <div class="card-tools ml-auto">
+                                                    <button type="button" class="btn btn-dark btn-xs px-2 font-weight-bold" data-toggle="modal" data-target="#modal-voie">
+                                                        <i class="fas fa-plus mr-1"></i> AJOUTER
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="bg-light sticky-top">
+                                                            <tr>
+                                                                <th class="px-3 border-0">NOM</th>
+                                                                <th class="text-right px-3 border-0">ACTIONS</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for voie in voies %}
+                                                            <tr>
+                                                                <td class="px-3 border-top">{{ voie.nomvoie }}</td>
+                                                                <td class="text-right px-3 border-top">
+                                                                    <button class="btn btn-link btn-xs text-info edit-voie-btn" data-pk="{{ voie.pk }}" data-name="{{ voie.nomvoie }}"><i class="fas fa-edit"></i></button>
+                                                                    <button class="btn btn-link btn-xs text-danger delete-voie-btn" data-pk="{{ voie.pk }}" data-name="{{ voie.nomvoie }}" data-type="voie"><i class="fas fa-trash"></i></button>
+                                                                </td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr><td colspan="2" class="text-center text-muted py-3">Aucune voie</td></tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             {% endif %}
@@ -424,6 +642,141 @@
     </div>
 </div>
 
+<!-- Importateur Modal (Add/Edit) -->
+<div class="modal fade" id="modal-importateur" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="importateurModalTitle">AJOUTER UN IMPORTATEUR</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="importateurForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="importateur_pk">
+                <input type="hidden" name="add_importateur" id="importateur_action_add" value="1">
+                <input type="hidden" name="edit_importateur" id="importateur_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy importateur_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-primary px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Entrepot Modal (Add/Edit) -->
+<div class="modal fade" id="modal-entrepot" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-warning text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="entrepotModalTitle">AJOUTER UN ENTREPÔT</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="entrepotForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="entrepot_pk">
+                <input type="hidden" name="add_entrepot" id="entrepot_action_add" value="1">
+                <input type="hidden" name="edit_entrepot" id="entrepot_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy entrepot_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-warning px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Ville Modal (Add/Edit) -->
+<div class="modal fade" id="modal-ville" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-secondary text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="villeModalTitle">AJOUTER UNE VILLE</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="villeForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="ville_pk">
+                <input type="hidden" name="add_ville" id="ville_action_add" value="1">
+                <input type="hidden" name="edit_ville" id="ville_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy ville_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-secondary px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Produit Modal (Add/Edit) -->
+<div class="modal fade" id="modal-produit" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="produitModalTitle">AJOUTER UN PRODUIT</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="produitForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="produit_pk">
+                <input type="hidden" name="add_produit" id="produit_action_add" value="1">
+                <input type="hidden" name="edit_produit" id="produit_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy produit_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-danger px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Voie Modal (Add/Edit) -->
+<div class="modal fade" id="modal-voie" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white border-0">
+                <h5 class="modal-title font-weight-bold" id="voieModalTitle">AJOUTER UNE VOIE</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" id="voieForm">
+                {% csrf_token %}
+                <input type="hidden" name="pk" id="voie_pk">
+                <input type="hidden" name="add_voie" id="voie_action_add" value="1">
+                <input type="hidden" name="edit_voie" id="voie_action_edit" value="1" disabled>
+                <div class="modal-body p-4">
+                    {% crispy voie_form %}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-secondary font-weight-bold" data-dismiss="modal">ANNULER</button>
+                    <button type="submit" class="btn btn-dark px-4 font-weight-bold shadow-sm">ENREGISTRER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="modal-delete-confirm" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
@@ -557,8 +910,135 @@
             $('#modele_action_edit').prop('disabled', true);
         });
 
+        // Importateur Edit
+        $('.edit-importateur-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            var nif = $(this).data('nif');
+            var addr = $(this).data('addr');
+            var email = $(this).data('email');
+            
+            $('#importateurModalTitle').text("MODIFIER L'IMPORTATEUR");
+            $('#importateur_pk').val(pk);
+            $('#id_nomimportateur').val(name);
+            $('#id_nifimportateur').val(nif);
+            $('#id_adresseimportateur').val(addr);
+            $('#id_email').val(email);
+            
+            $('#importateur_action_add').prop('disabled', true);
+            $('#importateur_action_edit').prop('disabled', false);
+            
+            $('#modal-importateur').modal('show');
+        });
+
+        $('#modal-importateur').on('hidden.bs.modal', function () {
+            $('#importateurModalTitle').text("AJOUTER UN IMPORTATEUR");
+            $('#importateurForm')[0].reset();
+            $('#importateur_pk').val('');
+            $('#importateur_action_add').prop('disabled', false);
+            $('#importateur_action_edit').prop('disabled', true);
+        });
+
+        // Entrepot Edit
+        $('.edit-entrepot-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            var ville = $(this).data('ville');
+            var addr = $(this).data('addr');
+            
+            $('#entrepotModalTitle').text("MODIFIER L'ENTREPÔT");
+            $('#entrepot_pk').val(pk);
+            $('#id_nomentrepot').val(name);
+            $('#id_ville').val(ville);
+            $('#id_adresseentrepot').val(addr);
+            
+            $('#entrepot_action_add').prop('disabled', true);
+            $('#entrepot_action_edit').prop('disabled', false);
+            
+            $('#modal-entrepot').modal('show');
+        });
+
+        $('#modal-entrepot').on('hidden.bs.modal', function () {
+            $('#entrepotModalTitle').text("AJOUTER UN ENTREPÔT");
+            $('#entrepotForm')[0].reset();
+            $('#entrepot_pk').val('');
+            $('#entrepot_action_add').prop('disabled', false);
+            $('#entrepot_action_edit').prop('disabled', true);
+        });
+
+        // Ville Edit
+        $('.edit-ville-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            var province = $(this).data('province');
+            
+            $('#villeModalTitle').text('MODIFIER LA VILLE');
+            $('#ville_pk').val(pk);
+            $('#id_nomville').val(name);
+            $('#id_province').val(province);
+            
+            $('#ville_action_add').prop('disabled', true);
+            $('#ville_action_edit').prop('disabled', false);
+            
+            $('#modal-ville').modal('show');
+        });
+
+        $('#modal-ville').on('hidden.bs.modal', function () {
+            $('#villeModalTitle').text('AJOUTER UNE VILLE');
+            $('#villeForm')[0].reset();
+            $('#ville_pk').val('');
+            $('#ville_action_add').prop('disabled', false);
+            $('#ville_action_edit').prop('disabled', true);
+        });
+
+        // Produit Edit
+        $('.edit-produit-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            
+            $('#produitModalTitle').text('MODIFIER LE PRODUIT');
+            $('#produit_pk').val(pk);
+            $('#id_nomproduit').val(name);
+            
+            $('#produit_action_add').prop('disabled', true);
+            $('#produit_action_edit').prop('disabled', false);
+            
+            $('#modal-produit').modal('show');
+        });
+
+        $('#modal-produit').on('hidden.bs.modal', function () {
+            $('#produitModalTitle').text('AJOUTER UN PRODUIT');
+            $('#produitForm')[0].reset();
+            $('#produit_pk').val('');
+            $('#produit_action_add').prop('disabled', false);
+            $('#produit_action_edit').prop('disabled', true);
+        });
+
+        // Voie Edit
+        $('.edit-voie-btn').on('click', function() {
+            var pk = $(this).data('pk');
+            var name = $(this).data('name');
+            
+            $('#voieModalTitle').text('MODIFIER LA VOIE');
+            $('#voie_pk').val(pk);
+            $('#id_nomvoie').val(name);
+            
+            $('#voie_action_add').prop('disabled', true);
+            $('#voie_action_edit').prop('disabled', false);
+            
+            $('#modal-voie').modal('show');
+        });
+
+        $('#modal-voie').on('hidden.bs.modal', function () {
+            $('#voieModalTitle').text('AJOUTER UNE VOIE');
+            $('#voieForm')[0].reset();
+            $('#voie_pk').val('');
+            $('#voie_action_add').prop('disabled', false);
+            $('#voie_action_edit').prop('disabled', true);
+        });
+
         // Delete Confirmation
-        $('.delete-bureau-btn, .delete-banque-btn, .delete-modele-btn').on('click', function() {
+        $('.delete-bureau-btn, .delete-banque-btn, .delete-modele-btn, .delete-importateur-btn, .delete-entrepot-btn, .delete-ville-btn, .delete-produit-btn, .delete-voie-btn').on('click', function() {
             var pk = $(this).data('pk');
             var name = $(this).data('name');
             var type = $(this).data('type');
