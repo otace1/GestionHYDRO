@@ -84,10 +84,15 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install Bandit
-        run: pip install bandit
+      - name: Install Security Tools
+        run: pip install bandit safety semgrep
 
       - name: Bandit Scan
         # -r: recursive, -ll: medium/high severity, -x: exclude directories
-#        run: bandit -r . -ll -x ./tests,./venv,./migrations,./staticfiles,./staticfiles-cdn,./static,./assets
         run: bandit -r . -ll -x ./tests,./venv,./migrations,./staticfiles,./staticfiles-cdn,./static,./assets || true
+
+      - name: Safety Scan
+        run: safety check -r requirements.txt || true
+
+      - name: Semgrep Scan
+        run: semgrep scan --config auto --exclude ./tests --exclude ./venv --exclude ./migrations --exclude ./staticfiles --exclude ./staticfiles-cdn --exclude ./static --exclude ./assets || true
