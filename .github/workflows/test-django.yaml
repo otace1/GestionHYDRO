@@ -14,20 +14,24 @@ concurrency:
 
 jobs:
   security_scan:
+    name: Security Scan (Bandit)
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      # Bandit GitHub Action (recommended by PyCQA)
+      - name: Bandit by PyCQA
+        uses: PyCQA/bandit-action@v1.0.1
         with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install security tools
-        run: pip install bandit
-
-      - name: Bandit Scan
-        # -r: recursive, -ll: medium/high severity, -x: exclude directories
-        run: bandit -r . -ll -x ./tests,./venv,./migrations,./staticfiles,./staticfiles-cdn,./static,./assets
+          # Recursive scan of repository
+          targets: "."
+          # -ll = medium/high only
+          # -r  = recursive (targets="." already, but keep for clarity)
+          # -x  = exclude paths
+          # --skip B101 example (optional) if you want to ignore assert usage
+          options: >-
+            -r
+            -ll
+            -x ./tests,./venv,./.venv,./migrations,./staticfiles,./staticfiles-cdn,./static,./assets,./node_modules,./media
