@@ -1,308 +1,1187 @@
 {% extends 'base_template/base_template.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block content %}
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0 text-dark page-title font-weight-bold">GUIDE D'UTILISATION</h1>
-                <div class="text-muted small">Documentation et Aide • TrackFlow+</div>
-            </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right mb-0">
-                    <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                    <li class="breadcrumb-item active">Aide</li>
-                </ol>
-            </div>
+<style>
+  :root{
+    --tf-primary:#0d6efd;
+    --tf-success:#198754;
+    --tf-warning:#ffc107;
+    --tf-danger:#dc3545;
+    --tf-muted:#6c757d;
+    --tf-card:#ffffff;
+    --tf-bg:#f6f8fb;
+    --tf-border:rgba(0,0,0,.08);
+  }
+
+  html{ scroll-behavior:smooth; }
+  .content-wrapper{ background: var(--tf-bg); }
+
+  /* Hero */
+  .help-hero{
+    background: radial-gradient(1200px 400px at 10% 0%, rgba(13,110,253,.14), transparent 60%),
+                radial-gradient(900px 300px at 90% 20%, rgba(32,201,151,.10), transparent 55%),
+                linear-gradient(180deg, #ffffff, #f6f8fb);
+    border-bottom: 1px solid var(--tf-border);
+  }
+  .help-hero .title{ font-weight: 800; letter-spacing: .2px; }
+  .help-hero .subtitle{ color: var(--tf-muted); }
+
+  /* Cards */
+  .help-card{
+    border: 1px solid var(--tf-border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--tf-card);
+  }
+  .help-card .card-header{
+    background: #fff;
+    border-bottom: 1px solid var(--tf-border);
+  }
+
+  /* Mobile TOC bar */
+  .toc-mobile{
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: rgba(246,248,251,.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--tf-border);
+  }
+
+  /* Desktop TOC */
+  .toc-desktop{ position: sticky; top: 16px; }
+  .toc-box{
+    border: 1px solid var(--tf-border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .toc-box .toc-head{
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--tf-border);
+    font-weight: 800;
+  }
+  .toc-search{ padding: 12px 16px; border-bottom: 1px solid var(--tf-border); }
+  .toc-search input{ border-radius: 12px; }
+  .toc-list{ max-height: calc(100vh - 220px); overflow: auto; padding: 10px; }
+  .toc-link{
+    display:flex; align-items:center; gap:10px;
+    padding: 10px 12px; border-radius: 12px;
+    color:#1f2937; text-decoration:none;
+    border: 1px solid transparent;
+  }
+  .toc-link:hover{ background: rgba(13,110,253,.06); border-color: rgba(13,110,253,.16); color:#0d6efd; }
+  .toc-link.active{ background: rgba(13,110,253,.10); border-color: rgba(13,110,253,.25); color:#0d6efd; font-weight: 700; }
+  .toc-icon{
+    width: 30px; height: 30px; border-radius: 10px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(13,110,253,.10); color:#0d6efd;
+    flex: 0 0 30px;
+  }
+
+  /* Section anchors spacing */
+  .help-section{ scroll-margin-top: 90px; }
+  .help-section .section-title{ font-weight: 800; }
+
+  /* Section helper blocks */
+  .hint{
+    border: 1px dashed rgba(13,110,253,.35);
+    background: rgba(13,110,253,.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .hint .hint-title{ font-weight: 800; margin-bottom: 6px; }
+  .kbd{
+    display:inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--tf-border);
+    background: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+  }
+
+  /* Quick Cards */
+  .quick-grid .quick-item{
+    border: 1px solid var(--tf-border);
+    border-radius: 16px;
+    padding: 14px;
+    background: #fff;
+    height: 100%;
+  }
+  .quick-item h6{ font-weight: 800; margin: 0 0 6px; }
+  .quick-item p{ margin: 0; color: var(--tf-muted); font-size: .92rem; }
+  .quick-badge{
+    font-size: .75rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(13,110,253,.10);
+    color:#0d6efd;
+    font-weight: 700;
+  }
+
+  /* Workflow steps */
+  .wf-step{
+    display:flex; gap:12px;
+    padding: 12px;
+    border: 1px solid var(--tf-border);
+    border-radius: 16px;
+    background:#fff;
+    height: 100%;
+  }
+  .wf-dot{
+    width: 36px; height: 36px;
+    border-radius: 14px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(25,135,84,.12);
+    color: var(--tf-success);
+    flex: 0 0 36px;
+  }
+
+  /* Mini checklists */
+  .mini-list{ padding-left: 18px; margin-bottom: 0; }
+  .mini-list li{ margin-bottom: 6px; }
+  .mini-list li:last-child{ margin-bottom: 0; }
+
+  /* Back to top */
+  .back-top{
+    position: fixed; right: 16px; bottom: 16px;
+    z-index: 1040;
+    display:none;
+  }
+
+  @media print{
+    .toc-desktop, .toc-mobile, .back-top, #btn-print-help{ display:none !important; }
+    .help-card{ break-inside: avoid; }
+  }
+</style>
+
+<!-- ================= HERO / HEADER ================= -->
+<div class="help-hero py-4" id="top">
+  <div class="container-fluid">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge badge-primary" style="border-radius:999px; padding:6px 10px;">
+            TrackFlow+
+          </span>
+          <span class="text-muted small">Documentation & Aide</span>
         </div>
+        <h1 class="h4 mb-1 title">Guide d’utilisation</h1>
+        <div class="subtitle small">
+          Guide complet et cohérent par module : <strong>Frontière</strong> → <strong>Entrepôt</strong> → <strong>Labo</strong> → <strong>HYDRO</strong> → <strong>ADS</strong>.
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <a href="#support" class="btn btn-primary">
+          <i class="fas fa-headset mr-2"></i> Support
+        </a>
+        <button type="button" class="btn btn-outline-secondary" id="btn-print-help">
+          <i class="fas fa-print mr-2"></i> Imprimer
+        </button>
+      </div>
     </div>
+
+    <!-- Mobile TOC / search bar -->
+    <div class="toc-mobile d-md-none mt-3 rounded-lg px-2 py-2">
+      <div class="d-flex gap-2">
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white">
+              <i class="fas fa-search"></i>
+            </span>
+          </div>
+          <input id="helpSearchMobile" type="text" class="form-control" placeholder="Rechercher dans le guide… (ex: QR, inspection, certificat)">
+        </div>
+        <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#modal-toc">
+          <i class="fas fa-list"></i>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<section class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar Navigation -->
-            <div class="col-md-3 d-none d-md-block">
-                <div class="card card-primary card-outline sticky-top" style="top: 20px; z-index: 100;">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold">Sommaire</h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <ul class="nav nav-pills flex-column nav-help">
-                            <li class="nav-item"><a href="#intro" class="nav-link"><i class="fas fa-info-circle mr-2"></i> Introduction</a></li>
-                            <li class="nav-item"><a href="#getting-started" class="nav-link"><i class="fas fa-rocket mr-2"></i> Prise en main</a></li>
-                            <li class="nav-item"><a href="#features" class="nav-link"><i class="fas fa-list-ul mr-2"></i> Fonctionnalités clés</a></li>
-                            <li class="nav-item"><a href="#workflow" class="nav-link"><i class="fas fa-project-diagram mr-2"></i> Flux opérationnel</a></li>
-                            <li class="nav-item"><a href="#forms" class="nav-link"><i class="fas fa-edit mr-2"></i> Formulaires & Modals</a></li>
-                            <li class="nav-item"><a href="#reports" class="nav-link"><i class="fas fa-file-pdf mr-2"></i> Rapports & Documents</a></li>
-                            <li class="nav-item"><a href="#settings" class="nav-link"><i class="fas fa-user-cog mr-2"></i> Profil & Paramètres</a></li>
-                            <li class="nav-item"><a href="#troubleshooting" class="nav-link"><i class="fas fa-tools mr-2"></i> Dépannage</a></li>
-                            <li class="nav-item"><a href="#best-practices" class="nav-link"><i class="fas fa-shield-alt mr-2"></i> Bonnes pratiques</a></li>
-                            <li class="nav-item"><a href="#support" class="nav-link"><i class="fas fa-headset mr-2"></i> Support & Contact</a></li>
-                        </ul>
-                    </div>
-                </div>
+<section class="content py-3">
+  <div class="container-fluid">
+
+    <!-- ================= QUICK LINKS ================= -->
+    <div class="row mb-3 quick-grid">
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a class="text-decoration-none" href="#cargaison">
+          <div class="quick-item">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="quick-badge"><i class="fas fa-truck-moving mr-1"></i> Frontière</div>
+              <i class="fas fa-chevron-right text-muted"></i>
             </div>
+            <h6>Créer & retrouver une cargaison</h6>
+            <p>Enregistrement, recherche, détails, QR Code.</p>
+          </div>
+        </a>
+      </div>
 
-            <!-- Content -->
-            <div class="col-md-9 col-sm-12">
-                <!-- Introduction -->
-                <div id="intro" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-info-circle text-info mr-2"></i> 1. Introduction</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>Bienvenue dans le guide d'utilisation de <strong>TrackFlow+</strong>. Cette application est une solution centralisée conçue pour le suivi rigoureux des cargaisons d'hydrocarbures, le contrôle qualité en laboratoire et la gestion administrative des dossiers.</p>
-                        <p><strong>Objectifs principaux :</strong></p>
-                        <ul>
-                            <li>Tracer chaque mouvement de cargaison depuis la frontière jusqu'à la destination finale.</li>
-                            <li>Garantir la conformité des produits via des analyses de laboratoire certifiées.</li>
-                            <li>Automatiser la génération de rapports et la gestion des paiements.</li>
-                        </ul>
-                        <p class="text-muted small italic">L'application est optimisée pour une utilisation sur ordinateurs, tablettes et smartphones.</p>
-                    </div>
-                </div>
-
-                <!-- Getting Started -->
-                <div id="getting-started" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-rocket text-info mr-2"></i> 2. Prise en main</h3>
-                    </div>
-                    <div class="card-body">
-                        <h5><strong>Connexion</strong></h5>
-                        <p>Utilisez vos identifiants fournis par l'administrateur. En cas d'oubli, veuillez contacter le support technique.</p>
-                        
-                        <h5><strong>Interface et Navigation</strong></h5>
-                        <ul>
-                            <li><strong>Barre latérale (Sidebar) :</strong> Accédez à tous les modules selon votre rôle.</li>
-                            <li><strong>Tableau de Bord :</strong> Une vue d'ensemble en temps réel des activités et statistiques.</li>
-                            <li><strong>Pillule Utilisateur :</strong> Située en haut à droite, elle affiche votre nom et permet de se déconnecter.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Core Features -->
-                <div id="features" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-list-ul text-info mr-2"></i> 3. Fonctionnalités clés par module</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div class="p-3 border rounded bg-light h-100">
-                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-truck-moving mr-2"></i> FRONTIÈRE (Enregistrement)</h6>
-                                    <p class="small">Permet d'enregistrer chaque nouvelle entrée de cargaison. Saisissez les informations du véhicule, de l'importateur et du produit.</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <div class="p-3 border rounded bg-light h-100">
-                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-industry mr-2"></i> ENTREPÔT</h6>
-                                    <p class="small">Gestion de la réception en entrepôt et réalisation de l'échantillonnage pour analyse.</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <div class="p-3 border rounded bg-light h-100">
-                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-flask mr-2"></i> LABORATOIRE (Certification)</h6>
-                                    <p class="small">Réception des échantillons, encodage des résultats d'analyse et validation multiniveaux (Niveau 1 et 2) avant impression du certificat.</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <div class="p-3 border rounded bg-light h-100">
-                                    <h6 class="font-weight-bold text-danger"><i class="fas fa-building mr-2"></i> CELLULE HYDRO</h6>
-                                    <p class="small">Gestion des réquisitions, régularisation des dossiers et suivi des rapports d'activité globaux.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Workflow -->
-                <div id="workflow" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-project-diagram text-info mr-2"></i> 4. Flux opérationnel type</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="timeline timeline-inverse">
-                            <div>
-                                <i class="fas fa-sign-in-alt bg-primary"></i>
-                                <div class="timeline-item shadow-none border">
-                                    <h3 class="timeline-header font-weight-bold">1. Enregistrement</h3>
-                                    <div class="timeline-body small">Saisie des données à la frontière.</div>
-                                </div>
-                            </div>
-                            <div>
-                                <i class="fas fa-vial bg-info"></i>
-                                <div class="timeline-item shadow-none border">
-                                    <h3 class="timeline-header font-weight-bold">2. Échantillonnage</h3>
-                                    <div class="timeline-body small">Prélèvement en entrepôt et envoi au laboratoire.</div>
-                                </div>
-                            </div>
-                            <div>
-                                <i class="fas fa-microscope bg-warning"></i>
-                                <div class="timeline-item shadow-none border">
-                                    <h3 class="timeline-header font-weight-bold">3. Analyse & Validation</h3>
-                                    <div class="timeline-body small">Tests de conformité et double validation hiérarchique.</div>
-                                </div>
-                            </div>
-                            <div>
-                                <i class="fas fa-check-double bg-success"></i>
-                                <div class="timeline-item shadow-none border">
-                                    <h3 class="timeline-header font-weight-bold">4. Régularisation & Paiement</h3>
-                                    <div class="timeline-body small">Codification finale et acquittement des taxes.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Forms & Modals -->
-                <div id="forms" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-edit text-info mr-2"></i> 5. Formulaires & Fenêtres surgissantes</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>Les formulaires sont conçus pour être simples et intuitifs :</p>
-                        <ul>
-                            <li><strong>Champs obligatoires :</strong> Ils doivent être remplis pour pouvoir valider l'action.</li>
-                            <li><strong>Modals (Fenêtres) :</strong> Utilisées pour les actions rapides (Ajout d'importateur, nouvel entrepôt) sans quitter la page actuelle.</li>
-                            <li><strong>Validation :</strong> En cas d'erreur, un message rouge s'affiche sous le champ concerné.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Reports -->
-                <div id="reports" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-file-pdf text-info mr-2"></i> 6. Rapports & Documents</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>Le système permet de générer divers documents officiels :</p>
-                        <ul>
-                            <li><strong>Certificat de Qualité :</strong> Généré après validation finale des analyses.</li>
-                            <li><strong>Rapports d'Activité :</strong> Exportables au format Excel ou PDF avec filtres personnalisés.</li>
-                            <li><strong>Codes QR :</strong> Présents sur certains documents pour une vérification rapide de l'authenticité.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Settings -->
-                <div id="settings" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-user-cog text-info mr-2"></i> 7. Profil & Paramètres</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>Accédez aux <strong>PARAMÈTRES</strong> dans le menu pour :</p>
-                        <ul>
-                            <li>Mettre à jour vos informations personnelles (Nom, fonction, poste).</li>
-                            <li>Changer votre mot de passe dans l'onglet <strong>Sécurité</strong>.</li>
-                            <li>Visualiser les statistiques système (pour les administrateurs).</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Troubleshooting -->
-                <div id="troubleshooting" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-tools text-info mr-2"></i> 8. Dépannage</h3>
-                    </div>
-                    <div class="card-body">
-                        <dl>
-                            <dt>Expiration de session</dt>
-                            <dd>Pour votre sécurité, le système vous déconnecte automatiquement après une période d'inactivité. Un message d'avertissement s'affiche 60 secondes avant.</dd>
-                            
-                            <dt>Affichage incorrect ou données obsolètes</dt>
-                            <dd>Les administrateurs peuvent vider le cache système dans l'onglet Maintenance des paramètres pour résoudre les problèmes de synchronisation.</dd>
-                            
-                            <dt>Action échouée</dt>
-                            <dd>Vérifiez votre connexion internet et assurez-vous que tous les champs requis sont correctement remplis.</dd>
-                        </dl>
-                    </div>
-                </div>
-
-                <!-- Best Practices -->
-                <div id="best-practices" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-shield-alt text-info mr-2"></i> 9. Bonnes pratiques</h3>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled">
-                            <li class="mb-2"><i class="fas fa-check-circle text-success mr-2"></i> <strong>Précision :</strong> Prenez le temps de vérifier les volumes et immatriculations lors de la saisie.</li>
-                            <li class="mb-2"><i class="fas fa-lock text-warning mr-2"></i> <strong>Confidentialité :</strong> Ne partagez jamais vos identifiants d'accès.</li>
-                            <li class="mb-2"><i class="fas fa-sign-out-alt text-danger mr-2"></i> <strong>Déconnexion :</strong> Déconnectez-vous systématiquement à la fin de votre session de travail.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Support -->
-                <div id="support" class="card card-outline card-info shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-headset text-info mr-2"></i> 10. Support & Contact</h3>
-                    </div>
-                    <div class="card-body text-center">
-                        <p>Besoin d'une assistance supplémentaire ?</p>
-                        <a href="mailto:support@cgworldwide.org" class="btn btn-primary px-4 py-2 font-weight-bold">
-                            <i class="fas fa-envelope mr-2"></i> Contacter le Support Technique
-                        </a>
-                        <p class="mt-3 text-muted small">Veuillez préciser votre nom d'utilisateur et décrire précisément le problème rencontré.</p>
-                    </div>
-                </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a class="text-decoration-none" href="#entrepot">
+          <div class="quick-item">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="quick-badge"><i class="fas fa-warehouse mr-1"></i> Entrepôt</div>
+              <i class="fas fa-chevron-right text-muted"></i>
             </div>
-        </div>
+            <h6>Échantillonnage & inspection</h6>
+            <p>Wizard, scellés, mesures, rapport RE/RI.</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a class="text-decoration-none" href="#labo">
+          <div class="quick-item">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="quick-badge"><i class="fas fa-flask mr-1"></i> Labo</div>
+              <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <h6>Analyse & certificat</h6>
+            <p>Réception, saisie, validations N1/N2.</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a class="text-decoration-none" href="#workflow">
+          <div class="quick-item">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="quick-badge"><i class="fas fa-project-diagram mr-1"></i> Process</div>
+              <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <h6>Flux complet</h6>
+            <p>De l’entrée à la clôture du dossier.</p>
+          </div>
+        </a>
+      </div>
     </div>
+
+    <div class="row">
+
+      <!-- ================= DESKTOP TOC ================= -->
+      <div class="col-lg-3 d-none d-md-block">
+        <div class="toc-desktop">
+          <div class="toc-box shadow-sm">
+            <div class="toc-head">
+              <i class="fas fa-book mr-2 text-primary"></i> Sommaire
+            </div>
+            <div class="toc-search">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
+                </div>
+                <input id="helpSearchDesktop" type="text" class="form-control" placeholder="Rechercher…">
+              </div>
+              <small class="text-muted d-block mt-2">Exemples : <span class="kbd">QR</span> <span class="kbd">inspection</span> <span class="kbd"></span></small>
+            </div>
+
+            <div class="toc-list" id="tocList">
+              <a href="#intro" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-info-circle"></i></span>
+                1. Introduction
+              </a>
+              <a href="#getting-started" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-rocket"></i></span>
+                2. Prise en main
+              </a>
+              <a href="#features" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-list-ul"></i></span>
+                3. Modules & rôles
+              </a>
+              <a href="#cargaison" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-truck-moving"></i></span>
+                4. Frontière (Cargaisons)
+              </a>
+              <a href="#entrepot" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-warehouse"></i></span>
+                5. Entrepôt
+              </a>
+              <a href="#labo" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-flask"></i></span>
+                6. Laboratoire
+              </a>
+              <a href="#shydro" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-building"></i></span>
+                7. Cellule HYDRO
+              </a>
+              <a href="#ads" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-chart-line"></i></span>
+                8. ADS (Dashboard)
+              </a>
+              <a href="#workflow" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-project-diagram"></i></span>
+                9. Flux opérationnel
+              </a>
+              <a href="#forms" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-edit"></i></span>
+                10. Formulaires & modals
+              </a>
+              <a href="#reports" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-file-pdf"></i></span>
+                11. Rapports & documents
+              </a>
+              <a href="#settings" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-user-cog"></i></span>
+                12. Profil & paramètres
+              </a>
+              <a href="#troubleshooting" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-tools"></i></span>
+                13. Dépannage
+              </a>
+              <a href="#best-practices" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-shield-alt"></i></span>
+                14. Bonnes pratiques
+              </a>
+              <a href="#support" class="toc-link" data-toc>
+                <span class="toc-icon"><i class="fas fa-headset"></i></span>
+                15. Support
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= CONTENT ================= -->
+      <div class="col-lg-9 col-12">
+
+        <!-- 1. INTRO -->
+        <div id="intro" class="help-card shadow-sm mb-3 help-section" data-section-title="Introduction">
+          <div class="card-header py-3">
+            <div class="d-flex align-items-center justify-content-between">
+              <h3 class="h6 mb-0 section-title">
+                <i class="fas fa-info-circle text-primary mr-2"></i> 1. Introduction
+              </h3>
+              <a href="#top" class="text-muted small d-none d-md-inline"><i class="fas fa-arrow-up mr-1"></i> Haut</a>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="mb-2">
+              <strong>TrackFlow+</strong> est une solution centralisée de traçabilité et de contrôle qualité des cargaisons d’hydrocarbures.
+              Elle permet de suivre chaque dossier depuis l’enregistrement à la frontière jusqu’à la clôture administrative, avec génération de documents officiels (PDF) et identifiants (QR Code).
+            </p>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 border rounded-lg" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Objectifs principaux</h6>
+                  <ul class="mini-list small">
+                    <li>Tracer les mouvements (frontière → entrepôt → labo → hydro).</li>
+                    <li>Garantir la conformité via analyses et validations.</li>
+                    <li>Automatiser rapports, certificats et clôture.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="hint">
+                  <div class="hint-title"><i class="fas fa-lightbulb mr-2"></i>À retenir</div>
+                  <div class="small text-muted mb-0">
+                    Le <strong>QR Code</strong> est l’identifiant le plus rapide pour retrouver un dossier à n’importe quelle étape.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. GETTING STARTED -->
+        <div id="getting-started" class="help-card shadow-sm mb-3 help-section" data-section-title="Prise en main">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-rocket text-primary mr-2"></i> 2. Prise en main
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2"><i class="fas fa-right-to-bracket mr-2 text-primary"></i>Connexion</h6>
+                  <ul class="mini-list small">
+                    <li>Saisissez vos identifiants fournis par l’administrateur.</li>
+                    <li>En cas d’oubli ou blocage, contactez le support.</li>
+                    <li>Les accès peuvent être journalisés à des fins de traçabilité.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2"><i class="fas fa-compass mr-2 text-primary"></i>Navigation</h6>
+                  <ul class="mini-list small">
+                    <li><strong>Sidebar</strong> : modules visibles selon votre rôle.</li>
+                    <li><strong>Listes</strong> : tableaux de dossiers avec actions.</li>
+                    <li><strong>Recherche</strong> : immatriculation, dossier, déclaration, QR.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="hint">
+              <div class="hint-title"><i class="fas fa-bolt mr-2"></i>Astuce productivité</div>
+              <div class="small text-muted mb-0">
+                Utilisez le champ “Scanner le QRCode” + un lecteur (ou caméra) pour un accès immédiat au dossier.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. FEATURES / ROLES -->
+        <div id="features" class="help-card shadow-sm mb-3 help-section" data-section-title="Modules & rôles">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-list-ul text-primary mr-2"></i> 3. Modules & rôles (vue d’ensemble)
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              Le menu s’adapte aux rôles. Chaque module couvre une partie du cycle de vie d’une cargaison.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 border rounded-lg h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2"><i class="fas fa-truck-moving mr-2 text-primary"></i>Frontière (Enregistrement)</h6>
+                  <ul class="mini-list small">
+                    <li>Créer une nouvelle cargaison.</li>
+                    <li>Générer et télécharger le QR Code.</li>
+                    <li>Suivre l’état initial du dossier.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="p-3 border rounded-lg h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2"><i class="fas fa-warehouse mr-2 text-primary"></i>Entrepôt</h6>
+                  <ul class="mini-list small">
+                    <li>Échantillonnage (RE) et inspection (RI).</li>
+                    <li>Validation déchargement selon conformité labo.</li>
+                    <li>Suivi par onglets (statuts).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="p-3 border rounded-lg h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2"><i class="fas fa-flask mr-2 text-primary"></i>Laboratoire</h6>
+                  <ul class="mini-list small">
+                    <li>Réception et anonymisation (Code Labo).</li>
+                    <li>Saisie résultats et validations N1/N2.</li>
+                    <li>Impression certificat (PDF + QR).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="p-3 border rounded-lg h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2"><i class="fas fa-building mr-2 text-primary"></i>Cellule HYDRO & ADS</h6>
+                  <ul class="mini-list small">
+                    <li>Codification, régularisation.</li>
+                    <li>Dashboard, statistiques, exports et pilotage.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="hint">
+              <div class="hint-title"><i class="fas fa-shield-alt mr-2"></i>Sécurité & traçabilité</div>
+              <div class="small text-muted mb-0">
+                Chaque action est associée à un utilisateur (et parfois un rôle). Respectez les procédures et les limites du module.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. CARGAISON -->
+        <div id="cargaison" class="help-card shadow-sm mb-3 help-section" data-section-title="Frontière (Cargaisons)">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-truck-moving text-primary mr-2"></i> 4. Frontière – Gestion des cargaisons
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              Cette page est le point d’entrée du système. Elle sert à enregistrer une cargaison, vérifier les informations, et générer le QR Code qui suivra le dossier.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">A. Vue d’ensemble</h6>
+                  <ul class="mini-list small">
+                    <li><strong>KPI</strong> : volumes & nombre de dossiers selon période/statut.</li>
+                    <li><strong>Recherche</strong> : immatriculation, dossier, déclaration, QR Code.</li>
+                    <li><strong>Table</strong> : liste chronologique + bouton détails/actions.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">B. Ajouter une cargaison</h6>
+                  <ol class="mini-list small">
+                    <li>Cliquer <strong>Ajouter</strong> (bouton +).</li>
+                    <li>Renseigner véhicule, importateur, entrepôt, produit.</li>
+                    <li>Valider → dossier créé + QR Code disponible.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">C. Bonnes pratiques de saisie</h6>
+                  <ul class="mini-list small">
+                    <li>Vérifier la <strong>déclaration</strong> et l’<strong>immatriculation</strong>.</li>
+                    <li>Saisir le <strong>volume ambiant</strong> (obligatoire).</li>
+                    <li>Contrôler l’entrepôt de destination avant validation.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="hint h-100">
+                  <div class="hint-title"><i class="fas fa-qrcode mr-2"></i>D. QR Code</div>
+                  <div class="small text-muted">
+                    Le QR Code sert d’identifiant universel :
+                    <ul class="mini-list small mt-2">
+                      <li>Téléchargeable depuis les détails de la cargaison.</li>
+                      <li>Utilisé à l’entrepôt (échantillonnage, inspection) et au labo.</li>
+                      <li>Accélère la recherche et limite les erreurs de sélection.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. ENTREPOT -->
+        <div id="entrepot" class="help-card shadow-sm mb-3 help-section" data-section-title="Entrepôt">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-warehouse text-primary mr-2"></i> 5. Entrepôt – Opérations & suivi
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              Le module Entrepôt couvre le contrôle sur site : échantillonnage, inspection (wizard), puis déchargement.
+              Les onglets structurent le flux par statut.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">A. Onglets & statuts</h6>
+                  <ul class="mini-list small">
+                    <li><strong>En attente d’échantillonnage</strong> : pas encore prélevé.</li>
+                    <li><strong>En attente d’inspection</strong> : inspection requise.</li>
+                    <li><strong>Inspectées</strong> : rapport RI généré.</li>
+                    <li><strong>En attente de déchargement</strong> : conforme labo.</li>
+                    <li><strong>Échantillonnées</strong> : en cours de labo.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="hint h-100">
+                  <div class="hint-title"><i class="fas fa-clock mr-2"></i>Conseil exploitation</div>
+                  <div class="small text-muted mb-0">
+                    Faites l’échantillonnage le plus tôt possible pour éviter les blocages en aval (labo, hydro, déchargement).
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">B. Échantillonnage (RE)</h6>
+                  <ol class="mini-list small">
+                    <li>Cliquer <strong>ÉCHANTILLONNER</strong>.</li>
+                    <li>Renseigner opérateur, méthode, observation.</li>
+                    <li>Valider → génération du <strong>Rapport d’Échantillonnage (RE)</strong>.</li>
+                    <li>Le dossier est transmis au <strong>Laboratoire</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">C. Inspection (Wizard) (RI)</h6>
+                  <ul class="mini-list small">
+                    <li><strong>Étape 1</strong> : sélectionner le type (Tanker/Meter ou Shore).</li>
+                    <li><strong>Étape 2</strong> : scellés (numéros, intégrité).</li>
+                    <li><strong>Étape 3</strong> : mesures (densité, température).</li>
+                    <li><strong>Étape 4</strong> : détails (compartiments/réservoirs).</li>
+                    <li><strong>Étape 5</strong> : résumé → validation → <strong>Rapport d’Inspection (RI)</strong>.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-12">
+                <div class="p-3 rounded-lg border" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">D. Déchargement final</h6>
+                  <div class="row">
+                    <div class="col-md-7">
+                      <p class="text-muted small mb-2">
+                        Le déchargement est autorisé uniquement lorsque le laboratoire a validé la conformité.
+                      </p>
+                      <ol class="mini-list small mb-0">
+                        <li>Ouvrir <strong>DÉCHARGEMENT</strong>.</li>
+                        <li>Saisir index compteur (début/fin), densité, température.</li>
+                        <li>Valider → dossier passe à l’état <strong>Terminé</strong>.</li>
+                      </ol>
+                    </div>
+                    <div class="col-md-5">
+                      <div class="hint">
+                        <div class="hint-title"><i class="fas fa-exclamation-triangle mr-2"></i>Attention</div>
+                        <div class="small text-muted mb-0">
+                          Une saisie incorrecte (index, densité, température) peut fausser le calcul des volumes et impacter la clôture.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 6. LABO -->
+        <div id="labo" class="help-card shadow-sm mb-3 help-section" data-section-title="Laboratoire">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-flask text-primary mr-2"></i> 6. Laboratoire – Analyse & certification
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              Le module Laboratoire garantit la conformité produit via réception, saisie des résultats, et validations hiérarchiques.
+              Une fois validé, le certificat est imprimable (PDF).
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">A. Réception de l’échantillon</h6>
+                  <ol class="mini-list small">
+                    <li>Rechercher (QR, dossier, entrepôt).</li>
+                    <li>Cliquer <strong>RÉCEPTIONNER</strong>.</li>
+                    <li>Génération <strong>Code Labo</strong> (anonymisation).</li>
+                    <li>Statut → analyse en cours.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">B. Saisie & analyse</h6>
+                  <ul class="mini-list small">
+                    <li>Ouvrir la grille paramètres (densité, point éclair, soufre…).</li>
+                    <li>Si nécessaire : correction produit (selon procédure).</li>
+                    <li>Valider l’analyse → passe en validation hiérarchique.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-7 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">C. Validation multiniveaux</h6>
+                  <ul class="mini-list small">
+                    <li><strong>Niveau 1</strong> : contrôle cohérence, peut demander reprise.</li>
+                    <li><strong>Niveau 2</strong> : validation finale, verrouille les résultats.</li>
+                    <li>Statut final : <strong>Conforme</strong> ou <strong>Non conforme</strong>.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-md-5 mb-3">
+                <div class="hint h-100">
+                  <div class="hint-title"><i class="fas fa-file-pdf mr-2"></i>D. Certificat</div>
+                  <div class="small text-muted mb-0">
+                    Après validation N2, le certificat est disponible en PDF et peut inclure un QR Code de vérification.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. SHYDRO -->
+        <div id="shydro" class="help-card shadow-sm mb-3 help-section" data-section-title="Cellule HYDRO">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-building text-primary mr-2"></i> 7. Cellule HYDRO – Pilotage & clôture
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              HYDRO est le centre de pilotage : codification des dossiers, régularisation, et génération/gestion des documents de clôture.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">A. Codification (réquisition)</h6>
+                  <ol class="mini-list small">
+                    <li>Sélectionner la cargaison à codifier.</li>
+                    <li>Saisir le numéro de réquisition.</li>
+                    <li>Valider → numéro dossier TrackFlow+ attribué.</li>
+                  </ol>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">B. Régularisation</h6>
+                  <ul class="mini-list small">
+                    <li>Correction importateur/fournisseur.</li>
+                    <li>Correction nature produit.</li>
+                    <li>Ré-orientation (entrepôt) / transbordement (si prévu).</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 8. ADS -->
+        <div id="ads" class="help-card shadow-sm mb-3 help-section" data-section-title="ADS (Dashboard)">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-chart-line text-primary mr-2"></i> 8. ADS – Dashboard & reporting
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              ADS centralise la visualisation des indicateurs et la production de rapports (exports).
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">A. KPI & états</h6>
+                  <ul class="mini-list small">
+                    <li>Volumes par produit (m³) et répartition.</li>
+                    <li>Nombre de dossiers par statut.</li>
+                    <li>Accès à des listes détaillées via clic sur KPI (si activé).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">B. Rapports & exports</h6>
+                  <ol class="mini-list small">
+                    <li>Ouvrir “Rapports”.</li>
+                    <li>Définir filtres (période, importateur, produit, entrepôt…).</li>
+                    <li>Générer → téléchargement une fois prêt.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9. WORKFLOW -->
+        <div id="workflow" class="help-card shadow-sm mb-3 help-section" data-section-title="Flux opérationnel">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-project-diagram text-primary mr-2"></i> 9. Flux opérationnel type (résumé)
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              Ce flux décrit la séquence standard d’un dossier. Selon la politique opérationnelle, certaines étapes peuvent être conditionnelles.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="wf-step">
+                  <div class="wf-dot"><i class="fas fa-sign-in-alt"></i></div>
+                  <div>
+                    <div class="font-weight-bold">1) Frontière</div>
+                    <div class="text-muted small">Enregistrement + QR Code.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="wf-step">
+                  <div class="wf-dot"><i class="fas fa-cog"></i></div>
+                  <div>
+                    <div class="font-weight-bold">2) HYDRO</div>
+                    <div class="text-muted small">Codification (réquisition).</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="wf-step">
+                  <div class="wf-dot"><i class="fas fa-vial"></i></div>
+                  <div>
+                    <div class="font-weight-bold">3) Entrepôt</div>
+                    <div class="text-muted small">Échantillonnage (RE) + inspection (RI).</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="wf-step">
+                  <div class="wf-dot"><i class="fas fa-microscope"></i></div>
+                  <div>
+                    <div class="font-weight-bold">4) Labo</div>
+                    <div class="text-muted small">Analyse + validation N1/N2 + certificat.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="wf-step">
+                  <div class="wf-dot"><i class="fas fa-check-double"></i></div>
+                  <div>
+                    <div class="font-weight-bold">5) Clôture</div>
+                    <div class="text-muted small">Déchargement (si conforme) → archivage & rapports.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 10. FORMS -->
+        <div id="forms" class="help-card shadow-sm mb-3 help-section" data-section-title="Formulaires & modals">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-edit text-primary mr-2"></i> 10. Formulaires & modals (règles communes)
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Validation</h6>
+                  <ul class="mini-list small">
+                    <li>Les champs obligatoires bloquent la validation si vides.</li>
+                    <li>Les erreurs apparaissent sous les champs concernés.</li>
+                    <li>Privilégier la saisie via listes (référentiels) quand disponible.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Modals</h6>
+                  <ul class="mini-list small">
+                    <li>Actions rapides sans quitter la page.</li>
+                    <li>Éviter de fermer pendant un traitement (progress).</li>
+                    <li>Une fois validé, télécharger/archiver les PDF si nécessaire.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11. REPORTS -->
+        <div id="reports" class="help-card shadow-sm mb-3 help-section" data-section-title="Rapports & documents">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-file-pdf text-primary mr-2"></i> 11. Rapports & documents
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">
+              Les documents générés sont des preuves opérationnelles. Ils peuvent être téléchargés, archivés et partagés selon la procédure interne.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Documents courants</h6>
+                  <ul class="mini-list small">
+                    <li>RE : Rapport d’échantillonnage.</li>
+                    <li>RI : Rapport d’inspection.</li>
+                    <li>Certificat labo (PDF).</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="hint h-100">
+                  <div class="hint-title"><i class="fas fa-qrcode mr-2"></i>QR Code & authenticité</div>
+                  <div class="small text-muted mb-0">
+                    Les QR Codes permettent une vérification rapide et réduisent le risque d’erreur (mauvais dossier / mauvais véhicule).
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12. SETTINGS -->
+        <div id="settings" class="help-card shadow-sm mb-3 help-section" data-section-title="Profil & paramètres">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-user-cog text-primary mr-2"></i> 12. Profil & paramètres
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-7 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Ce que vous pouvez gérer</h6>
+                  <ul class="mini-list small">
+                    <li>Mettre à jour certaines informations de profil (selon droits).</li>
+                    <li>Changer le mot de passe via l’onglet sécurité.</li>
+                    <li>Préférences d’affichage si activées (langue, etc.).</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-5 mb-3">
+                <div class="hint h-100">
+                  <div class="hint-title"><i class="fas fa-lock mr-2"></i>Sécurité</div>
+                  <div class="small text-muted mb-0">
+                    Utilisez un mot de passe fort et ne le partagez jamais. Déconnectez-vous en fin de session.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 13. TROUBLESHOOT -->
+        <div id="troubleshooting" class="help-card shadow-sm mb-3 help-section" data-section-title="Dépannage">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-tools text-primary mr-2"></i> 13. Dépannage (FAQ)
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="accordion" id="helpAcc">
+              <div class="card border-0">
+                <div class="card-header bg-white px-0" id="h1">
+                  <button class="btn btn-link px-0 font-weight-bold" type="button" data-toggle="collapse" data-target="#c1" aria-expanded="true" aria-controls="c1">
+                    Expiration de session
+                  </button>
+                </div>
+                <div id="c1" class="collapse show" aria-labelledby="h1" data-parent="#helpAcc">
+                  <div class="card-body px-0 pt-0 text-muted small">
+                    Après une période d’inactivité, la session expire. Sauvegardez vos données avant de quitter votre poste.
+                  </div>
+                </div>
+              </div>
+
+              <div class="card border-0">
+                <div class="card-header bg-white px-0" id="h2">
+                  <button class="btn btn-link px-0 font-weight-bold collapsed" type="button" data-toggle="collapse" data-target="#c2" aria-expanded="false" aria-controls="c2">
+                    Données obsolètes / affichage incorrect
+                  </button>
+                </div>
+                <div id="c2" class="collapse" aria-labelledby="h2" data-parent="#helpAcc">
+                  <div class="card-body px-0 pt-0 text-muted small">
+                    Rafraîchissez la page. Si le problème persiste, signalez l’anomalie (page + action + heure).
+                  </div>
+                </div>
+              </div>
+
+              <div class="card border-0">
+                <div class="card-header bg-white px-0" id="h3">
+                  <button class="btn btn-link px-0 font-weight-bold collapsed" type="button" data-toggle="collapse" data-target="#c3" aria-expanded="false" aria-controls="c3">
+                    Action échouée / validation bloquée
+                  </button>
+                </div>
+                <div id="c3" class="collapse" aria-labelledby="h3" data-parent="#helpAcc">
+                  <div class="card-body px-0 pt-0 text-muted small">
+                    Vérifiez les champs obligatoires, votre connexion, puis réessayez. Évitez les doubles clics sur “Valider”.
+                  </div>
+                </div>
+              </div>
+
+              <div class="card border-0">
+                <div class="card-header bg-white px-0" id="h4">
+                  <button class="btn btn-link px-0 font-weight-bold collapsed" type="button" data-toggle="collapse" data-target="#c4" aria-expanded="false" aria-controls="c4">
+                    QR Code introuvable
+                  </button>
+                </div>
+                <div id="c4" class="collapse" aria-labelledby="h4" data-parent="#helpAcc">
+                  <div class="card-body px-0 pt-0 text-muted small">
+                    Recherchez via déclaration/immatriculation. Si le QR est absent, vérifiez que le dossier a bien été créé et validé à la frontière.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 14. BEST PRACTICES -->
+        <div id="best-practices" class="help-card shadow-sm mb-3 help-section" data-section-title="Bonnes pratiques">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-shield-alt text-primary mr-2"></i> 14. Bonnes pratiques
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Qualité des données</h6>
+                  <ul class="mini-list small">
+                    <li>Vérifier immatriculation & déclaration avant validation.</li>
+                    <li>Éviter les abréviations non standard.</li>
+                    <li>Contrôler l’entrepôt et le produit.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="p-3 rounded-lg border h-100" style="border-color: var(--tf-border);">
+                  <h6 class="font-weight-bold mb-2">Sécurité</h6>
+                  <ul class="mini-list small">
+                    <li>Ne jamais partager vos identifiants.</li>
+                    <li>Se déconnecter en fin de poste.</li>
+                    <li>Signaler immédiatement toute anomalie.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 15. SUPPORT -->
+        <div id="support" class="help-card shadow-sm mb-5 help-section" data-section-title="Support">
+          <div class="card-header py-3">
+            <h3 class="h6 mb-0 section-title">
+              <i class="fas fa-headset text-primary mr-2"></i> 15. Support & Contact
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-8 mb-3 mb-md-0">
+                <h6 class="font-weight-bold mb-1">Contacter le support technique</h6>
+                <div class="text-muted small">
+                  Merci d’indiquer : <strong>votre nom d’utilisateur</strong>, la <strong>page</strong>, l’<strong>action</strong> réalisée, et l’<strong>heure</strong> (pour faciliter le diagnostic).
+                </div>
+              </div>
+              <div class="col-md-4 text-md-right">
+                <a href="mailto:support@cgworldwide.org" class="btn btn-primary px-4 py-2 font-weight-bold">
+                  <i class="fas fa-envelope mr-2"></i> Email support
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 </section>
 
-<style>
-    html {
-        scroll-behavior: smooth;
-    }
-    .sticky-top {
-        transition: all 0.3s ease-in-out;
-    }
-    .nav-help .nav-link {
-        color: #4b545c;
-        border-radius: 0;
-        border-left: 3px solid transparent;
-    }
-    .nav-help .nav-link:hover {
-        background-color: rgba(0,0,0,.05);
-        color: #007bff;
-    }
-    .nav-help .nav-link.active {
-        background-color: #f8f9fa;
-        color: #007bff;
-        border-left-color: #007bff;
-        font-weight: bold;
-    }
-    .timeline::before {
-        border-radius: 0.25rem;
-        background-color: #dee2e6;
-        bottom: 0;
-        content: "";
-        left: 31px;
-        margin: 0;
-        position: absolute;
-        top: 0;
-        width: 4px;
-    }
-    @media (max-width: 768px) {
-        .sticky-top {
-            position: relative !important;
-            top: 0 !important;
-        }
-    }
-</style>
-{% endblock %}
+<!-- Back to top -->
+<button class="btn btn-primary back-top" id="backTopBtn" type="button" title="Haut">
+  <i class="fas fa-arrow-up"></i>
+</button>
 
-{% block javascript %}
-    // Highlight active nav item on scroll
-    $(window).scroll(function() {
-        var scrollDistance = $(window).scrollTop() + 100;
-        $('.card-outline').each(function(i) {
-            if ($(this).position().top <= scrollDistance) {
-                $('.nav-help a.active').removeClass('active');
-                $('.nav-help a').eq(i).addClass('active');
-            }
-        });
-    }).scroll();
+<!-- Mobile TOC Modal -->
+<div class="modal fade" id="modal-toc" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius: 16px; overflow:hidden;">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-list mr-2"></i>Sommaire</h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
+          </div>
+          <input id="helpSearchModal" type="text" class="form-control" placeholder="Rechercher…">
+        </div>
+
+        <div class="list-group" id="tocModalList">
+          <a class="list-group-item list-group-item-action" href="#intro" data-toc-modal><i class="fas fa-info-circle mr-2 text-primary"></i>1. Introduction</a>
+          <a class="list-group-item list-group-item-action" href="#getting-started" data-toc-modal><i class="fas fa-rocket mr-2 text-primary"></i>2. Prise en main</a>
+          <a class="list-group-item list-group-item-action" href="#features" data-toc-modal><i class="fas fa-list-ul mr-2 text-primary"></i>3. Modules & rôles</a>
+          <a class="list-group-item list-group-item-action" href="#cargaison" data-toc-modal><i class="fas fa-truck-moving mr-2 text-primary"></i>4. Frontière</a>
+          <a class="list-group-item list-group-item-action" href="#entrepot" data-toc-modal><i class="fas fa-warehouse mr-2 text-primary"></i>5. Entrepôt</a>
+          <a class="list-group-item list-group-item-action" href="#labo" data-toc-modal><i class="fas fa-flask mr-2 text-primary"></i>6. Laboratoire</a>
+          <a class="list-group-item list-group-item-action" href="#shydro" data-toc-modal><i class="fas fa-building mr-2 text-primary"></i>7. HYDRO</a>
+          <a class="list-group-item list-group-item-action" href="#ads" data-toc-modal><i class="fas fa-chart-line mr-2 text-primary"></i>8. ADS</a>
+          <a class="list-group-item list-group-item-action" href="#workflow" data-toc-modal><i class="fas fa-project-diagram mr-2 text-primary"></i>9. Flux</a>
+          <a class="list-group-item list-group-item-action" href="#forms" data-toc-modal><i class="fas fa-edit mr-2 text-primary"></i>10. Formulaires</a>
+          <a class="list-group-item list-group-item-action" href="#reports" data-toc-modal><i class="fas fa-file-pdf mr-2 text-primary"></i>11. Rapports</a>
+          <a class="list-group-item list-group-item-action" href="#settings" data-toc-modal><i class="fas fa-user-cog mr-2 text-primary"></i>12. Paramètres</a>
+          <a class="list-group-item list-group-item-action" href="#troubleshooting" data-toc-modal><i class="fas fa-tools mr-2 text-primary"></i>13. Dépannage</a>
+          <a class="list-group-item list-group-item-action" href="#best-practices" data-toc-modal><i class="fas fa-shield-alt mr-2 text-primary"></i>14. Bonnes pratiques</a>
+          <a class="list-group-item list-group-item-action" href="#support" data-toc-modal><i class="fas fa-headset mr-2 text-primary"></i>15. Support</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Print
+  $('#btn-print-help').on('click', function(){ window.print(); });
+
+  // Back to top
+  const backBtn = document.getElementById('backTopBtn');
+  window.addEventListener('scroll', function(){
+    if (window.scrollY > 600) backBtn.style.display = 'inline-flex';
+    else backBtn.style.display = 'none';
+  });
+  backBtn.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+
+  // Close modal on click
+  $(document).on('click', '[data-toc-modal]', function(){
+    $('#modal-toc').modal('hide');
+  });
+
+  // Active section highlighting (desktop toc)
+  function setActiveToc(){
+    const sections = document.querySelectorAll('.help-section');
+    const tocLinks = document.querySelectorAll('[data-toc]');
+    let index = 0;
+    const scrollPos = window.scrollY + 120;
+    sections.forEach((sec, i) => {
+      if (sec.offsetTop <= scrollPos) index = i;
+    });
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (tocLinks[index]) tocLinks[index].classList.add('active');
+  }
+  window.addEventListener('scroll', setActiveToc);
+  setActiveToc();
+
+  // Search filter (desktop + mobile + modal) + optional section hide
+  function filterGuide(query){
+    query = (query || '').toLowerCase().trim();
+
+    // Filter TOC items
+    $('#tocList a[data-toc]').each(function(){
+      const t = $(this).text().toLowerCase();
+      $(this).toggle(t.includes(query));
+    });
+    $('#tocModalList a[data-toc-modal]').each(function(){
+      const t = $(this).text().toLowerCase();
+      $(this).toggle(t.includes(query));
+    });
+
+    // Filter sections when query >= 2 chars
+    if (query.length >= 2){
+      $('.help-section').each(function(){
+        const title = ($(this).data('section-title') || '').toLowerCase();
+        const content = $(this).text().toLowerCase();
+        $(this).toggle(title.includes(query) || content.includes(query));
+      });
+    } else {
+      $('.help-section').show();
+    }
+  }
+
+  $('#helpSearchDesktop').on('input', function(){ filterGuide(this.value); });
+  $('#helpSearchMobile').on('input', function(){ filterGuide(this.value); });
+  $('#helpSearchModal').on('input', function(){ filterGuide(this.value); });
+</script>
 {% endblock %}
