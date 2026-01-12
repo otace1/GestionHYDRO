@@ -22,6 +22,7 @@ from .tasks import purge_old_logs
 from jsignature.utils import draw_signature
 from openpyxl import Workbook
 
+from django.utils.http import url_has_allowed_host_and_scheme
 from accounts.models import *
 from django.utils import timezone
 from .services import log_action
@@ -46,6 +47,9 @@ def login_user(request):
                 login(request, user)
                 re = request.user
                 role = re.role_id
+
+                if next and url_has_allowed_host_and_scheme(url=next, allowed_hosts={request.get_host()}):
+                    return redirect(next)
 
                 # Roles frontière
                 if role == 2:
@@ -99,16 +103,21 @@ def login_user(request):
 @login_required(login_url='login')
 # Fontion pour logout les utilisateurs
 def logout_user(request):
-
-    # user = MyUser.objects.get(id=request.user)
-    # UserActivityLog.objects.create(
-    #     user=user,
-    #     action="System logout",
-    #     description="User logged out successfully",
-    # )
-
+    reason = request.GET.get('reason')
+    next_url = request.GET.get('next')
     logout(request)
-    return redirect('/')
+
+    response_url = '/'
+    params = []
+    if reason:
+        params.append(f'reason={reason}')
+    if next_url:
+        params.append(f'next={next_url}')
+
+    if params:
+        response_url += '?' + '&'.join(params)
+
+    return redirect(response_url)
 
 
 @login_required(login_url='login')

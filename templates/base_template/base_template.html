@@ -335,7 +335,8 @@
                 
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
-                    window.location.href = "{% url 'logout' %}?next={{ request.path }}";
+                    localStorage.removeItem(lastActivityKey);
+                    window.location.href = "{% url 'logout' %}?next={{ request.path }}&reason=timeout";
                 }
             }, 1000);
         }
@@ -389,6 +390,7 @@
 
         $('#session-timeout-continue').on('click', keepAlive);
         $('#session-timeout-logout').on('click', function() {
+            localStorage.removeItem(lastActivityKey);
             window.location.href = "{% url 'logout' %}";
         });
 

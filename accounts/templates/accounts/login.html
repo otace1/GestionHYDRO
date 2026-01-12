@@ -236,6 +236,18 @@
         <input type="hidden" name="next" value="{{ next }}">
       {% endif %}
 
+      {% if request.GET.reason == 'timeout' %}
+        <div class="tf-error" style="background: rgba(242,201,76,.12); border-color: rgba(242,201,76,.28); color: #fff;" role="alert">
+          <i class="fa-solid fa-clock-rotate-left" style="margin-top:2px;"></i>
+          <div>
+            <div style="font-weight:800;">Session expirée</div>
+            <div style="color:rgba(255,255,255,.72); font-size:.9rem;">
+              Vous avez été déconnecté pour cause d’inactivité. Veuillez vous reconnecter.
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
       {% if form and form.errors %}
         <div class="tf-error" role="alert">
           <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px;"></i>
