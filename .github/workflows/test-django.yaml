@@ -112,11 +112,11 @@ jobs:
           cache: "pip"
 
       - name: Install security tools
-        run: pip install bandit safety
+        run: pip install semgrep safety
 
-      - name: Bandit Scan
-        # -r: recursive, -ll: medium/high severity, -x: exclude directories
-        run: bandit -r . -ll -x ./tests,./venv,./migrations,./staticfiles,./staticfiles-cdn,./static,./assets
+      - name: Semgrep Scan
+        # Scans code using Semgrep for security vulnerabilities
+        run: semgrep scan --config auto --error --exclude="./tests" --exclude="./venv" --exclude="./migrations" --exclude="./staticfiles" --exclude="./staticfiles-cdn" --exclude="./static" --exclude="./assets"
 
       - name: Safety Check
         # Checks dependencies for known vulnerabilities
