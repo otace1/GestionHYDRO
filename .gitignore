@@ -13,3 +13,8 @@ docs
 /vol/
 /assets/
 
+
+# Python cache
+__pycache__/
+*.py[cod]
+
