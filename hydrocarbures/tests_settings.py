@@ -217,6 +217,134 @@ class TestAWSSecretsNotHardcoded(unittest.TestCase):
             self.assertIn('AWS', str(context.exception))
 
 
+class TestEnvironmentIsolation(unittest.TestCase):
+    """
+    Test that dev and prod environments are properly isolated.
+
+    These tests ensure that development configurations cannot
+    accidentally leak into production.
+    """
+
+    def test_development_uses_different_defaults_than_production(self):
+        """Dev and prod should have different security defaults."""
+        dev_env = {
+            'DJANGO_ENV': 'development',
+            'DATABASE_HOST': 'localhost',
+            'DATABASE_NAME': 'test',
+            'DATABASE_USER': 'user',
+            'DATABASE_PASSWORD': 'pass',
+        }
+
+        prod_env = {
+            'DJANGO_ENV': 'production',
+            'DJANGO_SECRET_KEY': 'a-very-long-secret-key-for-testing-purposes-1234567890',
+            'ALLOWED_HOSTS': 'example.com',
+            'DATABASE_HOST': 'localhost',
+            'DATABASE_NAME': 'test',
+            'DATABASE_USER': 'user',
+            'DATABASE_PASSWORD': 'pass',
+            'AWS_ACCESS_KEY_ID': 'test-key',
+            'AWS_SECRET_ACCESS_KEY': 'test-secret',
+        }
+
+        from hydrocarbures.config import get_settings
+
+        with patch.dict(os.environ, dev_env, clear=True):
+            dev_settings = get_settings(force_reload=True)
+
+        with patch.dict(os.environ, prod_env, clear=True):
+            prod_settings = get_settings(force_reload=True)
+
+        # DEBUG must differ
+        self.assertTrue(dev_settings.DEBUG)
+        self.assertFalse(prod_settings.DEBUG)
+
+    def test_production_secret_key_cannot_be_dev_key(self):
+        """Production should reject weak or known development keys."""
+        from hydrocarbures.config import get_settings, SettingsValidationError
+
+        # Simulate using a short/weak key in production
+        env = {
+            'DJANGO_ENV': 'production',
+            'DJANGO_SECRET_KEY': 'short-key',  # Too short for production
+            'ALLOWED_HOSTS': 'example.com',
+            'DATABASE_HOST': 'localhost',
+            'DATABASE_NAME': 'test',
+            'DATABASE_USER': 'user',
+            'DATABASE_PASSWORD': 'pass',
+            'AWS_ACCESS_KEY_ID': 'test-key',
+            'AWS_SECRET_ACCESS_KEY': 'test-secret',
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(SettingsValidationError):
+                get_settings(force_reload=True)
+
+    def test_csrf_trusted_origins_parsed_correctly(self):
+        """CSRF_TRUSTED_ORIGINS should be parsed from comma-separated string."""
+        from hydrocarbures.config import get_settings
+
+        env = {
+            'DJANGO_ENV': 'development',
+            'CSRF_TRUSTED_ORIGINS': 'http://localhost:8000, https://example.com',
+            'DATABASE_HOST': 'localhost',
+            'DATABASE_NAME': 'test',
+            'DATABASE_USER': 'user',
+            'DATABASE_PASSWORD': 'pass',
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            settings = get_settings(force_reload=True)
+            self.assertEqual(
+                settings.csrf_origins_list,
+                ['http://localhost:8000', 'https://example.com']
+            )
+
+    def test_celery_broker_from_environment(self):
+        """CELERY_BROKER must come from environment."""
+        from hydrocarbures.config import get_settings
+
+        env = {
+            'DJANGO_ENV': 'development',
+            'CELERY_BROKER': 'redis://custom-redis:6379/1',
+            'DATABASE_HOST': 'localhost',
+            'DATABASE_NAME': 'test',
+            'DATABASE_USER': 'user',
+            'DATABASE_PASSWORD': 'pass',
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            settings = get_settings(force_reload=True)
+            self.assertEqual(settings.CELERY_BROKER, 'redis://custom-redis:6379/1')
+
+
+class TestSettingsModuleImport(unittest.TestCase):
+    """Test that Django settings modules can be imported without errors."""
+
+    def test_development_settings_importable(self):
+        """Development settings should import without errors in dev env."""
+        env = {
+            'DJANGO_ENV': 'development',
+            'DATABASE_HOST': 'localhost',
+            'DATABASE_NAME': 'test',
+            'DATABASE_USER': 'user',
+            'DATABASE_PASSWORD': 'pass',
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            # Clear cached settings
+            from hydrocarbures.config import get_settings
+            get_settings(force_reload=True)
+
+            # This should not raise
+            try:
+                from importlib import import_module, reload
+                module = import_module('hydrocarbures.settings.development')
+                self.assertTrue(hasattr(module, 'DEBUG'))
+            except Exception as e:
+                self.fail(f"Failed to import development settings: {e}")
+
+
 if __name__ == '__main__':
     unittest.main()
 

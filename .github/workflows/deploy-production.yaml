@@ -1,0 +1,164 @@
+name: Deploy to Production
+
+# =============================================================================
+# PRODUCTION DEPLOYMENT WORKFLOW
+# =============================================================================
+# This workflow ONLY runs on:
+# - Direct push to main branch (after PR merge)
+# - Manual trigger (workflow_dispatch)
+#
+# It does NOT run on:
+# - Pull requests (those only run tests)
+# - Push to any other branch
+# =============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        type: string
+  push:
+    branches: ["main"]
+
+# Prevent concurrent deployments
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false  # Never cancel in-progress production deploys
+
+jobs:
+  # ==========================================================================
+  # Pre-deployment validation
+  # ==========================================================================
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - name: Validate manual deployment
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.confirm_deploy }}" != "deploy" ]; then
+              echo "❌ Manual deployment cancelled - confirmation not provided"
+              echo "deploy=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+          echo "deploy=true" >> $GITHUB_OUTPUT
+
+  # ==========================================================================
+  # Run all tests before deploying
+  # ==========================================================================
+  test:
+    needs: [validate]
+    uses: ./.github/workflows/test-django.yaml
+
+  # ==========================================================================
+  # Build and deploy to Kubernetes
+  # ==========================================================================
+  deploy:
+    needs: [test]
+    runs-on: ubuntu-latest
+    environment: production  # Requires environment approval if configured
+
+    env:
+      CLUSTER_NAME: k8s-gestionhydro
+      REGISTRY: registry.digitalocean.com/otace
+      IMAGE_NAME: gestionhydro-amd64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install DOCTL
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_API_TOKEN_KEY }}
+
+      - name: Login to DO Container registry (short-lived)
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Build container image
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 -f Dockerfile \
+            -t $REGISTRY/$IMAGE_NAME:latest \
+            -t $REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7} \
+            .
+
+      - name: Push image to DO
+        run: |
+          set -euo pipefail
+          docker push $REGISTRY/$IMAGE_NAME --all-tags
+
+      - name: Fetch kubeconfig (short-lived)
+        run: |
+          set -euo pipefail
+          doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ env.CLUSTER_NAME }}
+
+      # ============================================================
+      # Production secrets (from GitHub Secrets)
+      # ============================================================
+      - name: Apply deployment secret (django-deploy-env)
+        run: |
+          set -euo pipefail
+
+          kubectl create secret generic django-deploy-env \
+            --from-literal=DJANGO_ENV="production" \
+            --from-literal=DEBUG="0" \
+            --from-literal=DEVELOPMENT_MODE="0" \
+            --from-literal=DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+            --from-literal=ALLOWED_HOSTS="trackflow.plus" \
+            --from-literal=CELERY_BROKER="${{ secrets.CELERY_BROKER }}" \
+            --from-literal=DATABASE_HOST="${{ secrets.DATABASE_HOST }}" \
+            --from-literal=DATABASE_NAME="${{ secrets.DATABASE_NAME }}" \
+            --from-literal=DATABASE_USER="${{ secrets.DATABASE_USER }}" \
+            --from-literal=DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
+            --from-literal=DATABASE_PORT="25060" \
+            --from-literal=DB_CONN_MAX_AGE="60" \
+            --from-literal=CSRF_TRUSTED_ORIGINS="https://trackflow.plus" \
+            --from-literal=AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            --from-literal=AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            --from-literal=AWS_STORAGE_BUCKET_NAME="gestionhydro" \
+            --from-literal=AWS_S3_ENDPOINT_URL="https://sfo3.digitaloceanspaces.com" \
+            --from-literal=AWS_LOCATION="https://gestionhydro.sfo3.digitaloceanspaces.com" \
+            --from-literal=DELETE_CONFIRMATION_CODE="${{ secrets.DELETE_CONFIRMATION_CODE }}" \
+            --from-literal=SENTRY_ENV="production" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update deployment image (django-server)
+        run: |
+          set -euo pipefail
+          kubectl set image deployment/gestionhydro-deployment \
+            django-server=$REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}
+
+      - name: Update deployment image (celery-worker)
+        run: |
+          set -euo pipefail
+          kubectl set image deployment/gestionhydro-celery \
+            celery-worker=$REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}
+
+      - name: Wait for rollout to finish
+        run: |
+          set -euo pipefail
+          kubectl rollout status deployment/gestionhydro-deployment --timeout=300s
+          kubectl rollout status deployment/gestionhydro-celery --timeout=300s
+
+      - name: Run migrate inside one pod
+        run: |
+          set -euo pipefail
+          POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}")
+          kubectl exec "$POD_NAME" -- bash /app/scripts/migration.sh
+
+      - name: Deployment summary
+        run: |
+          echo "=============================================="
+          echo "✅ PRODUCTION DEPLOYMENT SUCCESSFUL"
+          echo "=============================================="
+          echo "Image: $REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "=============================================="
+

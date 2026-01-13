@@ -1,0 +1,16 @@
+#!/bin/sh
+# GestionHYDRO Pre-commit Hook
+# Prevents accidental commit of secrets and validates configuration
+
+echo "🔍 Running pre-commit checks..."
+
+# Run the validation script
+python3 scripts/validate_config.py
+if [ $? -ne 0 ]; then
+    echo "❌ Pre-commit checks failed. Commit aborted."
+    exit 1
+fi
+
+echo "✅ Pre-commit checks passed."
+exit 0
+
