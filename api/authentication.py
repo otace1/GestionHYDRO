@@ -20,31 +20,45 @@ class SafeJWTAuthentication(BaseAuthentication):
     '''
 
     def authenticate(self, request):
-
-        if not firebase_admin._apps:
-            cred = credentials.Certificate('./api/serviceAccount.json')
-            default_app = firebase_admin.initialize_app(cred)
-
         User = get_user_model()
         authorization_header = request.headers.get('Authorization')
 
         if not authorization_header:
             return None
         try:
-            access_token = authorization_header.split(' ')[1]
+            # Expecting 'Bearer <token>'
+            parts = authorization_header.split(' ')
+            if len(parts) != 2 or parts[0].lower() != 'bearer':
+                return None
+            
+            access_token = parts[1]
             payload = check_token(access_token)
-            print(payload)
+            
+            # Firebase ID token payload contains 'uid' (Firebase UID)
+            # and potentially other claims.
             uid = payload['uid']
-            print(uid)
         except auth.ExpiredIdTokenError:
-            raise exceptions.AuthenticationFailed('access_token expired')
+            print("Authentication error: Firebase ID token has expired")
+            raise exceptions.AuthenticationFailed('Firebase ID token has expired')
+        except auth.InvalidIdTokenError:
+            print("Authentication error: Invalid Firebase ID token")
+            raise exceptions.AuthenticationFailed('Invalid Firebase ID token')
+        except auth.CertificateFetchError:
+            print("Authentication error: Could not fetch certificates to verify token")
+            raise exceptions.AuthenticationFailed('Could not fetch certificates to verify token')
+        except Exception as e:
+            # For other errors, don't expose details but log them if needed
+            print(f"Authentication error: {str(e)}")
+            raise exceptions.AuthenticationFailed('Authentication failed')
 
+        # We assume the user ID in our database corresponds to the Firebase UID.
+        # If the mobile app uses our API to login first, we should ensure the UIDs match.
         user = User.objects.filter(id=uid).first()
         if user is None:
-            raise exceptions.AuthenticationFailed('User not found')
+            # Fallback to username search if ID doesn't match Firebase UID 
+            # (though id=uid is what was there before)
+            raise exceptions.AuthenticationFailed('User not found in local database')
 
-        # self.enforce_csrf(request)
-        print(user)
         return (user, None)
 
     #

@@ -27,3 +27,6 @@ __pycache__/
 /accounts/migrations/
 
 .idea/
+/k8s/config/
+/k8s/deployment/
+/k8s/upgraded k8s/

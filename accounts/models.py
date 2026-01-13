@@ -148,30 +148,23 @@ class MyUser(AbstractBaseUser):
 
     def _generate_jwt_token(self):
         """
-                        Generates a JSON Web Token that stores this user's ID and has an expiry
-                        date set to 60 days into the future.
+        Generates a Firebase Custom Token that the mobile app will use to 
+        authenticate with Firebase.
         """
         if not firebase_admin._apps:
+            # Try multiple paths for credentials
+            cred_path = 'hydrocarbures/firebaseData.json'
+            if not os.path.exists(cred_path):
+                cred_path = './api/serviceAccount.json'
 
-            # Load Firebase config from JSON file
-            with open('hydrocarbures/firebaseData.json') as f:
-                firebase_config = json.load(f)
-
-            crt = {
-                "type": firebase_config.get("type"),
-                "project_id": firebase_config.get("project_id"),
-                "private_key_id": firebase_config.get("private_key_id"),
-                "private_key": firebase_config.get("private_key"),
-                "client_email": firebase_config.get("client_email"),
-                "client_id": firebase_config.get("client_id"),
-                "auth_uri": firebase_config.get("auth_uri"),
-                "token_uri": firebase_config.get("token_uri"),
-                "auth_provider_x509_cert_url": firebase_config.get("auth_provider_x509_cert_url"),
-                "client_x509_cert_url": firebase_config.get("client_x509_cert_url")
-            }
-
-            cred = credentials.Certificate(crt)
-            firebase_admin.initialize_app(cred)
+            if os.path.exists(cred_path):
+                with open(cred_path) as f:
+                    crt = json.load(f)
+                cred = credentials.Certificate(crt)
+                firebase_admin.initialize_app(cred)
+            else:
+                # Fallback to default if files not found
+                firebase_admin.initialize_app()
 
         additional_claims = {
             'names': self.get_full_name(),
@@ -179,8 +172,17 @@ class MyUser(AbstractBaseUser):
             'last_name': self.last_name,
         }
 
+        # Use the local user ID as the Firebase UID
         uid = str(self.id)
+        if not uid or uid == 'None':
+             print(f"CRITICAL: Generating token for user with NO ID: {self.username}")
+        
         token = auth.create_custom_token(uid, additional_claims)
+        # In newer versions of firebase-admin, create_custom_token returns bytes
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+        
+        print(f"Generated Custom Token for UID {uid}: {token[:10]}...{token[-10:]}")
         return token
 
     def _generate_jwt_refresh_token(self):
