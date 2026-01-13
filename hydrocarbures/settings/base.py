@@ -35,7 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Core settings from validated config
 SECRET_KEY = env_settings.DJANGO_SECRET_KEY
 DEBUG = env_settings.DEBUG
-ALLOWED_HOSTS = env_settings.ALLOWED_HOSTS
+ALLOWED_HOSTS = env_settings.allowed_hosts_list
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -236,7 +236,7 @@ LOGGING = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 # CSRF trusted origins
-CSRF_TRUSTED_ORIGINS = env_settings.CSRF_TRUSTED_ORIGINS or [
+CSRF_TRUSTED_ORIGINS = env_settings.csrf_origins_list or [
     host if host.startswith(("http://", "https://")) else f"https://{host}"
     for host in ALLOWED_HOSTS
 ]

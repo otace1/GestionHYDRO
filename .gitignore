@@ -1,6 +1,12 @@
 /docker-compose.yml
 venv/
+
+# Environment files - NEVER commit secrets
 .env
+.env.*
+!.env.template
+!.env.sample
+
 .kube/
 gestionhydro-k8s-kubeconfig.yaml
 minikube-darwin-arm64
@@ -9,7 +15,6 @@ minikube-darwin-arm64
 db
 data
 app
-docs
 /vol/
 /assets/
 
