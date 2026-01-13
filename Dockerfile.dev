@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1.5
+# =============================================================================
+# DEVELOPMENT DOCKERFILE
+# =============================================================================
+# Use this for local development with docker-compose-dev.yml
+# Includes debug tools, hot reload support, etc.
+# =============================================================================
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    DJANGO_ENV=development
+
+WORKDIR /app
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    pkg-config \
+    default-libmysqlclient-dev \
+    curl \
+    nano \
+    git \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Python deps (development)
+COPY requirements/ /app/requirements/
+RUN pip install --upgrade pip && pip install -r /app/requirements/development.txt
+
+# Copy scripts and make them executable
+COPY scripts/ /scripts/
+RUN chmod +x /scripts/*.sh
+
+# Copy project code
+COPY . /app
+
+# Create non-root user
+RUN useradd -m -u 10001 appuser \
+  && chown -R appuser:appuser /app /scripts
+USER appuser
+
+# Default command for development
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+

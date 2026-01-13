@@ -27,6 +27,7 @@ services:
     restart: unless-stopped
     build:
       context: .
+      dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
     volumes:
@@ -46,6 +47,7 @@ services:
     container_name: celery-worker
     build:
       context: .
+      dockerfile: Dockerfile.dev
     entrypoint: /scripts/worker-entrypoint.sh
     volumes:
       - .:/app/

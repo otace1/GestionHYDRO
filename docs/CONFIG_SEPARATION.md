@@ -13,6 +13,28 @@ hydrocarbures/
 │   ├── production.py  # Prod-specific settings  
 │   └── test.py        # Test-specific settings
 └── config.py          # Pydantic validation
+
+requirements/
+├── base.txt           # Core dependencies (shared)
+├── development.txt    # Dev tools (debug toolbar, etc.)
+├── production.txt     # Production (gunicorn, sentry)
+└── test.txt           # Testing (pytest, coverage)
+```
+
+## Requirements Installation
+
+```bash
+# Development (local)
+pip install -r requirements/development.txt
+
+# Production (Docker/K8s)
+pip install -r requirements/production.txt
+
+# Testing (CI/CD)
+pip install -r requirements/test.txt
+
+# Legacy (points to production)
+pip install -r requirements.txt
 ```
 
 ## Environment Selection

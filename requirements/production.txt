@@ -1,0 +1,20 @@
+# =============================================================================
+# PRODUCTION REQUIREMENTS
+# =============================================================================
+# Dependencies for production deployment
+# Install with: pip install -r requirements/production.txt
+# =============================================================================
+
+# Include base requirements
+-r base.txt
+
+# Production WSGI Server
+gunicorn==23.0.0
+
+# Static files serving
+whitenoise==6.6.0
+
+# Production optimizations (optional)
+# uvicorn==0.27.1  # If using ASGI
+# uvloop==0.19.0   # Linux only, for better async performance
+
