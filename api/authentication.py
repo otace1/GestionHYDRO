@@ -38,10 +38,13 @@ class SafeJWTAuthentication(BaseAuthentication):
             # and potentially other claims.
             uid = payload['uid']
         except auth.ExpiredIdTokenError:
+            print("Authentication error: Firebase ID token has expired")
             raise exceptions.AuthenticationFailed('Firebase ID token has expired')
         except auth.InvalidIdTokenError:
+            print("Authentication error: Invalid Firebase ID token")
             raise exceptions.AuthenticationFailed('Invalid Firebase ID token')
         except auth.CertificateFetchError:
+            print("Authentication error: Could not fetch certificates to verify token")
             raise exceptions.AuthenticationFailed('Could not fetch certificates to verify token')
         except Exception as e:
             # For other errors, don't expose details but log them if needed

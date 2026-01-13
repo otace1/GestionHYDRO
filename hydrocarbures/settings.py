@@ -131,6 +131,7 @@ REST_FRAMEWORK = {
         # "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.SafeJWTAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
 }
