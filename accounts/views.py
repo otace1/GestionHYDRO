@@ -25,6 +25,7 @@ from openpyxl import Workbook
 from django.utils.http import url_has_allowed_host_and_scheme
 from accounts.models import *
 from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
 from .services import log_action
 from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm, \
     Affectation_Role, Affectation_Labo
@@ -598,21 +599,45 @@ def sign_it(request, pk):
 
 @login_required(login_url='login')
 def createToken(request, pk):
-    # Get the user instance or return a 404 if not found
-    print('HIT')
-    user = get_object_or_404(MyUser, pk=pk)
+    """
+    Génère des jetons JWT Django pour un utilisateur spécifique.
+    Accès réservé aux administrateurs (role_id=1).
+    """
+    if request.user.role_id != 1:
+        return JsonResponse({'success': False, 'error': 'Permission refusée'}, status=403)
 
-    # Check if a token already exists for the user
-    if Token.objects.filter(user=user).exists():
-        # Return a JsonResponse with an error message indicating token already exists
-        print('TEST')
-        print(Token.objects.filter(user=user))
-        return JsonResponse({'error': 'Le jeton existe déjà pour cet utilisateur'}, status=400)
-    else:
-        # Create a new token for the user
-        Token.objects.create(user=user)
-        # Return a JsonResponse indicating successful token creation
-        return JsonResponse({'message': 'Jeton créé avec succès'}, status=201)
+    try:
+        # Get the user instance or return a 404 if not found
+        user = get_object_or_404(MyUser, pk=pk)
+
+        # Generate Django JWT tokens
+        refresh = RefreshToken.for_user(user)
+        
+        # Add custom claims
+        refresh['username'] = user.username
+        refresh['role'] = user.role.role if user.role else None
+
+        # Audit logging
+        log_action(
+            request,
+            action="JWT_TOKEN_GEN",
+            description=f"Admin a généré des jetons JWT pour l'utilisateur : {user.username}",
+            obj=user
+        )
+
+        # Return a JsonResponse with the tokens
+        return JsonResponse({
+            'success': True,
+            'message': 'Jetons JWT créés avec succès',
+            'token': str(refresh.access_token), # Legacy field for compatibility
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'username': user.username,
+            'full_name': user.get_full_name()
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @login_required(login_url='login')

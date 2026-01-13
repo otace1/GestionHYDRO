@@ -10,6 +10,11 @@ from django.db import utils as db_utils
 from .models import UserActivityLog, AuditLog
 from .middleware import get_current_request, get_current_request_id
 
+try:
+    from django_countries.fields import Country
+except ImportError:
+    class Country: pass
+
 logger = logging.getLogger(__name__)
 
 SENSITIVE_FIELDS = {
@@ -55,6 +60,8 @@ def sanitize_data(data):
         return sanitized
     elif isinstance(data, list):
         return [sanitize_data(item) for item in data]
+    elif isinstance(data, Country):
+        return str(data.code) if hasattr(data, 'code') else str(data)
     return data
 
 def model_to_dict_sanitized(instance):
@@ -80,6 +87,14 @@ def model_to_dict_sanitized(instance):
             # Handle Date/Time
             elif isinstance(value, (datetime.date, datetime.datetime)):
                 data[f.name] = value.isoformat()
+            # Handle Country objects from django-countries
+            elif isinstance(value, Country):
+                data[f.name] = str(value.code) if hasattr(value, 'code') else str(value)
+            elif isinstance(value, (list, tuple)):
+                data[f.name] = [
+                    (str(v.code) if isinstance(v, Country) and hasattr(v, 'code') else v)
+                    for v in value
+                ]
             # Truncate very long text
             elif isinstance(value, str) and len(value) > 2000:
                 data[f.name] = value[:2000] + '... [TRUNCATED]'

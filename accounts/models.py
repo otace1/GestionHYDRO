@@ -11,9 +11,6 @@ from jsignature.mixins import JSignatureFieldsMixin
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
-import jwt
-import firebase_admin
-from firebase_admin import credentials, auth
 import datetime
 import os
 
@@ -121,22 +118,6 @@ class MyUser(AbstractBaseUser):
     def natural_key(self):
         return self.my_natural_key
 
-    @property
-    def token(self):
-        """
-        Allows us to get a user's token by calling `user.token` instead of
-        `user.generate_jwt_token().
-        The `@property` decorator above makes this possible. `token` is called
-        a "dynamic property".
-        """
-        return self._generate_jwt_token()
-
-    def refreshToken(self):
-        """
-        Get Refresh Token for user continues access to data
-        """
-        return self._generate_jwt_refresh_token()
-
     def get_full_name(self):
         """
         This method is required by Django for things like handling emails.
@@ -144,58 +125,6 @@ class MyUser(AbstractBaseUser):
         not store the user's real name, we return their username instead.
         """
         return self.first_name + " " + self.last_name
-
-
-    def _generate_jwt_token(self):
-        """
-        Generates a Firebase Custom Token that the mobile app will use to 
-        authenticate with Firebase.
-        """
-        if not firebase_admin._apps:
-            # Try multiple paths for credentials
-            cred_path = 'hydrocarbures/firebaseData.json'
-            if not os.path.exists(cred_path):
-                cred_path = './api/serviceAccount.json'
-
-            if os.path.exists(cred_path):
-                with open(cred_path) as f:
-                    crt = json.load(f)
-                cred = credentials.Certificate(crt)
-                firebase_admin.initialize_app(cred)
-            else:
-                # Fallback to default if files not found
-                firebase_admin.initialize_app()
-
-        additional_claims = {
-            'names': self.get_full_name(),
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-        }
-
-        # Use the local user ID as the Firebase UID
-        uid = str(self.id)
-        if not uid or uid == 'None':
-             print(f"CRITICAL: Generating token for user with NO ID: {self.username}")
-        
-        token = auth.create_custom_token(uid, additional_claims)
-        # In newer versions of firebase-admin, create_custom_token returns bytes
-        if isinstance(token, bytes):
-            token = token.decode('utf-8')
-        
-        print(f"Generated Custom Token for UID {uid}: {token[:10]}...{token[-10:]}")
-        return token
-
-    def _generate_jwt_refresh_token(self):
-        refresh_token_payload = {
-            'user_id': self.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7),
-            'iat': datetime.datetime.utcnow()
-        }
-
-        refresh_token = jwt.encode(
-            refresh_token_payload, settings.SECRET_KEY, algorithm='HS256')
-
-        return refresh_token
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

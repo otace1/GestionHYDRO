@@ -1,4 +1,7 @@
 from django.urls import path
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+)
 
 from .views import *
 
@@ -18,8 +21,15 @@ urlpatterns = [
     # path('list/cargo/', GetCargoList.as_view(), name='getcargolist_api'),
     # Compteur
     # path('compteur/cargo/', GetCargoCount.as_view(), name='getcargocount_api'),
-    path('auth/user/', AuthUserApiView.as_view(), name='auth'),     # Auth
-    path('auth/user/login/', loginApiView, name='apiLoginToken'),       # Auth
+    path('auth/user/', AuthUserApiView.as_view(), name='auth_user_status'),     # Auth status
+    path('auth/login/', loginApiView, name='api_login'), # New Standard Login
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Token Refresh
+    path('auth/logout/', logoutApiView, name='api_logout'), # Logout
+    
+    # Backward compatibility paths
+    path('auth/user/login/', loginApiView, name='api_login_legacy'),       
+    path('auth/firebase/custom-token/', loginApiView, name='firebase_custom_token_legacy'), 
+    
     path('verificationQrCode/', verificationQrCode, name='verificationQrCode'),     #Verification API
     path('showDataSaved/', showDataSaved, name='showDataSaved'),     #ShowPer user saved Data
 

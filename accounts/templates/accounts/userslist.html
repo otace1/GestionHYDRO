@@ -429,6 +429,51 @@
   </div>
 </div>
 
+<!-- App Token Modal -->
+<div class="modal fade" id="modal-app-token" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="fas fa-shield-alt mr-2"></i>{% trans "Jetons d'application JWT" %}</h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="mb-3">
+          {% trans "Le jeton d'application a été généré avec succès pour :" %}<br>
+          <strong id="token-user-name"></strong> (<span id="token-user-username"></span>)
+        </p>
+
+        <div class="alert alert-success">
+          <i class="fas fa-check-circle mr-2"></i>
+          {% trans "Ce jeton peut être utilisé pour authentifier l'application mobile." %}
+        </div>
+
+        <div class="form-group">
+          <label>{% trans "Jeton d'accès JWT (Access Token)" %}</label>
+          <div class="input-group">
+            <textarea id="app-token-input" class="form-control font-weight-bold" style="height: 150px;" readonly></textarea>
+          </div>
+          <div class="mt-2 text-right">
+            <button class="btn btn-outline-secondary" type="button" id="btn-copy-token">
+              <i class="fas fa-copy mr-1"></i> {% trans "Copier le jeton" %}
+            </button>
+          </div>
+          <small class="text-danger">
+            {% trans "Veuillez copier ce jeton. Il ne sera plus affiché une fois le modal fermé." %}
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">
+          {% trans "Terminé" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -789,12 +834,71 @@
       // Security actions
       $('#btn-app-token').on('click', function(){
         if(!selectedUserId) return;
-        $.get('/accounts/createToken/' + selectedUserId);
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> {% trans "Génération..." %}');
+
+        $.ajax({
+          url: `/accounts/createToken/${selectedUserId}/`,
+          type: 'GET',
+          success: function(resp) {
+            if (resp && resp.success && resp.token) {
+              $('#token-user-name').text(resp.full_name || '-');
+              $('#token-user-username').text(resp.username || '-');
+              $('#app-token-input').val(resp.token);
+              $('#modal-app-token').modal('show');
+            } else {
+              alert('{% trans "Erreur" %}: ' + (resp.error || '{% trans "Génération du jeton impossible." %}'));
+            }
+          },
+          error: function(xhr) {
+            const r = xhr.responseJSON;
+            alert('{% trans "Erreur" %}: ' + (r && r.error ? r.error : '{% trans "Une erreur est survenue." %}'));
+          },
+          complete: function() {
+            btn.prop('disabled', false).html(originalHtml);
+          }
+        });
+      });
+
+      // Copy token
+      $('#btn-copy-token').on('click', async function() {
+        const token = $('#app-token-input').val();
+        if (!token) return;
+
+        const ok = await copyToClipboard(token);
+        if (!ok) {
+          alert('{% trans "Impossible de copier automatiquement. Veuillez copier manuellement." %}');
+          return;
+        }
+
+        const btn = $(this);
+        const original = btn.html();
+        btn.removeClass('btn-outline-secondary').addClass('btn-success')
+          .html('<i class="fas fa-check mr-1"></i> {% trans "Copié !" %}');
+        setTimeout(() => {
+          btn.removeClass('btn-success').addClass('btn-outline-secondary').html(original);
+        }, 1500);
       });
 
       $('#btn-delete-user').on('click', function(){
         if(!selectedUserId) return;
-        $.get('/accounts/delete/' + selectedUserId);
+        if(!confirm('{% trans "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible." %}')) return;
+        
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> {% trans "Suppression..." %}');
+
+        $.get('/accounts/delete/' + selectedUserId, function(resp) {
+            alert(resp.status || resp.error || '{% trans "Utilisateur supprimé." %}');
+            $('#modal-user-manage').modal('hide');
+            table.ajax.reload(null, false);
+        }).fail(function(xhr) {
+            const r = xhr.responseJSON;
+            alert('{% trans "Erreur" %}: ' + (r && r.error ? r.error : '{% trans "Une erreur est survenue." %}'));
+        }).always(function() {
+            btn.prop('disabled', false).html(originalHtml);
+        });
       });
 
       // Signature actions

@@ -1,3 +1,4 @@
+# Project-wide imports
 import os
 import sys
 from pathlib import Path
@@ -14,7 +15,7 @@ from django.core.management.utils import get_random_secret_key
 from django.contrib.messages import constants as messages
 from datetime import timedelta
 
-import api.authentication
+# BASE_DIR definition
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -125,15 +126,23 @@ PUSH_NOTIFICATIONS_SETTINGS = {
 }
 
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": [
-        # "rest_framework_api_key.permissions.HasAPIKey",
-        # "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly",
-        # "rest_framework.permissions.IsAuthenticated",
-    ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "api.authentication.SafeJWTAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
 
 # API KEY Secret

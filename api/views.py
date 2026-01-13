@@ -3,7 +3,7 @@ import decimal
 import json
 import uuid
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Q, Value, CharField, When, Case
@@ -18,6 +18,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import MyUser, UserActivityLog, AffectationVille
 from entrepot.calculs import *
@@ -28,49 +29,80 @@ from shydro.numact import num_cert_inspection
 from .infiniteScroll import CustomPagination
 from .serializers import *
 
-# This for firebase Login system view Custom JWT
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def loginApiView(request):
-    data = request.data
-    username = data.get('username')
-    password = data.get('password')
-    print(username)
-    print(password)
-    response = Response()
-    if (username is None) or (password is None):
-        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
-    user = MyUser.objects.filter(username=username).first()
-    if (user is None):
-        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
-    if (not user.check_password(password)):
-        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+    """
+    Primary Login Endpoint: POST /api/auth/login/
+    Validates user credentials and returns Django JWT tokens.
+    """
+    username = request.data.get('username')
+    password = request.data.get('password')
 
-    access_token = user.token
-    apiKey_obj = Token.objects.filter(user=user).first()
-    if apiKey_obj:
-        apiKey = apiKey_obj.key
-    else:
-        # Create token if it doesn't exist
-        apiKey_obj = Token.objects.create(user=user)
-        apiKey = apiKey_obj.key
-    
-    print(f"Login successful for {username}. Returning Custom Token: {access_token[:10]}...")
+    if not username or not password:
+        return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    response.set_cookie(key="jwt", value=access_token, httponly=True)
-    response.data = {
-        'access_token': str(access_token),
-        'apiKey': str(apiKey),
-    }
+    user = authenticate(username=username, password=password)
 
-    # Activity Log
+    if user is None:
+        # Log failure attempt
+        UserActivityLog.objects.create(
+            username_snapshot=username,
+            action="Auth Failure",
+            description=f"Failed login attempt for user: {username}",
+            status="failed"
+        )
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Generate Simple JWT tokens
+    refresh = RefreshToken.for_user(user)
+
+    # Custom claims (id, username, role)
+    refresh['username'] = user.username
+    refresh['role'] = user.role.role if user.role else None
+
+    # Log success
     UserActivityLog.objects.create(
         user=user,
-        action="System login",
-        description="User logged in successfully",
+        username_snapshot=user.username,
+        action="Login SUCCESS",
+        description="User authenticated successfully via Django JWT",
     )
 
-    return response
+    return Response({
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.get_full_name(),
+            'role': user.role.role if user.role else None
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logoutApiView(request):
+    """
+    Optional Logout Endpoint: POST /api/auth/logout/
+    Blacklists the refresh token.
+    """
+    try:
+        refresh_token = request.data.get("refresh")
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+
+        UserActivityLog.objects.create(
+            user=request.user,
+            username_snapshot=request.user.username,
+            action="Logout SUCCESS",
+            description="User logged out and refresh token blacklisted",
+        )
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AddCargo(APIView):
@@ -587,10 +619,10 @@ class UserViewSerializer(viewsets.ModelViewSet):
 
 
 class AuthUserApiView(GenericAPIView):
-    # permission_classes = [HasAPIKey]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         user = request.user
-        serializer = UserSerializer(get_user_model())
+        serializer = UserSerializer(user)
         return Response({'user': serializer.data})
 
 
