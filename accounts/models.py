@@ -174,10 +174,15 @@ class MyUser(AbstractBaseUser):
 
         # Use the local user ID as the Firebase UID
         uid = str(self.id)
+        if not uid or uid == 'None':
+             print(f"CRITICAL: Generating token for user with NO ID: {self.username}")
+        
         token = auth.create_custom_token(uid, additional_claims)
         # In newer versions of firebase-admin, create_custom_token returns bytes
         if isinstance(token, bytes):
-            return token.decode('utf-8')
+            token = token.decode('utf-8')
+        
+        print(f"Generated Custom Token for UID {uid}: {token[:10]}...{token[-10:]}")
         return token
 
     def _generate_jwt_refresh_token(self):

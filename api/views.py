@@ -47,14 +47,20 @@ def loginApiView(request):
         raise exceptions.AuthenticationFailed('The login details are incorrect or required')
 
     access_token = user.token
-    apiKey = Token.objects.filter(user=user).first()
-    print(apiKey)
-    apiKey = apiKey.key
+    apiKey_obj = Token.objects.filter(user=user).first()
+    if apiKey_obj:
+        apiKey = apiKey_obj.key
+    else:
+        # Create token if it doesn't exist
+        apiKey_obj = Token.objects.create(user=user)
+        apiKey = apiKey_obj.key
+    
+    print(f"Login successful for {username}. Returning Custom Token: {access_token[:10]}...")
 
     response.set_cookie(key="jwt", value=access_token, httponly=True)
     response.data = {
-        'access_token': access_token,
-        'apiKey': apiKey,
+        'access_token': str(access_token),
+        'apiKey': str(apiKey),
     }
 
     # Activity Log
