@@ -20,3 +20,6 @@ __pycache__/
 
 /enreg/migrations/
 /accounts/migrations/
+/k8s/config/
+/k8s/deployment/
+/k8s/upgraded k8s/
