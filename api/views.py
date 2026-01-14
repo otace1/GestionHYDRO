@@ -470,7 +470,7 @@ class AddCargo(APIView):
             # data = serializer.data
             qrcode = str(uuid.uuid4())
             etat = "En attente requisition"
-            serializer.save(qrcode=qrcode, etat=etat)
+            instance = serializer.save(qrcode=qrcode, etat=etat)
 
             UserActivityLog.objects.create(
                 user=request.user,
@@ -478,7 +478,7 @@ class AddCargo(APIView):
                 description="User has created new import record successfully",
             )
 
-            context = {'qrcode': qrcode}
+            context = {'qrcode': qrcode, 'idcargaison': instance.idcargaison}
             return Response(context, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -488,6 +488,7 @@ class AddCargo(APIView):
         data = Cargaison.objects.all().order_by('dateheurecargaison')
         serializer = CargaisonSerializer(data, many=True)
         return Response(serializer.data)
+
 
 
 class TypeVoie(APIView):
