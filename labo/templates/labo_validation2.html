@@ -339,6 +339,18 @@
     let selectedRowIds = [];
     const csrfToken = '{{ csrf_token }}';
 
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
     function fetchKPIs() {
         $.ajax({
             url: '{% url "laboValidationKPIs" %}',
@@ -474,12 +486,9 @@
                         headers: { 'X-CSRFToken': csrfToken },
                         success: function(response) {
                             hideLoadbar();
-                            Swal.fire({
+                            Toast.fire({
                                 icon: 'success',
-                                title: 'Succès',
-                                text: successMsg || 'Opération réussie !',
-                                timer: 2000,
-                                showConfirmButton: false
+                                title: successMsg || 'Opération réussie !'
                             });
                             $('#modal-lg').modal('hide');
                             dataTable.ajax.reload(null, false);
@@ -488,10 +497,9 @@
                         },
                         error: function(error) {
                             hideLoadbar();
-                            Swal.fire({
+                            Toast.fire({
                                 icon: 'error',
-                                title: 'Erreur',
-                                text: 'Une erreur est survenue lors du traitement.'
+                                title: 'Une erreur est survenue lors du traitement.'
                             });
                         }
                     });
@@ -515,7 +523,10 @@
         // Bulk Actions
         $('#bulkConforme').click(function() {
             if (selectedRowIds.length === 0) {
-                Swal.fire('Attention', 'Veuillez sélectionner au moins un échantillon.', 'warning');
+                Toast.fire({
+                    icon: 'warning',
+                    title: 'Veuillez sélectionner au moins un échantillon.'
+                });
                 return;
             }
             performAction('{% url "bulkConforme2" %}', { selectedRowIds: selectedRowIds }, 'Sélection validée comme CONFORME.');
@@ -523,7 +534,10 @@
 
         $('#bulkNonConforme').click(function() {
             if (selectedRowIds.length === 0) {
-                Swal.fire('Attention', 'Veuillez sélectionner au moins un échantillon.', 'warning');
+                Toast.fire({
+                    icon: 'warning',
+                    title: 'Veuillez sélectionner au moins un échantillon.'
+                });
                 return;
             }
             performAction('{% url "bulkNonConforme2" %}', { selectedRowIds: selectedRowIds }, 'Sélection marquée comme NON CONFORME.');
@@ -531,7 +545,10 @@
 
         $('#bulkRefaire').click(function() {
             if (selectedRowIds.length === 0) {
-                Swal.fire('Attention', 'Veuillez sélectionner au moins un échantillon.', 'warning');
+                Toast.fire({
+                    icon: 'warning',
+                    title: 'Veuillez sélectionner au moins un échantillon.'
+                });
                 return;
             }
             performAction('{% url "bulkRefaire2" %}', { selectedRowIds: selectedRowIds }, 'Sélection renvoyée à l\'analyse.');
