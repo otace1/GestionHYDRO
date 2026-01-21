@@ -256,6 +256,10 @@
 
         <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
 
+          <button type="button" class="btn btn-outline-info btn-pill" id="btnGenReport" data-toggle="modal" data-target="#reportModal">
+            <i class="fas fa-file-pdf mr-1"></i> Générer Rapport
+          </button>
+
           <button type="button" class="btn btn-outline-primary btn-pill" id="btnArchives" data-toggle="modal" data-target="#archivesModal">
             <i class="fas fa-box-archive mr-1"></i> Certificats imprimés (Archives)
           </button>
@@ -316,7 +320,6 @@
                     <input type="checkbox" id="tick-all" />
                   </th>
                   <th>DATE RÉCEPTION</th>
-                  <th>DATE IMPRESSION</th>
                   <th>CODE LABO</th>
                   <th>N° CERTIFICAT</th>
                   <th>FOURNISSEUR</th>
@@ -426,6 +429,63 @@
   </div>
 </div>
 
+<!-- REPORT MODAL -->
+<div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-file-invoice mr-2"></i>Générer Rapport d'Impressions</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity:.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form id="reportForm" action="{% url 'impressionReport' %}" method="GET" target="_blank">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="small font-weight-bold">Date Impression (Début)</label>
+            <input type="date" name="date_start" class="form-control form-control-sm">
+          </div>
+          <div class="form-group">
+            <label class="small font-weight-bold">Date Impression (Fin)</label>
+            <input type="date" name="date_end" class="form-control form-control-sm">
+          </div>
+          <div class="form-group">
+            <label class="small font-weight-bold">Fournisseur / Importateur</label>
+            <select name="importateur" class="form-control form-control-sm" style="width:100%;">
+              <option value="">Tous les fournisseurs</option>
+              {% for imp in importateurs_list %}
+                <option value="{{ imp.idimportateur }}">{{ imp.nomimportateur }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="small font-weight-bold">Entrepôt</label>
+            <select name="entrepot" class="form-control form-control-sm" style="width:100%;">
+              <option value="">Tous les entrepôts</option>
+              {% for ent in entrepots_list %}
+                <option value="{{ ent.identrepot }}">{{ ent.nomentrepot }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="small font-weight-bold">Format d'export</label>
+            <select name="format" class="form-control form-control-sm">
+              <option value="pdf">PDF (Mandatory)</option>
+              <option value="xlsx">Excel (Optional)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary btn-pill">
+            <i class="fas fa-download mr-1"></i> Générer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 
@@ -485,7 +545,6 @@
           }
         },
         { data: 'dateReceptionLabo' },
-        { data: 'impressionresultat__printDate' },
         { data: 'codelabo' },
         { data: 'numcertificatqualite' },
         { data: 'nomimportateur' },

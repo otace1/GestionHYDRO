@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport des Impressions de Certificats</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #2563eb;
+            font-size: 18pt;
+        }
+        .header p {
+            margin: 5px 0 0;
+            color: #666;
+        }
+        .filters {
+            margin-bottom: 15px;
+            font-size: 9pt;
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 4px;
+            text-align: left;
+        }
+        th {
+            background-color: #2563eb;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 8pt;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 5px;
+        }
+        .text-center { text-align: center; }
+        .status-printed { color: #16a34a; font-weight: bold; }
+        .status-reprinted { color: #f59e0b; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Rapport des Impressions de Certificats</h1>
+        <p>Généré le {{ generated_at|date:"d/m/Y H:i" }} par {{ user.get_full_name }}</p>
+    </div>
+
+    <div class="filters">
+        <strong>Filtres appliqués :</strong>
+        {% if date_start %} Du {{ date_start }} {% endif %}
+        {% if date_end %} Au {{ date_end }} {% endif %}
+        {% if not date_start and not date_end %} Toutes les dates {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="8%">Réf.</th>
+                <th width="10%">Type</th>
+                <th width="15%">Bénéficiaire</th>
+                <th width="15%">Fournisseur</th>
+                <th width="12%">Entrepôt</th>
+                <th width="15%">Date/Heure Print</th>
+                <th width="12%">Imprimé par</th>
+                <th width="8%">Statut</th>
+                <th width="5%">Nbr.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            <tr>
+                <td class="text-center">{{ item.reference }}</td>
+                <td>{{ item.type }}</td>
+                <td>{{ item.beneficiary }}</td>
+                <td>{{ item.fournisseur }}</td>
+                <td>{{ item.entrepot }}</td>
+                <td>{{ item.print_time|date:"d/m/Y H:i"|default:item.print_time }}</td>
+                <td>{{ item.printed_by }}</td>
+                <td class="text-center">
+                    <span class="{% if item.num_prints > 1 %}status-reprinted{% else %}status-printed{% endif %}">
+                        {{ item.status }}
+                    </span>
+                </td>
+                <td class="text-center">{{ item.num_prints }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center">Aucun certificat imprimé trouvé.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        © {{ generated_at|date:"Y" }} Gestion HYDRO - Rapport d'Audit des Impressions
+    </div>
+</body>
+</html>

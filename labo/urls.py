@@ -34,6 +34,7 @@ urlpatterns = [
     path('impression/', views.GestionImpressionLabo.affichagetableauimpression, name='impression'),
     path('impression/response/', views.responseAffichagetableauimpression, name='responseAffichagetableauimpression'),
     path('archives/response/', views.responseArchivesTableau, name='responseArchivesTableau'),
+    path('impression/report/', views.responseImpressionReport, name='impressionReport'),
     # path('impression/<int:pk>', views.GestionImpressionLabo.impressioncertificat, name='print'),
     path('impression/cq/', views.impressioncertificat, name='print'),
     path('reimpression/<int:pk>', views.GestionImpressionLabo.reimpressioncertificat, name='reprint'),

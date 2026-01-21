@@ -1923,7 +1923,7 @@ class GestionImpressionLabo():
         if role not in (1, 5):
             return redirect('logout')
 
-        # Leverage denormalized scoping
+        # Leverage denormalized scoping (Consistent with optimized DataTables view)
         allowed_entrepot_ids = Entrepot.objects.filter(
             ville__affectationville__username_id=id
         ).values_list('identrepot', flat=True)
@@ -1940,12 +1940,20 @@ class GestionImpressionLabo():
         cqNotPrinted = base_qs.filter(has_been_printed=False).count()
         cqPrinted = base_qs.filter(has_been_printed=True).count()
 
+        # Lists for report filters
+        entrepots_list = Entrepot.objects.filter(identrepot__in=allowed_entrepot_ids).order_by('nomentrepot')
+        # Efficiently get importateurs linked to these cargaisons
+        importateur_ids = base_qs.values_list('importateur_id', flat=True).distinct()
+        importateurs_list = Importateur.objects.filter(idimportateur__in=importateur_ids).order_by('nomimportateur')
+
         request.session['url'] = request.get_full_path()
         template = 'labo_impression.html'
 
         context = {
             'cqNotPrinted': cqNotPrinted,
             'cqPrinted': cqPrinted,
+            'entrepots_list': entrepots_list,
+            'importateurs_list': importateurs_list,
         }
         return render(request, template, context)
 
@@ -1954,17 +1962,20 @@ class GestionImpressionLabo():
     def recherchecq(request):
         user = request.user
         role = user.role_id
-        ville = AffectationVille.objects.get(username_id=user.id)
-        ville = ville.ville_id
         request.session['url'] = request.get_full_path()
         template = 'labo_impression.html'
         if role == 5 or role == 1 or role == 6 or role == "v2":
             numcode = request.GET.get('codelabo')
             if numcode != "":
+                # Leverage denormalized scoping (Consistent with optimized DataTables view)
+                allowed_entrepot_ids = Entrepot.objects.filter(
+                    ville__affectationville__username_id=user.id
+                ).values_list('identrepot', flat=True)
+
                 qs = Cargaison.objects.filter(
-                    entrepot__ville_id=ville,
+                    entrepot_id__in=allowed_entrepot_ids,
                     code_labo=numcode,
-                    impressionresultat__isPrinted=0
+                    impressionresultat__isPrinted=False
                 ).annotate(
                     idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
@@ -1987,18 +1998,20 @@ class GestionImpressionLabo():
     @login_required(login_url='login')
     def recherchecqr(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        ville = AffectationVille.objects.get(username_id=user.id)
-        ville = ville.ville_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1 or role == "v1" or role == "v2":
             numcode = request.GET.get('codelabo')
             if numcode != "":
+                # Leverage denormalized scoping (Consistent with optimized DataTables view)
+                allowed_entrepot_ids = Entrepot.objects.filter(
+                    ville__affectationville__username_id=user.id
+                ).values_list('identrepot', flat=True)
+
                 qs = Cargaison.objects.filter(
-                    entrepot__ville_id=ville,
+                    entrepot_id__in=allowed_entrepot_ids,
                     code_labo=numcode,
-                    impressionresultat__isPrinted=1
+                    impressionresultat__isPrinted=True
                 ).annotate(
                     idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
@@ -4185,15 +4198,12 @@ def nonconformeAjx2(request):
 @require_POST
 def responseAffichagetableauimpression(request):
     user = request.user
-    id = user.id
     role = user.role_id
 
     if role not in (1, 5):
         return JsonResponse({"error": "Forbidden"}, status=403)
 
-    # ---------------------------
-    # Read POST payload safely
-    # ---------------------------
+    # Payload reading
     def get_payload():
         ct = (request.headers.get("Content-Type") or "").lower()
         if "application/json" in ct:
@@ -4201,67 +4211,69 @@ def responseAffichagetableauimpression(request):
                 return json.loads(request.body.decode("utf-8") or "{}") or {}
             except Exception:
                 return {}
-        # regular form POST
         return request.POST
 
     params = get_payload()
 
-    # Leverage denormalized scoping to avoid deep joins
+    # 1. Optimize allowed Entrepots (Denormalized scoping)
     allowed_entrepot_ids = Entrepot.objects.filter(
-        ville__affectationville__username_id=id
+        ville__affectationville__username_id=user.id
     ).values_list('identrepot', flat=True)
 
+    # 2. Base QuerySet with mandatory filters
     qs = Cargaison.objects.filter(
         entrepot_id__in=allowed_entrepot_ids,
         etat="Conforme aux exigences"
     )
 
-    # ---------- Filters from toolbar ----------
+    # recordsTotal for DataTables (count before optional filters)
+    recordsTotal = qs.count()
+
+    # 3. Optional Filters from toolbar
     date_start = params.get('date_start')
     date_end = params.get('date_end')
     printed_status = params.get('printed_status', 'not_printed')
 
     if date_start:
-        qs = qs.filter(date_reception_labo__date__gte=date_start)
+        qs = qs.filter(date_reception_labo__gte=date_start)
     if date_end:
         qs = qs.filter(date_reception_labo__date__lte=date_end)
 
-    # Robust printed status control using Exists to handle ForeignKey relationship correctly
-    printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
-    qs = qs.annotate(has_been_printed=Exists(printed_exists))
+    # Printed status subquery - we only care about records where isPrinted is True
+    print_records = ImpressionResultat.objects.filter(
+        idcargaison=OuterRef('pk'), 
+        isPrinted=True
+    ).order_by('-idImpression')
 
     if printed_status == 'not_printed':
-        qs = qs.filter(has_been_printed=False)
+        qs = qs.filter(~Exists(print_records))
     elif printed_status == 'printed':
-        qs = qs.filter(has_been_printed=True)
+        qs = qs.filter(Exists(print_records))
 
-    # ---------- Global search (DataTables or Quick Search) ----------
+    # 4. Global search (leveraging denormalized fields and indexes)
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
     search_value = search_value or params.get('q')
     if search_value:
-        qs = qs.filter(
-            Q(code_labo__iexact=search_value) |
-            Q(num_certificat_qualite__iexact=search_value) |
-            Q(nom_importateur__iexact=search_value) |
-            Q(nom_entrepot__iexact=search_value) |
-            Q(nom_produit__iexact=search_value) |
-            Q(immatriculation__iexact=search_value)
-        )
+        search_q = Q(code_labo__icontains=search_value) | \
+                   Q(num_certificat_qualite__icontains=search_value) | \
+                   Q(nom_importateur__icontains=search_value) | \
+                   Q(nom_entrepot__icontains=search_value) | \
+                   Q(nom_produit__icontains=search_value) | \
+                   Q(immatriculation__icontains=search_value)
+        
+        if search_value.isdigit():
+            val = int(search_value)
+            search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
+            
+        qs = qs.filter(search_q)
 
-    # recordsTotal / recordsFiltered
-    total_count = qs.count()
+    # recordsFiltered for DataTables
+    recordsFiltered = qs.count()
 
-    # Subquery for print date to avoid joins and duplicates
-    latest_print_date = ImpressionResultat.objects.filter(
-        idcargaison=OuterRef('pk')
-    ).order_by('-idImpression').values('printDate')[:1]
-
-    qs = qs.annotate(print_date_val=Subquery(latest_print_date))
-
+    # 5. Final projection and pagination
     qs = qs.values(
         'idcargaison',
         'date_reception_labo',
-        'print_date_val',
         'num_certificat_qualite',
         'code_labo',
         'nom_produit',
@@ -4270,7 +4282,6 @@ def responseAffichagetableauimpression(request):
         'immatriculation'
     ).order_by('date_reception_labo')
 
-    # ---------- Pagination ----------
     draw = int(params.get('draw', 1))
     start = int(params.get('start', 0))
     length = int(params.get('length', 10))
@@ -4279,30 +4290,18 @@ def responseAffichagetableauimpression(request):
         return JsonResponse({
             'data': [],
             'draw': draw,
-            'recordsTotal': total_count,
-            'recordsFiltered': total_count,
+            'recordsTotal': recordsTotal,
+            'recordsFiltered': recordsFiltered,
         })
 
-    paginator = LazyPaginator(qs, length)
-    current_page = (start // length) + 1
+    # Paging using direct slice for performance
+    data = list(qs[start:start+length])
 
-    try:
-        page = paginator.page(current_page)
-    except (PageNotAnInteger, EmptyPage):
-        page = paginator.page(1)
-
-    data = list(page.object_list)
-
-    # Rename keys for frontend compatibility
+    # 6. Formatting result for legacy compatibility
     for r in data:
-        dt_reception = r.pop("date_reception_labo", None)
-        r["dateReceptionLabo"] = dt_reception.date() if dt_reception and hasattr(dt_reception, 'date') else dt_reception
+        dt = r.pop("date_reception_labo", None)
+        r["dateReceptionLabo"] = dt.date() if dt and hasattr(dt, 'date') else dt
         
-        # Mapping print date back to expected key
-        pdate = r.pop("print_date_val", "—")
-        r["impressionresultat__printDate"] = pdate.strftime('%Y-%m-%d') if pdate and hasattr(pdate, 'strftime') else pdate
-        
-        # Mapping denormalized fields back to expected keys
         r["codelabo"] = r.pop("code_labo", None)
         r["numcertificatqualite"] = r.pop("num_certificat_qualite", None)
         r["nomproduit"] = r.pop("nom_produit", None)
@@ -4313,16 +4312,16 @@ def responseAffichagetableauimpression(request):
     return JsonResponse({
         'data': data,
         'draw': draw,
-        'recordsTotal': total_count,
-        'recordsFiltered': total_count,
+        'recordsTotal': recordsTotal,
+        'recordsFiltered': recordsFiltered,
     })
+
 
 
 @login_required(login_url='login')
 @require_POST
 def responseArchivesTableau(request):
     user = request.user
-    id = user.id
     role = user.role_id
 
     if role not in (1, 5):
@@ -4339,52 +4338,67 @@ def responseArchivesTableau(request):
 
     params = get_payload()
 
+    # 1. Optimize Scoping (Consistent with main printing table)
     allowed_entrepot_ids = Entrepot.objects.filter(
-        ville__affectationville__username_id=id
+        ville__affectationville__username_id=user.id
     ).values_list('identrepot', flat=True)
 
-    # Base Query: Only printed certificates
-    printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
+    # 2. Base QuerySet: Only certificates that have been printed
+    # Optimization: Use Exists on a restricted ImpressionResultat queryset
+    print_records = ImpressionResultat.objects.filter(
+        idcargaison=OuterRef('pk'), 
+        isPrinted=True
+    ).order_by('-idImpression')
+
     qs = Cargaison.objects.filter(
         entrepot_id__in=allowed_entrepot_ids
-    ).annotate(has_been_printed=Exists(printed_exists)).filter(has_been_printed=True)
+    ).annotate(has_been_printed=Exists(print_records)).filter(has_been_printed=True)
 
-    # Subquery for print date (also used for filtering)
-    latest_print_date = ImpressionResultat.objects.filter(
-        idcargaison=OuterRef('pk')
-    ).order_by('-idImpression').values('printDate')[:1]
-    qs = qs.annotate(print_date_val=Subquery(latest_print_date))
+    # recordsTotal for DataTables (within user's scope)
+    recordsTotal = qs.count()
 
-    # ---------- Filters ----------
+    # 3. Apply Filters
     code_labo = params.get('code_labo')
     num_certificat = params.get('num_certificat')
     date_start = params.get('date_start')
     date_end = params.get('date_end')
 
     if code_labo:
-        qs = qs.filter(code_labo__iexact=code_labo)
+        qs = qs.filter(code_labo=code_labo)
     if num_certificat:
-        qs = qs.filter(num_certificat_qualite__iexact=num_certificat)
+        qs = qs.filter(num_certificat_qualite=num_certificat)
+
+    # Subquery for the latest print date (needed for range filtering and ordering)
+    latest_print_date = print_records.values('printDate')[:1]
+    qs = qs.annotate(print_date_val=Subquery(latest_print_date))
+
     if date_start:
         qs = qs.filter(print_date_val__gte=date_start)
     if date_end:
         qs = qs.filter(print_date_val__lte=date_end)
 
-    # Global search
-    # DataTables sends search[value] in form-data, but if it's JSON it might be different
+    # Global search (leveraging denormalized fields and index-friendly queries)
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
+    search_value = search_value or params.get('q')
     if search_value:
-        qs = qs.filter(
-            Q(code_labo__iexact=search_value) |
-            Q(num_certificat_qualite__iexact=search_value) |
-            Q(nom_importateur__iexact=search_value) |
-            Q(nom_entrepot__iexact=search_value) |
-            Q(nom_produit__iexact=search_value) |
-            Q(immatriculation__iexact=search_value)
-        )
+        search_q = Q(nom_importateur__icontains=search_value) | \
+                   Q(nom_entrepot__icontains=search_value) | \
+                   Q(nom_produit__icontains=search_value) | \
+                   Q(immatriculation__icontains=search_value)
+        
+        # Numeric fields optimized
+        if search_value.isdigit():
+            val = int(search_value)
+            search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
+        else:
+            search_q |= Q(nom_frontiere__icontains=search_value)
 
-    total_count = qs.count()
+        qs = qs.filter(search_q)
 
+    # recordsFiltered after all filters applied
+    recordsFiltered = qs.count()
+
+    # 4. Final selection and Ordering
     qs = qs.values(
         'idcargaison',
         'date_reception_labo',
@@ -4397,39 +4411,145 @@ def responseArchivesTableau(request):
         'immatriculation'
     ).order_by('-print_date_val')
 
-    # Pagination
+    # 5. Pagination (Direct slicing for performance)
     draw = int(params.get('draw', 1))
     start = int(params.get('start', 0))
     length = int(params.get('length', 10))
 
-    paginator = LazyPaginator(qs, length)
-    current_page = (start // length) + 1
-    try:
-        page = paginator.page(current_page)
-    except (PageNotAnInteger, EmptyPage):
-        page = paginator.page(1)
+    if length > 0:
+        data = list(qs[start:start+length])
+    else:
+        data = []
 
-    data = list(page.object_list)
+    # 6. Legacy Key Mapping and Formatting
     for r in data:
         dt_reception = r.pop("date_reception_labo", None)
         r["dateReceptionLabo"] = dt_reception.date() if dt_reception and hasattr(dt_reception, 'date') else dt_reception
         
-        pdate = r.pop("print_date_val", "—")
-        r["impressionresultat__printDate"] = pdate.strftime('%Y-%m-%d') if pdate and hasattr(pdate, 'strftime') else pdate
-
-        r["codelabo"] = r.pop("code_labo", None)
-        r["numcertificatqualite"] = r.pop("num_certificat_qualite", None)
-        r["nomproduit"] = r.pop("nom_produit", None)
-        r["nomimportateur"] = r.pop("nom_importateur", None)
         r["nomentrepot"] = r.pop("nom_entrepot", None)
         r["immatriculation"] = r.pop("immatriculation", None)
 
     return JsonResponse({
         'data': data,
         'draw': draw,
-        'recordsTotal': total_count,
-        'recordsFiltered': total_count,
+        'recordsTotal': recordsTotal,
+        'recordsFiltered': recordsFiltered,
     })
+
+
+
+@login_required(login_url='login')
+def responseImpressionReport(request):
+    user = request.user
+    role = user.role_id
+    if role not in (1, 5):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    # Scoping
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user.id
+    ).values_list('identrepot', flat=True)
+
+    # Base query for printed certificates
+    qs = ImpressionResultat.objects.filter(
+        idcargaison__entrepot_id__in=allowed_entrepot_ids,
+        isPrinted=True
+    ).select_related('idcargaison', 'idcargaison__importateur', 'idcargaison__entrepot', 'idcargaison__produit')
+
+    # Apply filters
+    date_start = request.GET.get('date_start')
+    date_end = request.GET.get('date_end')
+    importateur_id = request.GET.get('importateur')
+    entrepot_id = request.GET.get('entrepot')
+    export_format = request.GET.get('format', 'pdf')
+
+    if date_start:
+        qs = qs.filter(printDate__gte=date_start)
+    if date_end:
+        qs = qs.filter(printDate__lte=date_end)
+    if importateur_id:
+        qs = qs.filter(idcargaison__importateur_id=importateur_id)
+    if entrepot_id:
+        qs = qs.filter(idcargaison__entrepot_id=entrepot_id)
+
+    # Order by date
+    qs = qs.order_by('-printDate', '-idImpression')
+
+    # Prepare data for report
+    data_list = []
+    cargaison_ids = [obj.idcargaison_id for obj in qs]
+    
+    # Batch fetch logs
+    logs = UserActivityLog.objects.filter(
+        action="Certificat Imprimé",
+        object_id__in=[str(cid) for cid in cargaison_ids]
+    ).select_related('user').order_by('timestamp')
+    
+    from collections import defaultdict
+    logs_by_cid = defaultdict(list)
+    for log in logs:
+        logs_by_cid[log.object_id].append(log)
+
+    for imp in qs:
+        cid_str = str(imp.idcargaison_id)
+        cid_logs = logs_by_cid.get(cid_str, [])
+        num_prints = len(cid_logs)
+        
+        if cid_logs:
+            last_log = cid_logs[-1]
+            print_time = last_log.timestamp
+            printed_by = last_log.user.get_full_name() if last_log.user else "N/A"
+        else:
+            # Fallback for historical data
+            print_time = imp.printDate
+            printed_by = "N/A"
+            num_prints = 1
+
+        data_list.append({
+            'reference': imp.idcargaison.num_certificat_qualite or imp.idcargaison.code_labo,
+            'type': imp.idcargaison.nom_produit,
+            'beneficiary': imp.idcargaison.nom_importateur,
+            'fournisseur': imp.idcargaison.nom_importateur,
+            'entrepot': imp.idcargaison.nom_entrepot,
+            'print_time': print_time,
+            'printed_by': printed_by,
+            'status': "Réimprimé" if num_prints > 1 else "Imprimé",
+            'num_prints': num_prints
+        })
+
+    if export_format == 'xlsx':
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Certificats Imprimés"
+        headers = ["Référence", "Type", "Bénéficiaire", "Fournisseur", "Entrepôt", "Date/Heure Impression", "Imprimé par", "Statut", "Nbr Impressions"]
+        ws.append(headers)
+        for row in data_list:
+            ws.append([
+                row['reference'],
+                row['type'],
+                row['beneficiary'],
+                row['fournisseur'],
+                row['entrepot'],
+                row['print_time'].strftime('%Y-%m-%d %H:%M') if hasattr(row['print_time'], 'strftime') else str(row['print_time']),
+                row['printed_by'],
+                row['status'],
+                row['num_prints']
+            ])
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_impressions.xlsx"'
+        wb.save(response)
+        return response
+
+    else:
+        context = {
+            'data': data_list,
+            'date_start': date_start,
+            'date_end': date_end,
+            'generated_at': timezone.now(),
+            'user': user
+        }
+        return render_to_pdf('report/impression_report.html', context)
 
 
 
@@ -4437,738 +4557,245 @@ def responseArchivesTableau(request):
 @login_required(login_url='login')
 def impressioncertificat(request):
     user = request.user
-    id = user.id
-    name = user.last_name + ' ' + user.first_name
-    poste = user.poste
-    ville = AffectationVille.objects.get(username_id=id)
-    ville = ville.ville_id
-    province = Ville.objects.get(idville=ville)
-    province = province.province
-    province = province.upper()
     role = user.role_id
 
-    # Recuperation des donnees liees aux signataires
-    affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
-    affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
-    signDroite = MyUser.objects.get(username=affect1.userId)
-    signGauche = MyUser.objects.get(username=affect2.userId)
+    # Optimization: Use select_related to get ville and province in one query
+    try:
+        aff_ville = AffectationVille.objects.select_related('ville').get(username_id=user.id)
+        ville_id = aff_ville.ville_id
+        province = (aff_ville.ville.province or "").upper()
+    except (AffectationVille.DoesNotExist, AttributeError):
+        return redirect('logout')
 
-    # Recuperation du Laboratoire asssocie a la ville
-    laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+    # Optimization: Fetch signers and lab data in one pass
+    signGauche = None
+    signDroite = None
+    laboratoireData = None
+
+    affects = AffectationLaboratoire.objects.filter(ville_id=ville_id).select_related('userId', 'idLaboratoire')
+    for aff in affects:
+        if aff.signGauche:
+            signGauche = aff.userId
+        else:
+            signDroite = aff.userId
+            laboratoireData = aff.idLaboratoire
+
+    if not signGauche or not signDroite or not laboratoireData:
+        # Handle missing configuration if necessary
+        pass
 
     # Recuperation des donnees liees a l'Impression
     if request.method == 'POST':
         dataJson = json.loads(request.body)
         pk = dataJson.get('idcargaison')
-        print(pk)
-        impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
+        
+        try:
+            # Use select_related and leverage denormalized fields
+            cargaison = Cargaison.objects.select_related(
+                'entrepot_echantillon', 
+                'entrepot_echantillon__laboreception'
+            ).get(idcargaison=pk)
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Cargaison not found'})
 
-        print(signGauche)
-        print(signDroite)
+        impressionData = ImpressionResultat.objects.filter(idcargaison_id=pk).first()
 
-        d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
-            mois=ExtractMonth('datereceptionlabo'),
-            annee=ExtractYear('datereceptionlabo')
-        ).values('idcargaison_id', 'mois', 'annee')
-
-        for entry in d:
-            mois = entry['mois']
-            annee = entry['annee']
+        # Extract month/year from denormalized date or related object
+        labo_rec = cargaison.entrepot_echantillon.laboreception
+        mois = labo_rec.datereceptionlabo.month if labo_rec and labo_rec.datereceptionlabo else None
+        annee = labo_rec.datereceptionlabo.year if labo_rec and labo_rec.datereceptionlabo else None
 
         if role == 5 or role == 1:
-            td = datetime.today()
-            # Recuperation du produit de la cargaison
-            p = Produit.objects.get(cargaison=pk)
-            produit = p.nomproduit
+            # Denormalized fields
+            produit = cargaison.nom_produit
+            echantillon = cargaison.entrepot_echantillon
+            laboratoire = labo_rec
 
-            # Fecthing object with pk corresponding into database
-            cargaison = Cargaison.objects.get(idcargaison=pk)
-            echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
-            laboratoire = LaboReception.objects.get(idcargaison=pk)
-
-            printed = ImpressionResultat.objects.get(idcargaison=pk)
-            printed.isPrinted = 1
-            printed.save(update_fields=['isPrinted'])
+            # Optimization: Fetch all analysis results in one query
+            results = ResultatAnalyse.objects.filter(idcargaison=pk).values('idParametre_id', 'valeurResultat', 'valeurResultatChar')
+            res_dict = {r['idParametre_id']: r for r in results}
 
             # Test pour afficher les differents rapports
+            template = ""
+            data = {
+                'laboratoire': laboratoire,
+                'cargaison': cargaison,
+                'echantillon': echantillon,
+                'annee': annee,
+                'mois': mois,
+                'province': province,
+                'signGauche': signGauche,
+                'signDroite': signDroite,
+                'impressionData': impressionData,
+                'laboratoireData': laboratoireData,
+            }
 
             if produit == 'GASOIL':
                 template = 'report/Report1/gasoilreport.html'
 
-                # Resultat Gasoil Fetching data into Database
+                # Resultat Gasoil Fetching data from the dictionary
+                data.update({
+                    'couleurastm': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'aciditetotal': res_dict.get(1, {}).get('valeurResultat', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'massevolumique': res_dict.get(21, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'distillation10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'distillation20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'distillation50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'distillation90': res_dict.get(15, {}).get('valeurResultat', ''),
+                    'pointinitial': res_dict.get(30, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'pointeclair': res_dict.get(25, {}).get('valeurResultat', ''),
+                    'viscosite': res_dict.get(38, {}).get('valeurResultat', ''),
+                    'pointecoulement': res_dict.get(26, {}).get('valeurResultat', ''),
+                    'teneureau': res_dict.get(35, {}).get('valeurResultat', ''),
+                    'sediment': res_dict.get(32, {}).get('valeurResultat', ''),
+                    'indicecetane': res_dict.get(19, {}).get('valeurResultat', ''),
+                    'recuperation362': res_dict.get(10, {}).get('valeurResultat', ''),
+                    'cendre': res_dict.get(3, {}).get('valeurResultat', ''),
+                })
+                
                 try:
-                    couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-                except:
-                    couleurastm = ''
-                try:
-                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
-                except:
-                    aciditetotal = ''
-                try:
-                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except:
-                    soufre = ''
-                try:
-                    massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[0].valeurResultat
-                except:
-                    massevolumique = ''
-                try:
-                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                except:
-                    massevolumique15 = ''
-                try:
-                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except:
-                    distillation = ''
-                try:
-                    distillation10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-                except:
-                    distillation10 = ''
-                try:
-                    distillation20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-                except:
-                    distillation20 = ''
-                try:
-                    distillation50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-                except:
-                    distillation50 = ''
-                try:
-                    distillation90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-                except:
-                    distillation90 = ''
-                try:
-                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[0].valeurResultat
-                except:
-                    pointinitial = ''
-                try:
-                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-                except:
-                    pointfinal = ''
-                try:
-                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[0].valeurResultat
-                except:
-                    pointeclair = ''
-                try:
-                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=38)[0].valeurResultat
-                except:
-                    viscosite = ''
-                try:
-                    pointecoulement = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[0].valeurResultat
-                except:
-                    pointecoulement = ''
-                try:
-                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[0].valeurResultat
-                except:
-                    teneureau = ''
-                try:
-                    sediment = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=32)[0].valeurResultat
-                except:
-                    sediment = ''
-                try:
-                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
-                    corrosion = int(corrosion_str)
-                except:
-                    corrosion = ''
-                try:
-                    indicecetane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[0].valeurResultat
-                except:
-                    indicecetane = ''
-                # try:
-                #     densite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=49)[0].valeurResultat
-                # except:
-                #     densite = ''
-                try:
-                    recuperation362 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
-                except:
-                    recuperation362 = ''
-                try:
-                    cendre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[0].valeurResultat
-                except:
-                    cendre = ''
+                    corrosion_str = res_dict.get(6, {}).get('valeurResultat', '')
+                    data['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
+                except (ValueError, TypeError):
+                    data['corrosion'] = ''
 
-                data = {
-                    'laboratoire': laboratoire,
-                    'cargaison': cargaison,
-                    'echantillon': echantillon,
-                    'annee': annee,
-                    'mois': mois,
-                    'province': province,
-                    'couleurastm': couleurastm,
-                    'aciditetotal': aciditetotal,
-                    'soufre': soufre,
-                    'massevolumique': massevolumique,
-                    'distillation': distillation,
-                    'distillation10': distillation10,
-                    'distillation20': distillation20,
-                    'distillation50': distillation50,
-                    'distillation90': distillation90,
-                    'pointfinal': pointfinal,
-                    'pointeclair': pointeclair,
-                    'pointinitial': pointinitial,
-                    'viscosite': viscosite,
-                    'pointecoulement': pointecoulement,
-                    'teneureau': teneureau,
-                    'sediment': sediment,
-                    'corrosion': corrosion,
-                    'indicecetane': indicecetane,
-                    # 'densite': densite,
-                    'recuperation362': recuperation362,
-                    'cendre': cendre,
-                    'massevolumique15': massevolumique15,
-                    'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData': laboratoireData,
-                }
-
-                # Rendered PDF report
-                pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                # return HttpResponse(pdf, content_type='application/pdf')
-
-            if produit == 'MOGAS':
+            elif produit == 'MOGAS':
                 template = 'report/Report1/mogasreport.html'
-                # Resultat Gasoil Fetching data into Database
+                # Resultat MOGAS Fetching data from the dictionary
+                data.update({
+                    'aspect': res_dict.get(2, {}).get('valeurResultatChar', ''),
+                    'odeur': res_dict.get(22, {}).get('valeurResultatChar', ''),
+                    'couleursaybolt': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'residu': res_dict.get(31, {}).get('valeurResultat', ''),
+                    'pourcent10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'pourcent20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'pourcent50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'pourcent70': res_dict.get(14, {}).get('valeurResultat', ''),
+                    'pourcent90': res_dict.get(15, {}).get('valeurResultat', ''),
+                    'tensionvapeur': res_dict.get(36, {}).get('valeurResultat', ''),
+                    'difftemperature': res_dict.get(9, {}).get('valeurResultat', ''),
+                    'plomb': res_dict.get(24, {}).get('valeurResultat', ''),
+                    'indiceoctane': res_dict.get(18, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                })
+                
                 try:
-                    aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
-                except:
-                    aspect = ''
-                try:
-                    odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
-                except:
-                    odeur = ''
-                try:
-                    couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-                except:
-                    couleursaybolt = ''
-                try:
-                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except:
-                    soufre = ''
-                try:
-                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except:
-                    distillation = ''
-                try:
-                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-                except:
-                    pointfinal = ''
-                try:
-                    residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
-                except:
-                    residu = ''
-                try:
-                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
-                    corrosion = int(corrosion_str)
-                except:
-                    corrosion = ''
-                try:
-                    pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-                except:
-                    pourcent10 = ''
-                try:
-                    pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-                except:
-                    pourcent20 = ''
-                try:
-                    pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-                except:
-                    pourcent50 = ''
-                try:
-                    pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
-                except:
-                    pourcent70 = ''
-                try:
-                    pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-                except:
-                    pourcent90 = ''
-                try:
-                    tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
-                except:
-                    tensionvapeur = ''
-                try:
-                    difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
-                except:
-                    difftemperature = ''
-                try:
-                    plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
-                except:
-                    plomb = ''
-                try:
-                    indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
-                except:
-                    indiceoctane = ''
-                try:
-                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                except:
-                    massevolumique15 = ''
+                    corrosion_str = res_dict.get(7, {}).get('valeurResultat', '')
+                    data['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
+                except (ValueError, TypeError):
+                    data['corrosion'] = ''
 
-                data = {
-                    'laboratoire': laboratoire,
-                    'cargaison': cargaison,
-                    'echantillon': echantillon,
-                    'annee': annee,
-                    'mois': mois,
-                    'province': province,
-                    'aspect': aspect,
-                    'odeur': odeur,
-                    'couleursaybolt': couleursaybolt,
-                    'soufre': soufre,
-                    'distillation': distillation,
-                    'pointfinal': pointfinal,
-                    'residu': residu,
-                    'corrosion': corrosion,
-                    'pourcent10': pourcent10,
-                    'pourcent20': pourcent20,
-                    'pourcent50': pourcent50,
-                    'pourcent70': pourcent70,
-                    'pourcent90': pourcent90,
-                    'tensionvapeur': tensionvapeur,
-                    'difftemperature': difftemperature,
-                    'plomb': plomb,
-                    'indiceoctane': indiceoctane,
-                    'massevolumique15': massevolumique15,
-                    'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData': laboratoireData,
-                }
-
-                # Rendered PDF report
-                pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                # return HttpResponse(pdf, content_type='application/pdf')
-
-            if produit == 'JET A1':
+            elif produit == 'JET A1':
                 template = 'report/Report1/jeta1report.html'
 
-                # Resultat Gasoil Fetching data into Database
+                # Resultat JET A1 Fetching data from the dictionary
+                data.update({
+                    'aspect': res_dict.get(2, {}).get('valeurResultatChar', ''),
+                    'couleursaybolt': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'aciditetotal': res_dict.get(1, {}).get('valeurResultat', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'soufremercaptan': res_dict.get(33, {}).get('valeurResultat', ''),
+                    'docteurtest': res_dict.get(16, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'pointinitial': res_dict.get(30, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'pointfumee': res_dict.get(28, {}).get('valeurResultat', ''),
+                    'pointeclair': res_dict.get(25, {}).get('valeurResultat', ''),
+                    'freezingpoint': res_dict.get(17, {}).get('valeurResultat', ''),
+                    'residu': res_dict.get(31, {}).get('valeurResultat', ''),
+                    'perte': res_dict.get(23, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                    'viscosite': res_dict.get(37, {}).get('valeurResultat', ''),
+                    'pointinflammabilite': res_dict.get(27, {}).get('valeurResultat', ''),
+                    'teneureau': res_dict.get(35, {}).get('valeurResultat', ''),
+                    'conductivite': res_dict.get(4, {}).get('valeurResultat', ''),
+                    'vol10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'vol20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'vol30': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol40': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'vol60': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol70': res_dict.get(14, {}).get('valeurResultat', ''),
+                    'vol80': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol90': res_dict.get(15, {}).get('valeurResultat', ''),
+                })
+                
                 try:
-                    aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
-                        0].valeurResultatChar
-                except:
-                    aspect = ''
-                try:
-                    couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                        0].valeurResultatChar
-                except:
-                    couleursaybolt = ''
-                try:
-                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                        0].valeurResultat
-                except:
-                    aciditetotal = ''
-                try:
-                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
-                        0].valeurResultat
-                except:
-                    soufre = ''
-                try:
-                    soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
-                        0].valeurResultat
-                except:
-                    soufremercaptan = ''
-                try:
-                    docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-                        0].valeurResultat
-                except:
-                    docteurtest = ''
-                try:
-                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    distillation = ''
-                try:
-                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
-                        0].valeurResultat
-                except:
-                    pointinitial = ''
-                try:
-                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-                        0].valeurResultat
-                except:
-                    pointfinal = ''
+                    corrosion_str = res_dict.get(5, {}).get('valeurResultat', '')
+                    data['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
+                except (ValueError, TypeError):
+                    data['corrosion'] = ''
 
-                try:
-                    pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-                        0].valeurResultat
-                except:
-                    pointfumee = ''
-
-                try:
-                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
-                        0].valeurResultat
-                except:
-                    pointeclair = ''
-
-                try:
-                    freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-                        0].valeurResultat
-                except:
-                    freezingpoint = ''
-
-                try:
-                    residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
-                        0].valeurResultat
-                except:
-                    residu = ''
-
-                try:
-                    perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-                        0].valeurResultat
-                except:
-                    perte = ''
-
-                try:
-                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-                        0].valeurResultat
-                except:
-                    massevolumique15 = ''
-
-                try:
-                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
-                        0].valeurResultat
-                except:
-                    viscosite = ''
-
-                try:
-                    pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
-                        0].valeurResultat
-                except:
-                    pointinflammabilite = ''
-
-                try:
-                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
-                        0].valeurResultat
-                except:
-                    teneureau = ''
-
-                try:
-                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-                        0].valeurResultat
-                    corrosion = int(corrosion_str)
-                except:
-                    corrosion = ''
-
-                try:
-                    conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
-                        0].valeurResultat
-                except:
-                    conductivite = ''
-
-                try:
-                    vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-                        0].valeurResultat
-                except:
-                    vol10 = ''
-
-                try:
-                    vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
-                        0].valeurResultat
-                except:
-                    vol20 = ''
-                try:
-                    vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol30 = ''
-                try:
-                    vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol40 = ''
-                try:
-                    vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
-                        0].valeurResultat
-                except:
-                    vol50 = ''
-                try:
-                    vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol60 = ''
-                try:
-                    vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
-                        0].valeurResultat
-                except:
-                    vol70 = ''
-                try:
-                    vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol80 = ''
-                try:
-                    vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
-                        0].valeurResultat
-                except:
-                    vol90 = ''
-
-                data = {
-                    'laboratoire': laboratoire,
-                    'cargaison': cargaison,
-                    'echantillon': echantillon,
-                    'annee': annee,
-                    'mois': mois,
-                    'province': province,
-                    'aspect': aspect,
-                    'couleursaybolt': couleursaybolt,
-                    'aciditetotal': aciditetotal,
-                    'soufre': soufre,
-                    'soufremercaptan': soufremercaptan,
-                    'docteurtest': docteurtest,
-                    'distillation': distillation,
-                    'pointinitial': pointinitial,
-                    'pointfinal': pointfinal,
-                    'pointfumee': pointfumee,
-                    'freezingpoint': freezingpoint,
-                    'residu': residu,
-                    'perte': perte,
-                    'pointeclair': pointeclair,
-                    'massevolumique15': massevolumique15,
-                    'viscosite': viscosite,
-                    'pointinflammabilite': pointinflammabilite,
-                    'teneureau': teneureau,
-                    'corrosion': corrosion,
-                    'conductivite': conductivite,
-                    'vol10': vol10,
-                    'vol20': vol20,
-                    'vol30': vol30,
-                    'vol40': vol40,
-                    'vol50': vol50,
-                    'vol60': vol60,
-                    'vol70': vol70,
-                    'vol80': vol80,
-                    'vol90': vol90,
-                    'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData': laboratoireData,
-                }
-                # Rendered PDF report
-                pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                # return HttpResponse(pdf, content_type='application/pdf')
-
-            if produit == 'PETROLE LAMPANT':
+            elif produit == 'PETROLE LAMPANT':
                 template = 'report/Report1/petrolereport.html'
 
-                # Resultat Gasoil Fetching data into Database
+                # Resultat PETROLE LAMPANT Fetching data from the dictionary
+                data.update({
+                    'aspect': res_dict.get(2, {}).get('valeurResultatChar', ''),
+                    'couleursaybolt': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'aciditetotal': res_dict.get(1, {}).get('valeurResultat', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'soufremercaptan': res_dict.get(33, {}).get('valeurResultat', ''),
+                    'docteurtest': res_dict.get(16, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'pointinitial': res_dict.get(30, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'pointfumee': res_dict.get(28, {}).get('valeurResultat', ''),
+                    'pointeclair': res_dict.get(25, {}).get('valeurResultat', ''),
+                    'freezingpoint': res_dict.get(17, {}).get('valeurResultat', ''),
+                    'residu': res_dict.get(31, {}).get('valeurResultat', ''),
+                    'perte': res_dict.get(23, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                    'viscosite': res_dict.get(37, {}).get('valeurResultat', ''),
+                    'pointinflammabilite': res_dict.get(27, {}).get('valeurResultat', ''),
+                    'teneureau': res_dict.get(35, {}).get('valeurResultat', ''),
+                    'conductivite': res_dict.get(4, {}).get('valeurResultat', ''),
+                    'vol10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'vol20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'vol30': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol40': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'vol60': res_dict.get(44, {}).get('valeurResultat', ''),
+                    'vol70': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol80': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol90': res_dict.get(15, {}).get('valeurResultat', ''),
+                })
+                
                 try:
-                    aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
-                        0].valeurResultatChar
-                except:
-                    aspect = ''
-                try:
-                    couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                        0].valeurResultatChar
-                except:
-                    couleursaybolt = ''
-                try:
-                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                        0].valeurResultat
-                except:
-                    aciditetotal = ''
-                try:
-                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
-                        0].valeurResultat
-                except:
-                    soufre = ''
-                try:
-                    soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
-                        0].valeurResultat
-                except:
-                    soufremercaptan = ''
-                try:
-                    docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-                        0].valeurResultat
-                except:
-                    docteurtest = ''
-                try:
-                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    distillation = ''
-                try:
-                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
-                        0].valeurResultat
-                except:
-                    pointinitial = ''
-                try:
-                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-                        0].valeurResultat
-                except:
-                    pointfinal = ''
+                    corrosion_str = res_dict.get(5, {}).get('valeurResultat', '')
+                    data['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
+                except (ValueError, TypeError):
+                    data['corrosion'] = ''
 
-                try:
-                    pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-                        0].valeurResultat
-                except:
-                    pointfumee = ''
-
-                try:
-                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
-                        0].valeurResultat
-                except:
-                    pointeclair = ''
-
-                try:
-                    freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-                        0].valeurResultat
-                except:
-                    freezingpoint = ''
-
-                try:
-                    residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
-                        0].valeurResultat
-                except:
-                    residu = ''
-
-                try:
-                    perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-                        0].valeurResultat
-                except:
-                    perte = ''
-
-                try:
-                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-                        0].valeurResultat
-                except:
-                    massevolumique15 = ''
-
-                try:
-                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
-                        0].valeurResultat
-                except:
-                    viscosite = ''
-
-                try:
-                    pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
-                        0].valeurResultat
-                except:
-                    pointinflammabilite = ''
-
-                try:
-                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
-                        0].valeurResultat
-                except:
-                    teneureau = ''
-
-                try:
-                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-                        0].valeurResultat
-                    corrosion = int(corrosion_str)
-
-                except:
-                    corrosion = ''
-
-                try:
-                    conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
-                        0].valeurResultat
-                except:
-                    conductivite = ''
-
-                try:
-                    vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-                        0].valeurResultat
-                except:
-                    vol10 = ''
-
-                try:
-                    vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
-                        0].valeurResultat
-                except:
-                    vol20 = ''
-                try:
-                    vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol30 = ''
-                try:
-                    vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol40 = ''
-                try:
-                    vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
-                        0].valeurResultat
-                except:
-                    vol50 = ''
-                try:
-                    vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
-                        0].valeurResultat
-                except:
-                    vol60 = ''
-                try:
-                    vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol70 = ''
-                try:
-                    vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                        0].valeurResultat
-                except:
-                    vol80 = ''
-                try:
-                    vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
-                        0].valeurResultat
-                except:
-                    vol90 = ''
-
-                data = {
-                    'laboratoire': laboratoire,
-                    'cargaison': cargaison,
-                    'echantillon': echantillon,
-                    'annee': annee,
-                    'mois': mois,
-                    'province': province,
-                    'aspect': aspect,
-                    'couleursaybolt': couleursaybolt,
-                    'aciditetotal': aciditetotal,
-                    'soufre': soufre,
-                    'soufremercaptan': soufremercaptan,
-                    'docteurtest': docteurtest,
-                    'distillation': distillation,
-                    'pointinitial': pointinitial,
-                    'pointfinal': pointfinal,
-                    'pointfumee': pointfumee,
-                    'freezingpoint': freezingpoint,
-                    'residu': residu,
-                    'perte': perte,
-                    'pointeclair': pointeclair,
-                    'massevolumique15': massevolumique15,
-                    'viscosite': viscosite,
-                    'pointinflammabilite': pointinflammabilite,
-                    'teneureau': teneureau,
-                    'corrosion': corrosion,
-                    'conductivite': conductivite,
-                    'vol10': vol10,
-                    'vol20': vol20,
-                    'vol30': vol30,
-                    'vol40': vol40,
-                    'vol50': vol50,
-                    'vol60': vol60,
-                    'vol70': vol70,
-                    'vol80': vol80,
-                    'vol90': vol90,
-                    'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData': laboratoireData,
-                }
-
-                # Rendered PDF report
+            if template:
                 pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                # return HttpResponse(pdf, content_type='application/pdf')
+                if pdf:
+                    # Update isPrinted only after successfully PDF generation
+                    ImpressionResultat.objects.filter(idcargaison=pk).update(isPrinted=1)
+                    
+                    # Log activity
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Certificat Imprimé",
+                        object_id=str(pk),
+                        description=f"Certificat pour cargaison {pk} (Produit: {produit}) imprimé par {user.get_full_name()}."
+                    )
+
+                    pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                    return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
 
         else:
             return ('logout')
     else:
         return redirect('logout')
+
 
 
 # Ajax response
@@ -6626,7 +6253,8 @@ def impressionCertificatBulk(request):
             province, 
             sign_gauche_payload, 
             sign_droite_payload, 
-            lab_name
+            lab_name,
+            user_id=user.id
         )
 
         return JsonResponse({'task_id': result.id})

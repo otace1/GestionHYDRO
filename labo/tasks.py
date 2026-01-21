@@ -22,7 +22,7 @@ from labo.utils import render_to_pdf_content
 
 
 @shared_task(bind=True)
-def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_data, sign_droite_data, laboratoire_name, marks_printed=True):
+def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_data, sign_droite_data, laboratoire_name, marks_printed=True, user_id=None):
     """
     Celery task to generate one or more certificate PDFs.
     If multiple, they are merged into a single PDF.
@@ -34,32 +34,26 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
     writer = PdfWriter()
     processed_count = 0
 
-    from accounts.models import ListeLaboratoire
+    from accounts.models import ListeLaboratoire, UserActivityLog
     laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=laboratoire_name)
 
     for pk in selected_ids:
         try:
             # Re-fetch objects to ensure fresh data in worker
-            cargaison = Cargaison.objects.select_related('produit').get(idcargaison=pk)
-            produit = cargaison.produit.nomproduit
+            cargaison = Cargaison.objects.select_related(
+                'entrepot_echantillon',
+                'entrepot_echantillon__laboreception'
+            ).get(idcargaison=pk)
+            produit = cargaison.nom_produit
 
-            impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
+            impressionData = ImpressionResultat.objects.filter(idcargaison_id=pk).first()
             
-            reception_qs = LaboReception.objects.filter(idcargaison_id=pk).annotate(
-                mois_extracted=ExtractMonth('datereceptionlabo'),
-                annee_extracted=ExtractYear('datereceptionlabo')
-            ).first()
+            labo_rec = cargaison.entrepot_echantillon.laboreception
+            mois = labo_rec.datereceptionlabo.month if labo_rec and labo_rec.datereceptionlabo else None
+            annee = labo_rec.datereceptionlabo.year if labo_rec and labo_rec.datereceptionlabo else None
 
-            mois = reception_qs.mois_extracted if reception_qs else None
-            annee = reception_qs.annee_extracted if reception_qs else None
-
-            echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
-            laboratoire = LaboReception.objects.get(idcargaison=pk)
-
-            if marks_printed:
-                printed = ImpressionResultat.objects.get(idcargaison=pk)
-                printed.isPrinted = True
-                printed.save(update_fields=['isPrinted'])
+            echantillon = cargaison.entrepot_echantillon
+            laboratoire = labo_rec
 
             template = ""
             context = {
@@ -68,200 +62,159 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
                 'laboratoire': laboratoire,
                 'mois': mois,
                 'annee': annee,
+                'province': province,
                 'signGauche': sign_gauche_data,
                 'signDroite': sign_droite_data,
                 'impressionData': impressionData,
                 'laboratoireData': laboratoireData,
             }
 
+            # Optimization: Fetch all analysis results in one query
+            results = ResultatAnalyse.objects.filter(idcargaison=pk).values('idParametre_id', 'valeurResultat', 'valeurResultatChar')
+            res_dict = {r['idParametre_id']: r for r in results}
+
             if produit == 'GASOIL':
                 template = 'report/Report1/gasoilreport.html'
+                context.update({
+                    'couleurastm': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'aciditetotal': res_dict.get(1, {}).get('valeurResultat', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'massevolumique': res_dict.get(21, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'distillation10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'distillation20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'distillation50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'distillation90': res_dict.get(15, {}).get('valeurResultat', ''),
+                    'pointinitial': res_dict.get(30, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'pointeclair': res_dict.get(25, {}).get('valeurResultat', ''),
+                    'viscosite': res_dict.get(38, {}).get('valeurResultat', ''),
+                    'pointecoulement': res_dict.get(26, {}).get('valeurResultat', ''),
+                    'teneureau': res_dict.get(35, {}).get('valeurResultat', ''),
+                    'sediment': res_dict.get(32, {}).get('valeurResultat', ''),
+                    'indicecetane': res_dict.get(19, {}).get('valeurResultat', ''),
+                    'recuperation362': res_dict.get(10, {}).get('valeurResultat', ''),
+                    'cendre': res_dict.get(3, {}).get('valeurResultat', ''),
+                })
                 try:
-                    context['couleurastm'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-                except: context['couleurastm'] = ''
-                try:
-                    context['aciditetotal'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
-                except: context['aciditetotal'] = ''
-                try:
-                    context['soufre'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except: context['soufre'] = ''
-                try:
-                    context['massevolumique'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[0].valeurResultat
-                except: context['massevolumique'] = ''
-                try:
-                    context['massevolumique15'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                except: context['massevolumique15'] = ''
-                try:
-                    context['distillation'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except: context['distillation'] = ''
-                try:
-                    context['cetane'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[0].valeurResultat
-                except: context['cetane'] = ''
-                try:
-                    context['pointéclair'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[0].valeurResultat
-                except: context['pointéclair'] = ''
-                try:
-                    context['viscosité'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[0].valeurResultat
-                except: context['viscosité'] = ''
-                try:
-                    context['pointécoulement'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
-                except: context['pointécoulement'] = ''
-                try:
-                    context['teneur'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[0].valeurResultat
-                except: context['teneur'] = ''
-                try:
-                    context['sediment'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=32)[0].valeurResultat
-                except: context['sediment'] = ''
-                try:
-                    context['carbonne'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[0].valeurResultat
-                except: context['carbonne'] = ''
-                try:
-                    context['cendres'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultat
-                except: context['cendres'] = ''
-                try:
-                    context['corrosion'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                    corrosion_str = res_dict.get(6, {}).get('valeurResultat', '')
+                    context['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
                 except: context['corrosion'] = ''
 
             elif produit == 'MOGAS':
                 template = 'report/Report1/mogasreport.html'
+                context.update({
+                    'aspect': res_dict.get(2, {}).get('valeurResultatChar', ''),
+                    'odeur': res_dict.get(22, {}).get('valeurResultatChar', ''),
+                    'couleursaybolt': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'residu': res_dict.get(31, {}).get('valeurResultat', ''),
+                    'pourcent10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'pourcent20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'pourcent50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'pourcent70': res_dict.get(14, {}).get('valeurResultat', ''),
+                    'pourcent90': res_dict.get(15, {}).get('valeurResultat', ''),
+                    'tensionvapeur': res_dict.get(36, {}).get('valeurResultat', ''),
+                    'difftemperature': res_dict.get(9, {}).get('valeurResultat', ''),
+                    'plomb': res_dict.get(24, {}).get('valeurResultat', ''),
+                    'indiceoctane': res_dict.get(18, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                })
                 try:
-                    context['couleur'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultatChar
-                except: context['couleur'] = ''
-                try:
-                    context['ron'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[0].valeurResultat
-                except: context['ron'] = ''
-                try:
-                    context['plomb'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultat
-                except: context['plomb'] = ''
-                try:
-                    context['distillation'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except: context['distillation'] = ''
-                try:
-                    context['pvr'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[0].valeurResultat
-                except: context['pvr'] = ''
-                try:
-                    context['gommes'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
-                except: context['gommes'] = ''
-                try:
-                    context['soufre'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except: context['soufre'] = ''
-                try:
-                    context['corrosion'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                    corrosion_str = res_dict.get(7, {}).get('valeurResultat', '')
+                    context['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
                 except: context['corrosion'] = ''
-                try:
-                    context['massevolumique'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[0].valeurResultat
-                except: context['massevolumique'] = ''
-                try:
-                    context['massevolumique15'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                except: context['massevolumique15'] = ''
-                try:
-                    context['stabilite'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[0].valeurResultat
-                except: context['stabilite'] = ''
-                try:
-                    context['benzen'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=39)[0].valeurResultat
-                except: context['benzen'] = ''
 
             elif produit == 'JET A1':
                 template = 'report/Report1/jeta1report.html'
+                context.update({
+                    'aspect': res_dict.get(2, {}).get('valeurResultatChar', ''),
+                    'couleursaybolt': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'aciditetotal': res_dict.get(1, {}).get('valeurResultat', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'soufremercaptan': res_dict.get(33, {}).get('valeurResultat', ''),
+                    'docteurtest': res_dict.get(16, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'pointinitial': res_dict.get(30, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'pointfumee': res_dict.get(28, {}).get('valeurResultat', ''),
+                    'pointeclair': res_dict.get(25, {}).get('valeurResultat', ''),
+                    'freezingpoint': res_dict.get(17, {}).get('valeurResultat', ''),
+                    'residu': res_dict.get(31, {}).get('valeurResultat', ''),
+                    'perte': res_dict.get(23, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                    'viscosite': res_dict.get(37, {}).get('valeurResultat', ''),
+                    'pointinflammabilite': res_dict.get(27, {}).get('valeurResultat', ''),
+                    'teneureau': res_dict.get(35, {}).get('valeurResultat', ''),
+                    'conductivite': res_dict.get(4, {}).get('valeurResultat', ''),
+                    'vol10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'vol20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'vol30': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol40': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'vol60': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol70': res_dict.get(14, {}).get('valeurResultat', ''),
+                    'vol80': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol90': res_dict.get(15, {}).get('valeurResultat', ''),
+                })
                 try:
-                    context['pointéclair'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[0].valeurResultat
-                except: context['pointéclair'] = ''
-                try:
-                    context['massevolumique'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[0].valeurResultat
-                except: context['massevolumique'] = ''
-                try:
-                    context['massevolumique15'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                except: context['massevolumique15'] = ''
-                try:
-                    context['distillation'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except: context['distillation'] = ''
-                try:
-                    context['pointcongelation'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[0].valeurResultat
-                except: context['pointcongelation'] = ''
-                try:
-                    context['viscosité'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[0].valeurResultat
-                except: context['viscosité'] = ''
-                try:
-                    context['soufre'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except: context['soufre'] = ''
-                try:
-                    context['mercaptan'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[0].valeurResultat
-                except: context['mercaptan'] = ''
-                try:
-                    context['corrosion'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                    corrosion_str = res_dict.get(5, {}).get('valeurResultat', '')
+                    context['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
                 except: context['corrosion'] = ''
-                try:
-                    context['acidite'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
-                except: context['acidite'] = ''
-                try:
-                    context['gommes'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
-                except: context['gommes'] = ''
-                try:
-                    context['aromatique'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=40)[0].valeurResultat
-                except: context['aromatique'] = ''
-                try:
-                    context['cendres'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultat
-                except: context['cendres'] = ''
-                try:
-                    context['wsim'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=38)[0].valeurResultat
-                except: context['wsim'] = ''
-                try:
-                    context['conductivite'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=41)[0].valeurResultat
-                except: context['conductivite'] = ''
 
             elif produit == 'PETROLE LAMPANT':
                 template = 'report/Report1/petrolereport.html'
+                context.update({
+                    'aspect': res_dict.get(2, {}).get('valeurResultatChar', ''),
+                    'couleursaybolt': res_dict.get(8, {}).get('valeurResultatChar', ''),
+                    'aciditetotal': res_dict.get(1, {}).get('valeurResultat', ''),
+                    'soufre': res_dict.get(34, {}).get('valeurResultat', ''),
+                    'soufremercaptan': res_dict.get(33, {}).get('valeurResultat', ''),
+                    'docteurtest': res_dict.get(16, {}).get('valeurResultat', ''),
+                    'distillation': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'pointinitial': res_dict.get(30, {}).get('valeurResultat', ''),
+                    'pointfinal': res_dict.get(29, {}).get('valeurResultat', ''),
+                    'pointfumee': res_dict.get(28, {}).get('valeurResultat', ''),
+                    'pointeclair': res_dict.get(25, {}).get('valeurResultat', ''),
+                    'freezingpoint': res_dict.get(17, {}).get('valeurResultat', ''),
+                    'residu': res_dict.get(31, {}).get('valeurResultat', ''),
+                    'perte': res_dict.get(23, {}).get('valeurResultat', ''),
+                    'massevolumique15': res_dict.get(20, {}).get('valeurResultat', ''),
+                    'viscosite': res_dict.get(37, {}).get('valeurResultat', ''),
+                    'pointinflammabilite': res_dict.get(27, {}).get('valeurResultat', ''),
+                    'teneureau': res_dict.get(35, {}).get('valeurResultat', ''),
+                    'conductivite': res_dict.get(4, {}).get('valeurResultat', ''),
+                    'vol10': res_dict.get(11, {}).get('valeurResultat', ''),
+                    'vol20': res_dict.get(12, {}).get('valeurResultat', ''),
+                    'vol30': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol40': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol50': res_dict.get(13, {}).get('valeurResultat', ''),
+                    'vol60': res_dict.get(44, {}).get('valeurResultat', ''),
+                    'vol70': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol80': res_dict.get(100, {}).get('valeurResultat', ''),
+                    'vol90': res_dict.get(15, {}).get('valeurResultat', ''),
+                })
                 try:
-                    context['pointéclair'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[0].valeurResultat
-                except: context['pointéclair'] = ''
-                try:
-                    context['massevolumique'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[0].valeurResultat
-                except: context['massevolumique'] = ''
-                try:
-                    context['massevolumique15'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                except: context['massevolumique15'] = ''
-                try:
-                    context['distillation'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except: context['distillation'] = ''
-                try:
-                    context['soufre'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except: context['soufre'] = ''
-                try:
-                    context['corrosion'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                    corrosion_str = res_dict.get(5, {}).get('valeurResultat', '')
+                    context['corrosion'] = int(corrosion_str) if corrosion_str != '' else ''
                 except: context['corrosion'] = ''
-                try:
-                    context['couleur'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
-                except: context['couleur'] = ''
-                try:
-                    context['pointfumee'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[0].valeurResultat
-                except: context['pointfumee'] = ''
-                try:
-                    context['vol210'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=101)[0].valeurResultat
-                except: context['vol210'] = ''
-
-            # Resultat Distillation (Shared logic)
-            try:
-                context['pi'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
-                context['vol10'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-                context['vol20'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=102)[0].valeurResultat
-                context['vol30'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=103)[0].valeurResultat
-                context['vol40'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=104)[0].valeurResultat
-                context['vol50'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-                context['vol60'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=105)[0].valeurResultat
-                context['vol70'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=106)[0].valeurResultat
-                context['vol80'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=107)[0].valeurResultat
-                context['vol90'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-                context['pf'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-                context['recu'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[0].valeurResultat
-                context['perte'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
-                context['residue'] = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[0].valeurResultat
-            except:
-                pass
 
             if template:
                 pdf_content = render_to_pdf_content(template, context)
                 if pdf_content:
                     writer.append(io.BytesIO(pdf_content))
+                    if marks_printed:
+                        ImpressionResultat.objects.filter(idcargaison=pk).update(isPrinted=True)
+                        if user_id:
+                            UserActivityLog.objects.create(
+                                user_id=user_id,
+                                action="Certificat Imprimé",
+                                object_id=str(pk),
+                                description=f"Certificat pour cargaison {pk} (Produit: {produit}) imprimé via tâche groupée."
+                            )
             
             processed_count += 1
             percent = round((processed_count / total) * 100, 2)
