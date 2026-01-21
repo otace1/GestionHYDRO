@@ -136,8 +136,8 @@ def exportRapportBrutExcel(self, params: dict):
         v_id = g('entrepot_ville_id')
         if v_id is not None and str(v_id).strip() != '':
             try:
-                # Use denormalized frontiere_id for performance
-                adv &= Q(frontiere_id=int(v_id))
+                # Modified: Filter by entrepot__ville_id as requested by user
+                adv &= Q(entrepot__ville_id=int(v_id))
             except Exception:
                 pass
 

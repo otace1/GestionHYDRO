@@ -1379,17 +1379,18 @@ def filterOptionsRapportActiviteAll(request):
 
         base = Cargaison.objects.all()
 
-        # FRONTIÈRES (global)
+        # FRONTIÈRES / ENTITÉS (global)
+        # Modified: Use entrepot__ville instead of frontiere as requested by user
         frontieres = []
         for v in (base
-                  .exclude(nom_frontiere__isnull=True)
-                  .values('frontiere_id', 'nom_frontiere')
-                  .order_by('nom_frontiere')
+                  .filter(entrepot__ville__isnull=False)
+                  .values(id=F('entrepot__ville_id'), label=F('entrepot__ville__nomville'))
+                  .order_by('label')
                   .distinct()):
             frontieres.append({
-                'id': v['frontiere_id'],
-                'label': v['nom_frontiere'],
-                'value': v['nom_frontiere'],
+                'id': v['id'],
+                'label': v['label'],
+                'value': v['label'],
             })
 
         # IMPORTATEURS (global)
@@ -1409,13 +1410,14 @@ def filterOptionsRapportActiviteAll(request):
         entrepots = []
         for e in (base
                   .exclude(nom_entrepot__isnull=True)
-                  .values('entrepot_id', 'nom_entrepot')
+                  .values('entrepot_id', 'nom_entrepot', ville_id=F('entrepot__ville_id'))
                   .order_by('nom_entrepot')
                   .distinct()):
             entrepots.append({
                 'id': e['entrepot_id'],
                 'label': e['nom_entrepot'],
                 'value': e['nom_entrepot'],
+                'ville_id': e['ville_id'],
             })
 
         # PRODUITS (global)

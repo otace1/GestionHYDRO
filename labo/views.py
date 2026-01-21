@@ -1,7 +1,7 @@
 import base64
 import io
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -457,11 +457,17 @@ class GestionAnalyse():
         role = user.role_id
         if role == 5 or role == 1:
             form = CorrectionProduit()
+            
+            # Optimized scoping
+            allowed_entrepot_ids = Entrepot.objects.filter(
+                ville__affectationville__username_id=user.id
+            ).values_list('identrepot', flat=True)
+            
             count = Cargaison.objects.filter(
                 etat='Refaire',
-                entrepot__ville__affectationville__username_id=user.id
+                entrepot_id__in=allowed_entrepot_ids
             ).count()
-            # print(count)
+
             context = {
                 'count': count,
                 'form': form
@@ -1256,34 +1262,11 @@ class GestionValidation():
     @login_required(login_url='login')
     def affichagetableauvalidation1(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        request.session['url'] = request.get_full_path()
-        d = datetime.today()
-        da = d.day
-        mo = d.month
-        yr = d.year
-        form = RapportLabo()
-        if role == 5 or role == 1 or role == 6:
-            # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',
-                                                                idcargaison__entrepot__ville__affectationville__username_id=id).count()
-            enanalyse = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Validation en cours 2').count()
-            certImprimer = ImpressionResultat.objects.filter(
-                idcargaison__entrepot__ville__affectationville__username_id=id, isPrinted=1).count()
-
-            return render(request, 'labo_validation1.html', {
-                'form': form,
-                'laboreception': laboreception,
-                'enanalyse': enanalyse,
-                'enattente': enattente,
-                'certImprimer': certImprimer,
-            })
+        if role in (5, 1, 6):
+            request.session['url'] = request.get_full_path()
+            form = RapportLabo()
+            return render(request, 'labo_validation1.html', {'form': form})
         else:
             return redirect('logout')
 
@@ -1880,32 +1863,13 @@ class GestionValidation():
         else:
             return redirect('logout')
 
-    # Fonction affichage des resultats sur Validation 1
+    # Fonction affichage des resultats sur Validation 2
     @login_required(login_url='login')
     def affichagetableauvalidation2(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        if role == 5 or role == 1 or role == 6 or role == 10:
-            template = 'labo_validation2.html'
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',
-                                                                idcargaison__entrepot__ville__affectationville__username_id=id).count()
-            enanalyse = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Validation en cours 2').count()
-            certImprimer = ImpressionResultat.objects.filter(
-                idcargaison__entrepot__ville__affectationville__username_id=id, isPrinted=1).count()
-
-            context = {
-                'laboreception': laboreception,
-                'enanalyse': enanalyse,
-                'enattente': enattente,
-                'certImprimer': certImprimer,
-            }
-            return render(request, template, context)
+        if role in (5, 1, 6, 10):
+            return render(request, 'labo_validation2.html')
         else:
             return redirect('logout')
 
@@ -3023,21 +2987,23 @@ def saisieResultatParametre(request, pk):
 def validationResulat(request):
     user = request.user
     if request.method == 'POST':
-        id = request.POST['idcargaison']
-        cargaison = Cargaison.objects.get(idcargaison=id)
-        cargaison.etat = 'Validation en cours 1'
-        cargaison.save(update_fields=['etat'])
+        idcargaison = request.POST.get('idcargaison')
+        if not idcargaison:
+            return JsonResponse({'status': 'error', 'message': 'Missing ID'}, status=400)
 
-        UserActivityLog.objects.create(
-            user=user,
-            action="Test result form confirmation",
-            description=f"User has confirm the results for the record {cargaison.idcargaison}",
-        )
-
-        context = {
-            'status': 'success'
-        }
-        return JsonResponse(context)
+        # Efficient update
+        updated = Cargaison.objects.filter(idcargaison=idcargaison).update(etat='Validation en cours 1')
+        
+        if updated:
+            UserActivityLog.objects.create(
+                user=user,
+                action="Test result form confirmation",
+                object_id=str(idcargaison),
+                description=f"User {user.get_full_name()} confirmed results for cargaison {idcargaison}",
+            )
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Cargaison not found'}, status=404)
     else:
         return redirect('analyse')
 
@@ -3796,18 +3762,19 @@ def refaireAjx(request):
             return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
 
         try:
-            with transaction.atomic():
-                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
-                c.etat = "Refaire"
-                c.save(update_fields=['etat'])
-
+            # Efficient update
+            updated = Cargaison.objects.filter(idcargaison=idcargaison).update(etat="Refaire")
+            
+            if updated:
                 UserActivityLog.objects.create(
                     user=user,
                     action="Validation: Request Re-analysis",
-                    description=f"Cargaison {c.idcargaison}: User requested re-analysis.",
+                    object_id=str(idcargaison),
+                    description=f"Cargaison {idcargaison}: User requested re-analysis.",
                 )
-
-            return JsonResponse({'status': 'success', 'message': 'Cargaison marked as REFAIRE'})
+                return JsonResponse({'status': 'success', 'message': 'Cargaison marked as REFAIRE'})
+            else:
+                return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
         except Cargaison.DoesNotExist:
             return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
         except Exception as e:
@@ -3829,21 +3796,23 @@ def conformeAjx(request):
             return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
 
         try:
-            with transaction.atomic():
-                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
-
-                c.etat = "Validation en cours 2"
-                c.conformite = "Conforme aux exigences"
-                c.impression = "0"
-                c.save(update_fields=['etat', 'conformite', 'impression'])
-
+            # Efficient update
+            updated = Cargaison.objects.filter(idcargaison=idcargaison).update(
+                etat="Validation en cours 2",
+                conformite="Conforme aux exigences",
+                impression="0"
+            )
+            
+            if updated:
                 UserActivityLog.objects.create(
                     user=user,
                     action="Validation 1: CONFORME",
+                    object_id=str(idcargaison),
                     description=f"Cargaison {idcargaison}: First validation set to CONFORME.",
                 )
-
                 return JsonResponse({'status': 'success', 'message': 'Cargaison marked as CONFORME'})
+            else:
+                return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
 
         except Cargaison.DoesNotExist:
             return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
@@ -3864,20 +3833,23 @@ def nonconformeAjx(request):
             return JsonResponse({'status': 'failure', 'message': 'Missing idcargaison'}, status=400)
 
         try:
-            with transaction.atomic():
-                c = Cargaison.objects.select_for_update().get(idcargaison=idcargaison)
-                c.etat = "Validation en cours 2"
-                c.conformite = "Non conforme aux exigences"
-                c.impression = "0"
-                c.save(update_fields=['etat', 'conformite', 'impression'])
-
+            # Efficient update
+            updated = Cargaison.objects.filter(idcargaison=idcargaison).update(
+                etat="Validation en cours 2",
+                conformite="Non conforme aux exigences",
+                impression="0"
+            )
+            
+            if updated:
                 UserActivityLog.objects.create(
                     user=user,
                     action="Validation 1: NON CONFORME",
-                    description=f"Cargaison {c.idcargaison}: First validation set to NON CONFORME.",
+                    object_id=str(idcargaison),
+                    description=f"Cargaison {idcargaison}: First validation set to NON CONFORME.",
                 )
-
                 return JsonResponse({'status': 'success', 'message': 'Cargaison marked as NON CONFORME'})
+            else:
+                return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
 
         except Cargaison.DoesNotExist:
             return JsonResponse({'status': 'failure', 'message': 'Cargaison not found'}, status=404)
@@ -3894,9 +3866,6 @@ def affichagetableauvalidation1Response(request):
     id = user.id
     role = user.role_id
     if role in (5, 1, 6):
-        # ---------------------------
-        # Read POST payload safely
-        # ---------------------------
         def get_payload():
             ct = (request.headers.get("Content-Type") or "").lower()
             if "application/json" in ct:
@@ -3904,20 +3873,45 @@ def affichagetableauvalidation1Response(request):
                     return json.loads(request.body.decode("utf-8") or "{}") or {}
                 except Exception:
                     return {}
-            # regular form POST
             return request.POST
 
         params = get_payload()
 
-        # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+        # 1. Optimize allowed Entrepots (Denormalized scoping)
         allowed_entrepot_ids = Entrepot.objects.filter(
             ville__affectationville__username_id=id
         ).values_list('identrepot', flat=True)
 
+        # 2. Base QuerySet
         qs = Cargaison.objects.filter(
             etat="Validation en cours 1",
             entrepot_id__in=allowed_entrepot_ids,
-        ).values(
+        )
+
+        # recordsTotal for DataTables
+        recordsTotal = qs.count()
+
+        # 3. Global search (leveraging denormalized fields and index-friendly queries)
+        search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
+        search_value = search_value or params.get('q')
+        
+        if search_value:
+            search_q = Q(nom_importateur__icontains=search_value) | \
+                       Q(nom_entrepot__icontains=search_value) | \
+                       Q(nom_produit__icontains=search_value) | \
+                       Q(immatriculation__icontains=search_value)
+            
+            if search_value.isdigit():
+                val = int(search_value)
+                search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
+                
+            qs = qs.filter(search_q)
+
+        # recordsFiltered for DataTables
+        recordsFiltered = qs.count()
+
+        # 4. Final projection and ordering
+        qs = qs.values(
             'idcargaison',
             'date_reception_labo',
             'nom_importateur',
@@ -3925,70 +3919,41 @@ def affichagetableauvalidation1Response(request):
             'code_labo',
             'num_certificat_qualite',
             'nom_produit'
-        ).order_by(
-            '-date_reception_labo'
-        )
+        ).order_by('-date_reception_labo')
 
-        # Get the search value from the request's parameters
-        search_value = params.get('search[value]', '')
-
-        # Apply search filter to the QuerySet (leveraging denormalized fields)
-        if search_value:
-            qs = qs.filter(
-                Q(code_labo__iexact=search_value) |
-                Q(nom_importateur__iexact=search_value) |
-                Q(nom_entrepot__iexact=search_value) |
-                Q(num_certificat_qualite__iexact=search_value) |
-                Q(nom_produit__iexact=search_value)
-            )
-
-        # Pagination parameters
+        # 5. Pagination
         draw = int(params.get('draw', 1))
         start = int(params.get('start', 0))
         length = int(params.get('length', 10))
 
         if length <= 0:
-            count = qs.count()
             return JsonResponse({
                 'data': [],
                 'draw': draw,
-                'recordsTotal': count,
-                'recordsFiltered': count,
+                'recordsTotal': recordsTotal,
+                'recordsFiltered': recordsFiltered,
             })
 
-        # Use LazyPaginator to satisfy "lazy pagination" requirement and performance
-        paginator = LazyPaginator(qs, length)
-        current_page = (start // length) + 1
+        # Paging using direct slice for performance
+        data = list(qs[start:start+length])
 
-        try:
-            page = paginator.page(current_page)
-        except (PageNotAnInteger, EmptyPage):
-            page = paginator.page(1)
-
-        # Convert the page object to a list of dictionaries
-        data = list(page.object_list)
-
-        # Rename keys for frontend compatibility
+        # 6. Key mapping for frontend compatibility
         for r in data:
-            dt_reception = r.pop("date_reception_labo", None)
-            r[
-                "entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt_reception.date() if dt_reception else None
+            dt = r.pop("date_reception_labo", None)
+            r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt.date() if dt and hasattr(dt, 'date') else dt
+            
             r["importateur__nomimportateur"] = r.pop("nom_importateur", None)
             r["entrepot__nomentrepot"] = r.pop("nom_entrepot", None)
             r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
             r["entrepot_echantillon__laboreception__numcertificatqualite"] = r.pop("num_certificat_qualite", None)
             r["produit__nomproduit"] = r.pop("nom_produit", None)
 
-        total_count = qs.count()
-
-        # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': total_count,
-            'recordsFiltered': total_count,
+            'recordsTotal': recordsTotal,
+            'recordsFiltered': recordsFiltered,
         })
-
     else:
         return redirect('logout')
 
@@ -4000,9 +3965,6 @@ def affichagetableauvalidation2Response(request):
     id = user.id
     role = user.role_id
     if role in (5, 1, 6, 10):
-        # ---------------------------
-        # Read POST payload safely
-        # ---------------------------
         def get_payload():
             ct = (request.headers.get("Content-Type") or "").lower()
             if "application/json" in ct:
@@ -4010,20 +3972,45 @@ def affichagetableauvalidation2Response(request):
                     return json.loads(request.body.decode("utf-8") or "{}") or {}
                 except Exception:
                     return {}
-            # regular form POST
             return request.POST
 
         params = get_payload()
 
-        # Leverage denormalized scoping to avoid deep joins in the main QuerySet
+        # 1. Optimize allowed Entrepots (Denormalized scoping)
         allowed_entrepot_ids = Entrepot.objects.filter(
             ville__affectationville__username_id=id
         ).values_list('identrepot', flat=True)
 
+        # 2. Base QuerySet
         qs = Cargaison.objects.filter(
             etat="Validation en cours 2",
             entrepot_id__in=allowed_entrepot_ids,
-        ).values(
+        )
+
+        # recordsTotal for DataTables
+        recordsTotal = qs.count()
+
+        # 3. Global search (leveraging denormalized fields and index-friendly queries)
+        search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
+        search_value = search_value or params.get('q')
+        
+        if search_value:
+            search_q = Q(nom_importateur__icontains=search_value) | \
+                       Q(nom_entrepot__icontains=search_value) | \
+                       Q(nom_produit__icontains=search_value) | \
+                       Q(immatriculation__icontains=search_value)
+            
+            if search_value.isdigit():
+                val = int(search_value)
+                search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
+                
+            qs = qs.filter(search_q)
+
+        # recordsFiltered for DataTables
+        recordsFiltered = qs.count()
+
+        # 4. Final projection and ordering
+        qs = qs.values(
             'idcargaison',
             'date_reception_labo',
             'nom_importateur',
@@ -4031,70 +4018,41 @@ def affichagetableauvalidation2Response(request):
             'code_labo',
             'num_certificat_qualite',
             'nom_produit'
-        ).order_by(
-            '-date_reception_labo'
-        )
+        ).order_by('-date_reception_labo')
 
-        # Get the search value from the request's parameters
-        search_value = params.get('search[value]', '')
-
-        # Apply search filter to the QuerySet (leveraging denormalized fields)
-        if search_value:
-            qs = qs.filter(
-                Q(code_labo__iexact=search_value) |
-                Q(nom_importateur__iexact=search_value) |
-                Q(nom_entrepot__iexact=search_value) |
-                Q(num_certificat_qualite__iexact=search_value) |
-                Q(nom_produit__iexact=search_value)
-            )
-
-        # Pagination parameters
+        # 5. Pagination
         draw = int(params.get('draw', 1))
         start = int(params.get('start', 0))
         length = int(params.get('length', 10))
 
         if length <= 0:
-            count = qs.count()
             return JsonResponse({
                 'data': [],
                 'draw': draw,
-                'recordsTotal': count,
-                'recordsFiltered': count,
+                'recordsTotal': recordsTotal,
+                'recordsFiltered': recordsFiltered,
             })
 
-        # Use LazyPaginator to satisfy "lazy pagination" requirement and performance
-        paginator = LazyPaginator(qs, length)
-        current_page = (start // length) + 1
+        # Paging using direct slice for performance
+        data = list(qs[start:start+length])
 
-        try:
-            page = paginator.page(current_page)
-        except (PageNotAnInteger, EmptyPage):
-            page = paginator.page(1)
-
-        # Convert the page object to a list of dictionaries
-        data = list(page.object_list)
-
-        # Rename keys for frontend compatibility
+        # 6. Key mapping for frontend compatibility
         for r in data:
-            dt_reception = r.pop("date_reception_labo", None)
-            r[
-                "entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt_reception.date() if dt_reception else None
+            dt = r.pop("date_reception_labo", None)
+            r["entrepot_echantillon__laboreception__datereceptionlabo__date"] = dt.date() if dt and hasattr(dt, 'date') else dt
+            
             r["importateur__nomimportateur"] = r.pop("nom_importateur", None)
             r["entrepot__nomentrepot"] = r.pop("nom_entrepot", None)
             r["entrepot_echantillon__laboreception__codelabo"] = r.pop("code_labo", None)
             r["entrepot_echantillon__laboreception__numcertificatqualite"] = r.pop("num_certificat_qualite", None)
             r["produit__nomproduit"] = r.pop("nom_produit", None)
 
-        total_count = qs.count()
-
-        # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': total_count,
-            'recordsFiltered': total_count,
+            'recordsTotal': recordsTotal,
+            'recordsFiltered': recordsFiltered,
         })
-
     else:
         return redirect('logout')
 
@@ -4426,6 +4384,13 @@ def responseArchivesTableau(request):
         dt_reception = r.pop("date_reception_labo", None)
         r["dateReceptionLabo"] = dt_reception.date() if dt_reception and hasattr(dt_reception, 'date') else dt_reception
         
+        pdate = r.pop("print_date_val", None)
+        r["impressionresultat__printDate"] = pdate.strftime('%Y-%m-%d') if pdate and hasattr(pdate, 'strftime') else (pdate or "—")
+
+        r["codelabo"] = r.pop("code_labo", None)
+        r["numcertificatqualite"] = r.pop("num_certificat_qualite", None)
+        r["nomproduit"] = r.pop("nom_produit", None)
+        r["nomimportateur"] = r.pop("nom_importateur", None)
         r["nomentrepot"] = r.pop("nom_entrepot", None)
         r["immatriculation"] = r.pop("immatriculation", None)
 
@@ -4501,7 +4466,9 @@ def responseImpressionReport(request):
             printed_by = last_log.user.get_full_name() if last_log.user else "N/A"
         else:
             # Fallback for historical data
-            print_time = imp.printDate
+            # print_time is a DateField (date object), we convert to datetime to avoid 
+            # template errors with time format specifiers (like 'H')
+            print_time = datetime.combine(imp.printDate, time.min) if imp.printDate else None
             printed_by = "N/A"
             num_prints = 1
 
@@ -4530,7 +4497,7 @@ def responseImpressionReport(request):
                 row['beneficiary'],
                 row['fournisseur'],
                 row['entrepot'],
-                row['print_time'].strftime('%Y-%m-%d %H:%M') if hasattr(row['print_time'], 'strftime') else str(row['print_time']),
+                row['print_time'].strftime('%Y-%m-%d %H:%M') if (row['print_time'] and hasattr(row['print_time'], 'strftime')) else "—",
                 row['printed_by'],
                 row['status'],
                 row['num_prints']
@@ -4851,23 +4818,51 @@ def responseAffichageanalyse(request):
         # Apply filters (leveraging denormalized fields)
         has_filter = False
         if date_debut:
-            qs = qs.filter(date_reception_labo__date__gte=date_debut)
+            qs = qs.filter(date_reception_labo__gte=date_debut)
             has_filter = True
         if date_fin:
             qs = qs.filter(date_reception_labo__date__lte=date_fin)
             has_filter = True
         if code_labo_filter:
-            qs = qs.filter(code_labo__iexact=code_labo_filter)
+            if code_labo_filter.isdigit():
+                qs = qs.filter(code_labo=int(code_labo_filter))
+            else:
+                qs = qs.filter(code_labo__icontains=code_labo_filter)
             has_filter = True
 
+        # recordsTotal for DataTables (count before search/filters but within scope)
+        recordsTotal = qs.count()
+
+        # Get the search value from the request's GET parameters
+        search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
+        search_value = search_value or params.get('q')
+
         # If no filter is applied, return empty data (as requested "before display... a filter has to be applied")
-        if not has_filter and not params.get('search[value]'):
+        if not has_filter and not search_value:
             return JsonResponse({
                 'data': [],
                 'draw': int(params.get('draw', 1)),
-                'recordsTotal': 0,
+                'recordsTotal': recordsTotal,
                 'recordsFiltered': 0,
             })
+
+        # Apply search filter to the QuerySet (leveraging denormalized fields and indexes)
+        if search_value:
+            search_q = Q(immatriculation__icontains=search_value) | \
+                       Q(nom_produit__icontains=search_value) | \
+                       Q(nom_importateur__icontains=search_value) | \
+                       Q(nom_entrepot__icontains=search_value)
+            
+            if search_value.isdigit():
+                val = int(search_value)
+                search_q |= Q(code_labo=val) | Q(numdos=val)
+            else:
+                search_q |= Q(code_labo__icontains=search_value)
+                
+            qs = qs.filter(search_q)
+
+        # recordsFiltered for DataTables
+        recordsFiltered = qs.count()
 
         qs = qs.values(
             'idcargaison',
@@ -4881,42 +4876,21 @@ def responseAffichageanalyse(request):
             'done_params'
         ).order_by('date_reception_labo')
 
-        # Get the search value from the request's GET parameters
-        search_value = params.get('search[value]', '')
-
-        # Apply search filter to the QuerySet (leveraging denormalized fields)
-        if search_value:
-            qs = qs.filter(
-                Q(code_labo__iexact=search_value) |
-                Q(numdos__iexact=search_value) |
-                Q(immatriculation__iexact=search_value)
-            )
-
         # Pagination parameters
         draw = int(params.get('draw', 1))
         start = int(params.get('start', 0))
         length = int(params.get('length', 13))
 
         if length <= 0:
-            count = qs.count()
             return JsonResponse({
                 'data': [],
                 'draw': draw,
-                'recordsTotal': count,
-                'recordsFiltered': count,
+                'recordsTotal': recordsTotal,
+                'recordsFiltered': recordsFiltered,
             })
 
-        # Use LazyPaginator to satisfy "lazy pagination" requirement and performance
-        paginator = LazyPaginator(qs, length)
-        current_page = (start // length) + 1
-
-        try:
-            page = paginator.page(current_page)
-        except (PageNotAnInteger, EmptyPage):
-            page = paginator.page(1)
-
-        # Convert the page object to a list of dictionaries
-        data = list(page.object_list)
+        # Use direct slicing for performance
+        data = list(qs[start:start+length])
 
         # Rename keys for frontend compatibility
         for r in data:
@@ -4939,14 +4913,12 @@ def responseAffichageanalyse(request):
             r["completion_percent"] = round((done / total * 100), 1) if total > 0 else 0
             r["completion_text"] = f"{done}/{total}"
 
-        total_count = qs.count()
-
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': total_count,
-            'recordsFiltered': total_count,
+            'recordsTotal': recordsTotal,
+            'recordsFiltered': recordsFiltered,
         })
 
     else:
@@ -4959,11 +4931,11 @@ def responseAffichageanalyse(request):
 def saisieResultatAjax(request):
     pk = request.POST.get('idcargaison', '')
     try:
-        cargaison = Cargaison.objects.get(idcargaison=pk)
+        # Use only needed fields from Cargaison
+        cargaison = Cargaison.objects.only('idcargaison', 'nom_produit', 'code_labo', 'produit_id').get(idcargaison=pk)
     except Cargaison.DoesNotExist:
         return JsonResponse({'data': [], 'codeLabo': None}, status=404)
 
-    # Use denormalized fields from Cargaison
     nom_produit = cargaison.nom_produit
     code_labo = cargaison.code_labo
 
@@ -4973,8 +4945,8 @@ def saisieResultatAjax(request):
     ).select_related('idParametre').order_by('id')
 
     # Fetch existing results for this cargaison to avoid N+1 in the loop
-    results = ResultatAnalyse.objects.filter(idcargaison=cargaison)
-    results_dict = {r.idParametre_id: r for r in results}
+    results = ResultatAnalyse.objects.filter(idcargaison_id=pk).values('idParametre_id', 'valeurResultat', 'valeurResultatChar')
+    results_dict = {r['idParametre_id']: r for r in results}
 
     data = []
     for ap in params_qs:
@@ -4986,8 +4958,8 @@ def saisieResultatAjax(request):
             'idcargaison': cargaison.idcargaison,
             'nomproduit': nom_produit,
             'nomParametre': param.nomParametre,
-            'valeurResultat': res.valeurResultat if res else None,
-            'valeurResultatChar': res.valeurResultatChar if res else None
+            'valeurResultat': res['valeurResultat'] if res else None,
+            'valeurResultatChar': res['valeurResultatChar'] if res else None
         })
 
     # Return JSON response with the data
@@ -5008,14 +4980,6 @@ def saisieResultatParametreAjax(request):
     if not all([parametre_id, idcargaison]):
         return JsonResponse({'status': 'error', 'message': 'Missing parameters'}, status=400)
 
-    try:
-        # We need the cargaison instance for logging and potentially other logic
-        # if Cargaison is huge, we could use idcargaison directly in update_or_create
-        # but UserActivityLog description uses it.
-        cargaison = Cargaison.objects.only('idcargaison').get(idcargaison=idcargaison)
-    except Cargaison.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Cargaison not found'}, status=404)
-
     # Determine which field to update based on parametreId
     # Hardcoded IDs 2, 8, 22 use valeurResultatChar (string)
     # Others use valeurResultat (float)
@@ -5025,7 +4989,6 @@ def saisieResultatParametreAjax(request):
     else:
         try:
             # Ensure it's a valid float if it's supposed to be numeric
-            # If input_value is empty, we might want to store None or 0.0
             defaults['valeurResultat'] = float(input_value) if input_value else None
         except ValueError:
             return JsonResponse({'status': 'error', 'message': 'Invalid numeric value'}, status=400)
@@ -5039,7 +5002,8 @@ def saisieResultatParametreAjax(request):
     UserActivityLog.objects.create(
         user=user,
         action="Test result input",
-        description=f"User has input the test result for the record {idcargaison}",
+        object_id=str(idcargaison),
+        description=f"User {user.get_full_name()} input result for param {parametre_id} on cargaison {idcargaison}",
     )
 
     return JsonResponse({'status': 'success'})
@@ -5107,13 +5071,21 @@ def affichageAnalyseRefaireResponse(request):
         # Get the search value from the request's GET parameters
         search_value = params.get('search[value]', '')
 
-        # Apply search filter to the QuerySet (leveraging denormalized fields)
+        # Apply search filter to the QuerySet (leveraging denormalized fields and indexes)
         if search_value:
-            qs = qs.filter(
-                Q(code_labo__iexact=search_value) |
-                Q(numdos__iexact=search_value) |
-                Q(immatriculation__iexact=search_value)
-            )
+            search_q = Q(immatriculation__icontains=search_value) | \
+                       Q(nom_produit__icontains=search_value)
+            
+            if search_value.isdigit():
+                val = int(search_value)
+                search_q |= Q(code_labo=val) | Q(numdos=val)
+            else:
+                search_q |= Q(code_labo__icontains=search_value)
+                
+            qs = qs.filter(search_q)
+
+        # recordsTotal / recordsFiltered for DataTables
+        total_count = qs.count()
 
         # Pagination parameters
         draw = int(params.get('draw', 1))
@@ -5121,27 +5093,15 @@ def affichageAnalyseRefaireResponse(request):
         length = int(params.get('length', 10))
 
         if length <= 0:
-            # If length is 0, we typically just need the count (e.g., for badges)
-            count = qs.count()
             return JsonResponse({
                 'data': [],
                 'draw': draw,
-                'recordsTotal': count,
-                'recordsFiltered': count,
+                'recordsTotal': total_count,
+                'recordsFiltered': total_count,
             })
 
-        # Use LazyPaginator to satisfy "lazy pagination" requirement
-        # It avoids unnecessary count queries if not accessed, improving performance.
-        paginator = LazyPaginator(qs, length)
-        current_page = (start // length) + 1
-
-        try:
-            page = paginator.page(current_page)
-        except (PageNotAnInteger, EmptyPage):
-            page = paginator.page(1)
-
-        # Convert the page object to a list of dictionaries
-        data = list(page.object_list)
+        # Use direct slicing for performance
+        data = list(qs[start:start+length])
 
         # Rename keys for frontend compatibility
         for r in data:
@@ -5256,15 +5216,22 @@ def correctionNature(request):
             return JsonResponse({"message": "Données manquantes"}, status=400)
             
         try:
+            # We need the full object to call save() which handles denormalization
             c = Cargaison.objects.get(idcargaison=idcargaison)
-            p = Produit.objects.get(idproduit=produit_id)
-            c.produit = p
-            # We don't use update_fields to let the custom save() handle denormalization
-            c.save()
+            c.produit_id = produit_id
+            c.save() # This will update nom_produit and other fields
+            
+            # Log the change
+            UserActivityLog.objects.create(
+                user=request.user,
+                action="Correction Nature Produit",
+                object_id=str(idcargaison),
+                description=f"User {request.user.get_full_name()} corrected product for cargaison {idcargaison} to product ID {produit_id}."
+            )
             
             return JsonResponse({"message": "Changement de produit effectué avec succès"}, status=200)
-        except (Cargaison.DoesNotExist, Produit.DoesNotExist):
-            return JsonResponse({"message": "Cargaison ou Produit introuvable"}, status=404)
+        except Cargaison.DoesNotExist:
+            return JsonResponse({"message": "Cargaison introuvable"}, status=404)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
@@ -5274,33 +5241,28 @@ def correctionNature(request):
 @login_required(login_url='login')
 def clearSaisie(request):
     if request.method == 'POST':
-        parametreId = request.POST.get('rowId')  # Get the rowId from POST data
-        idcargaison = request.POST.get('idcargaison')  # Get the idcargaison from POST data
-        inputValue = ""  # Define inputValue (you need to get this from your POST data)
-        print(parametreId)
-        print(idcargaison)
-        # Check if the user is allowed to clear values based on parametre.idParametre
-        try:
-            parametre = ParametresProduits.objects.get(idParametre=parametreId)
-            cargaison = Cargaison.objects.get(idcargaison=idcargaison)
-            print(parametre.nomParametre)
+        parametreId = request.POST.get('rowId')
+        idcargaison = request.POST.get('idcargaison')
+        
+        if not all([parametreId, idcargaison]):
+            return JsonResponse({'status': 'error', 'message': 'Missing data'}, status=400)
 
-            if parametre.idParametre in [2, 8, 22]:
-                r, created = ResultatAnalyse.objects.get_or_create(idParametre=parametre, idcargaison=cargaison)
-                r.valeurResultatChar = inputValue
-                r.save(update_fields=['valeurResultatChar'])
-            else:
-                r, created = ResultatAnalyse.objects.get_or_create(idParametre=parametre, idcargaison=cargaison)
-                r.valeurResultat = None
-                r.save(update_fields=['valeurResultat'])
+        # Efficient clear (delete or set to null)
+        # Using update allows us to be efficient if the record exists
+        # Hardcoded IDs 2, 8, 22 use valeurResultatChar (string)
+        if parametreId in ['2', '8', '22']:
+            ResultatAnalyse.objects.filter(idcargaison_id=idcargaison, idParametre_id=parametreId).update(valeurResultatChar="")
+        else:
+            ResultatAnalyse.objects.filter(idcargaison_id=idcargaison, idParametre_id=parametreId).update(valeurResultat=None)
 
-            return JsonResponse({'status': 'success'})
-        except ParametresProduits.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Parametre not found'}, status=400)
-        except Cargaison.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Cargaison not found'}, status=400)
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        UserActivityLog.objects.create(
+            user=request.user,
+            action="Clear test result",
+            object_id=str(idcargaison),
+            description=f"User {request.user.get_full_name()} cleared result for param {parametreId} on cargaison {idcargaison}",
+        )
+
+        return JsonResponse({'status': 'success'})
     else:
         return redirect('logout')
 
