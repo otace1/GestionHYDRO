@@ -129,15 +129,15 @@ def affichageenchantillonResponse(request):
         except Exception:
             return default
 
-    # ---------------------------
-    # Base scope (security)
-    # ---------------------------
-    base_scope = (
-        Cargaison.objects
-        .filter(
-            etat="Echantillonner",
-            entrepot__ville__affectationville__username_id=user_id
-        )
+    # 1. Optimize scoping: Pre-fetch allowed entrepôt IDs to avoid deep joins in the main query
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
+    # 2. Base QuerySet
+    base_scope = Cargaison.objects.filter(
+        etat="Echantillonner",
+        entrepot_id__in=allowed_entrepot_ids
     )
 
     qs = base_scope
@@ -159,38 +159,51 @@ def affichageenchantillonResponse(request):
     except Exception:
         entrepot_id_selected = 0
 
+    # 3. Apply Filters (using exact matches for numeric fields where possible)
     if entrepot_name:
         qs = qs.filter(nom_entrepot__iexact=entrepot_name)
+
     if num_dossier:
-        qs = qs.filter(numdos__iexact=num_dossier)
+        if num_dossier.isdigit():
+            qs = qs.filter(numdos=int(num_dossier))
+        else:
+            qs = qs.filter(numdos__icontains=num_dossier)
+
     if num_re:
-        qs = qs.filter(entrepot_echantillon__numrappechauto__iexact=num_re)
+        if num_re.isdigit():
+            qs = qs.filter(entrepot_echantillon__numrappechauto=int(num_re))
+        else:
+            qs = qs.filter(entrepot_echantillon__numrappechauto__icontains=num_re)
+
     if immat:
-        qs = qs.filter(immatriculation__iexact=immat)
+        qs = qs.filter(immatriculation__icontains=immat)
+
     if qrcode:
         qs = qs.filter(qrcode__iexact=qrcode)
+
     if f:
-        qs = qs.filter(Q(immatriculation=f) | Q(numdos=f) | Q(declaration=f))
+        f_q = Q(immatriculation__icontains=f) | Q(declaration__icontains=f)
+        if f.isdigit():
+            f_q |= Q(numdos=int(f))
+        qs = qs.filter(f_q)
+
     if entrepot_id_selected > 0:
         qs = qs.filter(entrepot_id=entrepot_id_selected)
 
     # Optional: generic search text (POST key = search)
     search_value = _s("search") or _s("search[value]")
     if search_value:
-        # qs = qs.filter(
-        #     Q(nom_entrepot__icontains=search_value) |
-        #     Q(immatriculation__icontains=search_value) |
-        #     Q(numdos__icontains=search_value) |
-        #     Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-        #     Q(qrcode__icontains=search_value)
-        # )
-        qs = qs.filter(
-            Q(nom_entrepot__iexact=search_value) |
-            Q(immatriculation__iexact=search_value) |
-            Q(numdos__iexact=search_value) |
-            Q(entrepot_echantillon__numrappechauto__iexact=search_value) |
-            Q(qrcode__iexact=search_value)
-        )
+        search_q = Q(nom_entrepot__icontains=search_value) | \
+                   Q(immatriculation__icontains=search_value) | \
+                   Q(nom_produit__icontains=search_value)
+
+        if search_value.isdigit():
+            val = int(search_value)
+            search_q |= Q(numdos=val) | Q(entrepot_echantillon__numrappechauto=val)
+        else:
+            search_q |= Q(qrcode__iexact=search_value)
+
+        qs = qs.filter(search_q)
 
     # ---------------------------
     # Ordering (whitelist)
@@ -278,71 +291,62 @@ def affichageenchantillonResponse(request):
 
 
 @login_required(login_url='login')
+@transaction.atomic
 def receptionechantillon(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        pk = data.get('idcargaison')
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
+        pk = data.get('idcargaison')
         if pk is None:
-            response_data = {
-                'success': False,
-                'error': 'Missing primary key (pk)',
-            }
-            return JsonResponse(response_data, status=400)
+            return JsonResponse({'success': False, 'error': 'Missing primary key (pk)'}, status=400)
 
         user = request.user
-        id = user.id
-
-        # Get Town du point de dechargement pour l'attribution automatique des numeros
-
-        c = Cargaison.objects.get(idcargaison=pk)
-        c = c.entrepot_id
-        c = Entrepot.objects.get(identrepot=c)
-        v = c.ville_id
-
         role = user.role_id
-        if role == 4 or role == 1:
-            # Getting current Year & Month
-            now = datetime.now()
 
-            numcertificatqualite = numCq(v)
+        if role not in (1, 4):
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
 
-            # Changement de l'etat de la cargaison
-            d = Cargaison.objects.get(idcargaison=pk)
-            d.etat = "Analyse Labo en cours"
-            d.save(update_fields=['etat'])
+        try:
+            # Optimized fetch with select_related to get ville_id in one query
+            c = Cargaison.objects.select_related('entrepot').get(idcargaison=pk)
+            ville_id = c.entrepot.ville_id
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Cargaison not found'}, status=404)
 
-            # Sauvegarde de l'instruction dans la Table LaboReception
-            codelabo = generate_labo_code(v)
+        now = timezone.now()
+        
+        # Generate numbers
+        numcertificatqualite = numCq(ville_id)
+        codelabo = generate_labo_code(ville_id)
 
-            p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
-                              numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
-            p.save()
+        # Update Cargaison status
+        c.etat = "Analyse Labo en cours"
+        c.save(update_fields=['etat'])
 
-            UserActivityLog.objects.create(
-                user=user,
-                action="Sample receiving acknowledgement",
-                description=f"User has confirm reception of the sample of the record {d.idcargaison}",
-            )
+        # Create LaboReception (triggers denormalization via its save() method)
+        LaboReception.objects.create(
+            idcargaison_id=pk, 
+            codelabo=codelabo,
+            numcertificatqualite=numcertificatqualite, 
+            datereceptionlabo=now
+        )
 
-            # Prepare the JSON response
-            response_data = {
-                'success': True,
-                'codeLabo': codelabo,
-            }
-            return JsonResponse(response_data)
-        else:
-            response_data = {
-                'success': False,
-                'error': 'Unauthorized',
-            }
-            return JsonResponse(response_data, status=401)
+        UserActivityLog.objects.create(
+            user=user,
+            action="Sample receiving acknowledgement",
+            object_id=str(pk),
+            description=f"User {user.get_full_name()} confirmed reception of sample for record {pk}. Assigned code: {codelabo}",
+        )
+
+        return JsonResponse({
+            'success': True,
+            'codeLabo': codelabo,
+        })
     else:
-        response_data = {
-            'success': False,
-            'error': 'Invalid request method',
-        }
-        return JsonResponse(response_data, status=405)
+        return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 
 # Modification echantillone receptionner
@@ -374,78 +378,91 @@ def modification(request):
 @login_required(login_url='login')
 def rechercheqrcode(request):
     user = request.user
-    id = user.id
-    ville = AffectationVille.objects.get(username_id=id)
-    ville = ville.ville_id
     role = user.role_id
-    form = ReceptionEchantillon()
-    form1 = ModificationEchantillon()
-    if role == 4 or role == 1:
-        q = request.GET.get('q')
-        if q == "":
-            return redirect('labo')
-        else:
-            a = '%' + q + '%'
-            qs1 = Entrepot_echantillon.objects.filter(idcargaison__qrcode=q, idcargaison__etat="Echantillonner",
-                                                      idcargaison__entrepot__ville=ville)
-            table = LaboratoireReception(qs1, prefix='1_')
 
-            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-                                              idcargaison__idcargaison__entrepot__ville=ville).order_by(
-                '-datereceptionlabo')
-            table1 = TableauEchantillonRecu(qs, prefix='2_')
-
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
-
-            return render(request, 'labo.html', {
-                'labo': table,
-                'labo1': table1,
-                'form': form,
-                'form1': form1,
-            })
-        return redirect('labo')
-    else:
+    if role not in (1, 4):
         return redirect('logout')
 
+    # Optimized scoping
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user.id
+    ).values_list('identrepot', flat=True)
 
-# #Recherche du code Labo
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return redirect('labo')
+
+    form = ReceptionEchantillon()
+    form1 = ModificationEchantillon()
+
+    # Query for samples to receive
+    qs1 = Entrepot_echantillon.objects.filter(
+        idcargaison__qrcode=q,
+        idcargaison__etat="Echantillonner",
+        idcargaison__entrepot_id__in=allowed_entrepot_ids
+    )
+    table = LaboratoireReception(qs1, prefix='1_')
+
+    # Query for received samples
+    qs = LaboReception.objects.filter(
+        idcargaison__idcargaison__etat="Analyse Labo en cours",
+        idcargaison__idcargaison__entrepot_id__in=allowed_entrepot_ids
+    ).order_by('-datereceptionlabo')
+    table1 = TableauEchantillonRecu(qs, prefix='2_')
+
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
+
+    return render(request, 'labo.html', {
+        'labo': table,
+        'labo1': table1,
+        'form': form,
+        'form1': form1,
+    })
+
+
+# Recherche du code Labo
 @login_required(login_url='login')
 def recherchecode(request):
     user = request.user
-    id = user.id
-    ville = AffectationVille.objects.get(username_id=id)
-    ville = ville.ville_id
     role = user.role_id
+
+    if role not in (1, 4):
+        return redirect('logout')
+
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user.id
+    ).values_list('identrepot', flat=True)
+
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return redirect('labo')
+
     form1 = ModificationEchantillon()
     form = ReceptionEchantillon()
-    if role == 4 or role == 1:
-        q = request.GET.get('q')
-        if q == "":
-            return redirect('labo')
-        else:
-            qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
-                                                     idcargaison__entrepot__ville=ville).order_by(
-                '-dateechantillonage')
-            table = LaboratoireReception(qs)
 
-            qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-                                               idcargaison__idcargaison__entrepot__ville=ville,
-                                               codelabo=q).order_by(
-                '-datereceptionlabo')
-            table1 = TableauEchantillonRecu(qs1, prefix='2_')
+    qs = Entrepot_echantillon.objects.filter(
+        idcargaison__etat="Echantillonner",
+        idcargaison__entrepot_id__in=allowed_entrepot_ids
+    ).order_by('-dateechantillonage')
+    table = LaboratoireReception(qs)
 
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
-            return render(request, 'labo.html', {
-                'labo': table,
-                'labo1': table1,
-                'form': form,
-                'form1': form1,
-            })
-        return redirect('labo')
-    else:
-        return redirect('logout')
+    qs1 = LaboReception.objects.filter(
+        idcargaison__idcargaison__etat="Analyse Labo en cours",
+        idcargaison__idcargaison__entrepot_id__in=allowed_entrepot_ids,
+        codelabo=q
+    ).order_by('-datereceptionlabo')
+    table1 = TableauEchantillonRecu(qs1, prefix='2_')
+
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
+
+    return render(request, 'labo.html', {
+        'labo': table,
+        'labo1': table1,
+        'form': form,
+        'form1': form1,
+    })
 
 
 # Class de gestion des analyses au Laboratoire
@@ -2817,15 +2834,17 @@ def labdashboardrapport(request):
 @login_required(login_url='login')
 def echantCount(request):
     user = request.user
-    role = user.role_id
-    id = user.id
-    u = user.username
-    username = user.username
-    ville = AffectationVille.objects.get(username=id)
-    ville = ville.ville_id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user.id
+    ).values_list('identrepot', flat=True)
+
     template = 'validationCompteur.html'
-    qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
-                                      idcargaison__idcargaison__etat='Echantillonner').order_by('-datereceptionlabo')
+    qs = LaboReception.objects.filter(
+        idcargaison__idcargaison__entrepot_id__in=allowed_entrepot_ids,
+        idcargaison__idcargaison__etat='Echantillonner'
+    ).select_related('idcargaison', 'idcargaison__idcargaison').order_by('-datereceptionlabo')
+    
     table = EchantReception(qs, prefix='1_')
     RequestConfig(request, paginate={"per_page": 20}).configure(table)
     context = {'table': table}
@@ -2835,16 +2854,17 @@ def echantCount(request):
 @login_required(login_url='login')
 def echantAnalyse(request):
     user = request.user
-    role = user.role_id
-    id = user.id
-    u = user.username
-    username = user.username
-    ville = AffectationVille.objects.get(username=id)
-    ville = ville.ville_id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user.id
+    ).values_list('identrepot', flat=True)
+
     template = 'AnalyseCompteur.html'
-    qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
-                                      idcargaison__idcargaison__etat='Analyse Labo en cours').order_by(
-        '-datereceptionlabo')
+    qs = LaboReception.objects.filter(
+        idcargaison__idcargaison__entrepot_id__in=allowed_entrepot_ids,
+        idcargaison__idcargaison__etat='Analyse Labo en cours'
+    ).select_related('idcargaison', 'idcargaison__idcargaison').order_by('-datereceptionlabo')
+    
     table = EchantReception(qs, prefix='1_')
     RequestConfig(request, paginate={"per_page": 20}).configure(table)
     context = {'table': table}
@@ -5269,11 +5289,16 @@ def clearSaisie(request):
 
 @login_required(login_url='login')
 def enchAttenteReception(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapport.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Echantillonner',
-        entrepot__ville__affectationville__username_id=user
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
         'nom_entrepot', 'nom_importateur',
@@ -5288,11 +5313,16 @@ def enchAttenteReception(request):
 
 @login_required(login_url='login')
 def enchAttenteReception2(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapport2.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Echantillonner',
-        entrepot__ville__affectationville__username_id=user
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
         'nom_entrepot', 'nom_importateur',
@@ -5307,67 +5337,68 @@ def enchAttenteReception2(request):
 
 @login_required(login_url='login')
 def enchAttenteReceptionExport(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Echantillonner',
-        entrepot__ville__affectationville__username_id=user
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
         'nom_entrepot', 'nom_importateur',
         'nom_produit', 'entrepot_echantillon__qte'
     )
-    table = RapportLaboratoireEnAttenteReception(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
-
+    
     export_format = 'xlsx'
-
     serialized_qs = list(qs)
 
     # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task', args=[export_format, serialized_qs])
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    return JsonResponse({'task_id': result.id})
 
 
 @login_required(login_url='login')
 def enchAttenteReceptionExport2(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Echantillonner',
-        entrepot__ville__affectationville__username_id=user
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'numdos', 'entrepot_echantillon__numrappechauto', 'date_echantillon',
         'nom_entrepot', 'nom_importateur',
         'nom_produit', 'entrepot_echantillon__qte'
     )
-    table = RapportLaboratoireEnAttenteReception(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
-
+    
     export_format = 'xlsx'
-
     serialized_qs = list(qs)
 
     # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task', args=[export_format, serialized_qs])
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    return JsonResponse({'task_id': result.id})
 
 
 @login_required(login_url='login')
 def enchAttenteResultat(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapportEnAttenteAnalyse.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Analyse Labo en cours',
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
@@ -5387,11 +5418,16 @@ def enchAttenteResultat(request):
 
 @login_required(login_url='login')
 def enchAttenteResultat2(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapportEnAttenteAnalyse2.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Analyse Labo en cours',
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
@@ -5411,10 +5447,15 @@ def enchAttenteResultat2(request):
 
 @login_required(login_url='login')
 def enchAttenteResultatExport(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Analyse Labo en cours',
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
@@ -5425,25 +5466,25 @@ def enchAttenteResultatExport(request):
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
 
     export_format = 'xlsx'
-
     serialized_qs = list(qs)
 
     # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task_Attente_Res', args=[export_format, serialized_qs])
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    return JsonResponse({'task_id': result.id})
 
 
 @login_required(login_url='login')
 def enchAttenteResultatExport2(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Analyse Labo en cours',
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'nom_entrepot',
@@ -5454,26 +5495,26 @@ def enchAttenteResultatExport2(request):
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
 
     export_format = 'xlsx'
-
     serialized_qs = list(qs)
 
     # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task_Attente_Res', args=[export_format, serialized_qs])
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    return JsonResponse({'task_id': result.id})
 
 
 @login_required(login_url='login')
 def enchAttenteValidation(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapportEnAttenteValidation.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Validation en cours 2',
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
@@ -5493,11 +5534,16 @@ def enchAttenteValidation(request):
 
 @login_required(login_url='login')
 def enchAttenteValidation2(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapportEnAttenteValidation2.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         etat='Validation en cours 2',
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
@@ -5517,11 +5563,16 @@ def enchAttenteValidation2(request):
 
 @login_required(login_url='login')
 def enchPrintedCert(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'laboRapportCertImprimer.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         impressionresultat__isPrinted=1,
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
@@ -5541,11 +5592,16 @@ def enchPrintedCert(request):
 
 @login_required(login_url='login')
 def enchPrintedCert2(request):
-    user = request.user.id
-    template = 'laboRapportCertImprimer.html'
+    user_id = request.user.id
+    template = 'laboRapportCertImprimer2.html'
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         impressionresultat__isPrinted=1,
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
@@ -5565,58 +5621,56 @@ def enchPrintedCert2(request):
 
 @login_required(login_url='login')
 def enchPrintedCertExport(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         impressionresultat__isPrinted=1,
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
         'nom_entrepot', 'nom_importateur', 'impressionresultat__printDate',
         'nom_produit'
     )
-    table = RapportLaboratoireEnchPrintedCert(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
-
+    
     export_format = 'xlsx'
     serialized_qs = list(qs)
 
     # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task_cert_imprimer', args=[export_format, serialized_qs])
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    return JsonResponse({'task_id': result.id})
 
 
 @login_required(login_url='login')
 def enchPrintedCertExport2(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
         impressionresultat__isPrinted=1,
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
     ).values(
         'date_echantillon', 'date_reception_labo', 'numdos',
         'entrepot_echantillon__numrappechauto', 'code_labo', 'num_certificat_qualite',
         'nom_entrepot', 'nom_importateur', 'impressionresultat__printDate',
         'nom_produit'
     )
-    table = RapportLaboratoireEnchPrintedCert(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
-
+    
     export_format = 'xlsx'
     serialized_qs = list(qs)
 
     # Start Celery task to export report asynchronously
     result = app.send_task('labo.tasks.export_report_task_cert_imprimer', args=[export_format, serialized_qs])
 
-    # Retrieve the task ID
-    task_id = result.id
-
-    message = "Export task started. Task ID: {}".format(task_id)
-    return JsonResponse({'task_id': task_id})
+    return JsonResponse({'task_id': result.id})
 
 
 @login_required(login_url='login')
@@ -5637,11 +5691,15 @@ def rapportCq2(request):
 
 @login_required(login_url='login')
 def rapportCqResponse(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
         date_reception_labo__isnull=False
-        # impressionresultat__isnull=False
     ).annotate(
         conformiteProduit=Case(
             When(impressionresultat__isConforme__isnull=True, then=Value('EN ATTENTE')),
@@ -5702,11 +5760,15 @@ def rapportCqResponse(request):
 
 @login_required(login_url='login')
 def rapportCQExport(request):
-    user = request.user.id
+    user_id = request.user.id
+    
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+
     qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user,
+        entrepot_id__in=allowed_entrepot_ids,
         date_reception_labo__isnull=False
-        # impressionresultat__isnull=False
     ).annotate(
         conformiteProduit=Case(
             When(impressionresultat__isConforme__isnull=True, then=Value('EN ATTENTE')),
