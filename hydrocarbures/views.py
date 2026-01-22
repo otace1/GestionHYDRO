@@ -1,13 +1,3 @@
-#
-# from firebase_admin import credentials
-#
-#
-# options = {
-#     'serviceAccountId': 'firebase-adminsdk-r5wop@cgw-mobile-apps.iam.gserviceaccount.com',
-# }
-#
-# cred = credentials.Certificate()
-#
 
 
 # class AuthUserApiView(GenericAPIView):
