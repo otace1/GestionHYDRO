@@ -33,6 +33,8 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
 
     writer = PdfWriter()
     processed_count = 0
+    # Collect IDs and products of successfully rendered certificates
+    successfully_rendered_data = []
 
     from accounts.models import ListeLaboratoire, UserActivityLog
     laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=laboratoire_name)
@@ -207,14 +209,10 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
                 if pdf_content:
                     writer.append(io.BytesIO(pdf_content))
                     if marks_printed:
-                        ImpressionResultat.objects.filter(idcargaison=pk).update(isPrinted=True)
-                        if user_id:
-                            UserActivityLog.objects.create(
-                                user_id=user_id,
-                                action="Certificat Imprimé",
-                                object_id=str(pk),
-                                description=f"Certificat pour cargaison {pk} (Produit: {produit}) imprimé via tâche groupée."
-                            )
+                        successfully_rendered_data.append({
+                            'pk': pk,
+                            'produit': produit
+                        })
             
             processed_count += 1
             percent = round((processed_count / total) * 100, 2)
@@ -237,6 +235,22 @@ def generate_certificates_pdf_task(self, selected_ids, province, sign_gauche_dat
     
     storage_path = default_storage.save(rel_path, ContentFile(output.read()))
     file_url = default_storage.url(storage_path)
+
+    # Finalize printing status only after successful storage save
+    if storage_path and marks_printed:
+        pks_to_mark = [item['pk'] for item in successfully_rendered_data]
+        if pks_to_mark:
+            ImpressionResultat.objects.filter(idcargaison__in=pks_to_mark).update(isPrinted=True, printDate=now_dt.date())
+            
+            # Log activity for each if user_id is provided
+            if user_id:
+                for item in successfully_rendered_data:
+                    UserActivityLog.objects.create(
+                        user_id=user_id,
+                        action="Certificat Imprimé",
+                        object_id=str(item['pk']),
+                        description=f"Certificat pour cargaison {item['pk']} (Produit: {item['produit']}) imprimé via tâche groupée."
+                    )
 
     return {
         "storage_key": storage_path,

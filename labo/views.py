@@ -26,12 +26,13 @@ from accounts.models import AffectationVille, AffectationLaboratoire, ListeLabor
 from enreg.models import *
 from hydrocarbures.celery import app
 from celery.result import AsyncResult
-from labo.utils import render_to_pdf
+from labo.utils import render_to_pdf, render_to_pdf_content
 from .codeLabo import generate_labo_code
 from .forms import *
 from .numCq import numCq
 from .tables import *
 from .tasks import export_reception_rapports_to_xlsx, generate_certificates_pdf_task
+from .reports import get_report_context
 import os
 import tempfile
 
@@ -2064,6 +2065,15 @@ class GestionImpressionLabo():
             # Putting printing counter to 1
             a.impression = "1"
             a.save(update_fields=['impression'])
+
+            # Update ImpressionResultat and log activity
+            ImpressionResultat.objects.filter(idcargaison=pk).update(isPrinted=True, printDate=timezone.now().date())
+            UserActivityLog.objects.create(
+                user=user,
+                action="Certificat Imprimé (Réimpression)",
+                object_id=str(pk),
+                description=f"Certificat pour cargaison {pk} réimprimé par {user.get_full_name()}."
+            )
 
             # # Saving print date into DBS
             # d.dateimpression = today
@@ -4448,10 +4458,20 @@ def responseImpressionReport(request):
     entrepot_id = request.GET.get('entrepot')
     export_format = request.GET.get('format', 'pdf')
 
-    if date_start:
-        qs = qs.filter(printDate__gte=date_start)
-    if date_end:
-        qs = qs.filter(printDate__lte=date_end)
+    # Logic for filtering by activity date (UserActivityLog)
+    if date_start or date_end:
+        log_filter = Q(action__startswith="Certificat Imprimé")
+        pd_filter = Q()
+        if date_start:
+            log_filter &= Q(timestamp__date__gte=date_start)
+            pd_filter &= Q(printDate__gte=date_start)
+        if date_end:
+            log_filter &= Q(timestamp__date__lte=date_end)
+            pd_filter &= Q(printDate__lte=date_end)
+            
+        printed_cids = UserActivityLog.objects.filter(log_filter).values_list('object_id', flat=True).distinct()
+        qs = qs.filter(Q(idcargaison_id__in=list(printed_cids)) | pd_filter)
+    
     if importateur_id:
         qs = qs.filter(idcargaison__importateur_id=importateur_id)
     if entrepot_id:
@@ -4464,9 +4484,9 @@ def responseImpressionReport(request):
     data_list = []
     cargaison_ids = [obj.idcargaison_id for obj in qs]
     
-    # Batch fetch logs
+    # Batch fetch logs (all logs for context, but we will filter for display)
     logs = UserActivityLog.objects.filter(
-        action="Certificat Imprimé",
+        action__startswith="Certificat Imprimé",
         object_id__in=[str(cid) for cid in cargaison_ids]
     ).select_related('user').order_by('timestamp')
     
@@ -4475,44 +4495,63 @@ def responseImpressionReport(request):
     for log in logs:
         logs_by_cid[log.object_id].append(log)
 
+    # Parse date filters for Python-side filtering
+    ds_dt = datetime.strptime(date_start, '%Y-%m-%d').date() if date_start else None
+    de_dt = datetime.strptime(date_end, '%Y-%m-%d').date() if date_end else None
+
     for imp in qs:
         cid_str = str(imp.idcargaison_id)
         cid_logs = logs_by_cid.get(cid_str, [])
-        num_prints = len(cid_logs)
         
-        if cid_logs:
+        # Filter logs for the specific period to show correct print_time and count for the report
+        period_logs = []
+        for l in cid_logs:
+            l_date = l.timestamp.date()
+            if (not ds_dt or l_date >= ds_dt) and (not de_dt or l_date <= de_dt):
+                period_logs.append(l)
+
+        num_prints_total = len(cid_logs)
+        num_prints_period = len(period_logs)
+        
+        if period_logs:
+            # Show the latest print in the requested period
+            last_log = period_logs[-1]
+            print_time = last_log.timestamp
+            printed_by = last_log.user.get_full_name() if last_log.user else "N/A"
+        elif cid_logs:
+            # Fallback if somehow filtered out but has logs (should not happen with qs filtering)
             last_log = cid_logs[-1]
             print_time = last_log.timestamp
             printed_by = last_log.user.get_full_name() if last_log.user else "N/A"
         else:
-            # Fallback for historical data
-            # print_time is a DateField (date object), we convert to datetime to avoid 
-            # template errors with time format specifiers (like 'H')
+            # Fallback for historical data without logs
             print_time = datetime.combine(imp.printDate, time.min) if imp.printDate else None
             printed_by = "N/A"
-            num_prints = 1
+            num_prints_total = 1
 
         data_list.append({
             'reference': imp.idcargaison.num_certificat_qualite or imp.idcargaison.code_labo,
+            'code_labo': imp.idcargaison.code_labo,
             'type': imp.idcargaison.nom_produit,
             'beneficiary': imp.idcargaison.nom_importateur,
             'fournisseur': imp.idcargaison.nom_importateur,
             'entrepot': imp.idcargaison.nom_entrepot,
             'print_time': print_time,
             'printed_by': printed_by,
-            'status': "Réimprimé" if num_prints > 1 else "Imprimé",
-            'num_prints': num_prints
+            'status': "Réimprimé" if num_prints_total > 1 else "Imprimé",
+            'num_prints': num_prints_total # Keeping total historical count for context
         })
 
     if export_format == 'xlsx':
         wb = Workbook()
         ws = wb.active
         ws.title = "Certificats Imprimés"
-        headers = ["Référence", "Type", "Bénéficiaire", "Fournisseur", "Entrepôt", "Date/Heure Impression", "Imprimé par", "Statut", "Nbr Impressions"]
+        headers = ["Référence", "Code Labo", "Type", "Bénéficiaire", "Fournisseur", "Entrepôt", "Date/Heure Impression", "Imprimé par", "Statut", "Nbr Impressions"]
         ws.append(headers)
         for row in data_list:
             ws.append([
                 row['reference'],
+                row['code_labo'],
                 row['type'],
                 row['beneficiary'],
                 row['fournisseur'],
@@ -4538,6 +4577,44 @@ def responseImpressionReport(request):
         }
         return render_to_pdf('report/impression_report.html', context)
 
+
+
+@login_required(login_url='login')
+@require_POST
+def confirm_print(request):
+    user = request.user
+    role = user.role_id
+
+    if role not in (1, 5):
+        return JsonResponse({"status": "failure", "message": "Unauthorized"}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        selected_ids = data.get('selectedRowIds', [])
+        if not selected_ids:
+            # Fallback for single ID
+            pk = data.get('idcargaison')
+            if pk:
+                selected_ids = [pk]
+
+        if not selected_ids:
+            return JsonResponse({"status": "failure", "message": "No IDs provided"}, status=400)
+
+        # Update status
+        updated_count = ImpressionResultat.objects.filter(idcargaison_id__in=selected_ids).update(isPrinted=True, printDate=timezone.now().date())
+
+        # Log activity for each
+        for pk in selected_ids:
+            UserActivityLog.objects.create(
+                user=user,
+                action="Certificat Imprimé (Confirmé)",
+                object_id=str(pk),
+                description=f"Impression confirmée via l'interface par {user.get_full_name()}."
+            )
+
+        return JsonResponse({"status": "success", "updated_count": updated_count})
+    except Exception as e:
+        return JsonResponse({"status": "failure", "message": str(e)}, status=500)
 
 
 # Fonction pour impression Certificat
@@ -4762,10 +4839,14 @@ def impressioncertificat(request):
                     data['corrosion'] = ''
 
             if template:
-                pdf = render_to_pdf(template, data)
-                if pdf:
-                    # Update isPrinted only after successfully PDF generation
-                    ImpressionResultat.objects.filter(idcargaison=pk).update(isPrinted=1)
+                # Render PDF content
+                pdf_content = render_to_pdf_content(template, data)
+                if pdf_content:
+                    # Base64 encode the PDF content
+                    pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+
+                    # Update isPrinted only after successful generation and encoding
+                    ImpressionResultat.objects.filter(idcargaison=pk).update(isPrinted=True, printDate=timezone.now().date())
                     
                     # Log activity
                     UserActivityLog.objects.create(
@@ -4775,7 +4856,6 @@ def impressioncertificat(request):
                         description=f"Certificat pour cargaison {pk} (Produit: {produit}) imprimé par {user.get_full_name()}."
                     )
 
-                    pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
                     return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
 
         else:
