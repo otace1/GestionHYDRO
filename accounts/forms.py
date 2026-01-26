@@ -89,14 +89,18 @@ class UserRegisterForm(forms.ModelForm):
     first_name = forms.CharField(label='Prénom')
     last_name = forms.CharField(label='Nom')
     role = forms.ModelChoiceField(label='Rôle', queryset=Roles.objects.all())
-    fonction = forms.CharField(label='Fonction')
+    fonction = forms.CharField(label='Fonction', required=False)
+    poste = forms.CharField(label='Poste', required=False)
     username = forms.CharField(label="Nom d'utilisateur")
     password1 = forms.CharField(label='Mot de passe', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirmation mot de passe', widget=forms.PasswordInput)
+    is_active = forms.BooleanField(label='Actif', initial=True, required=False)
+    is_admin = forms.BooleanField(label='Administrateur', initial=False, required=False)
+    is_staff = forms.BooleanField(label='Staff', initial=False, required=False)
 
     class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'username', 'role']
+        model = MyUser
+        fields = ['first_name', 'last_name', 'username', 'role', 'fonction', 'poste', 'is_active', 'is_admin', 'is_staff']
 
     def clean_password2(self):
         password1 = self.cleaned_data.get('password1')
@@ -123,33 +127,31 @@ class UserRegisterForm(forms.ModelForm):
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(
             Row(
-                Column('first_name', css_class='form-group col-md-12 mb-0'),
+                Column('first_name', css_class='form-group col-md-6 mb-0'),
+                Column('last_name', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
-                ),
-            Row(
-                Column('last_name', css_class='form-group col-md-12 mb-0'),
-                css_class='form-row'
-                ),
+            ),
             Row(
                 Column('username', css_class='form-group col-md-6 mb-0'),
                 Column('role', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
-            # Field('role', placeholder=""),
             Row(
-                Column('fonction', css_class='form-group col-md-12 mb-0'),
-
+                Column('fonction', css_class='form-group col-md-6 mb-0'),
+                Column('poste', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
             ),
             Row(
                 Column('password1', css_class='form-group col-md-6 mb-0'),
                 Column('password2', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
-
             ),
-            # Row(
-            #     Column('fonction', css_class='form-group col-md-6 mb-0'),
-            #
-            # ),
+            Row(
+                Column('is_active', css_class='form-group col-md-4 mb-0'),
+                Column('is_admin', css_class='form-group col-md-4 mb-0'),
+                Column('is_staff', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),
                 Reset('annuler', 'annuler', css_class='btn btn-danger'),
@@ -160,9 +162,52 @@ class UserRegisterForm(forms.ModelForm):
 
 # Modification de l'utilisateur
 class UserEdit(forms.ModelForm):
+    first_name = forms.CharField(label='Prénom')
+    last_name = forms.CharField(label='Nom')
+    role = forms.ModelChoiceField(label='Rôle', queryset=Roles.objects.all())
+    fonction = forms.CharField(label='Fonction', required=False)
+    poste = forms.CharField(label='Poste', required=False)
+    username = forms.CharField(label="Nom d'utilisateur")
+    is_active = forms.BooleanField(label='Actif', required=False)
+    is_admin = forms.BooleanField(label='Administrateur', required=False)
+    is_staff = forms.BooleanField(label='Staff', required=False)
+
     class Meta:
         model = MyUser
-        fields = ['first_name', 'last_name', 'username', 'password', 'role', 'fonction','poste']
+        fields = ['first_name', 'last_name', 'username', 'role', 'fonction', 'poste', 'is_active', 'is_admin', 'is_staff']
+
+    def __init__(self, *args, **kwargs):
+        super(UserEdit, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-md-12'
+        self.helper.field_class = 'col-md-12'
+        self.helper.layout = Layout(
+            Row(
+                Column('first_name', css_class='form-group col-md-6 mb-0'),
+                Column('last_name', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('username', css_class='form-group col-md-6 mb-0'),
+                Column('role', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('fonction', css_class='form-group col-md-6 mb-0'),
+                Column('poste', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('is_active', css_class='form-group col-md-4 mb-0'),
+                Column('is_admin', css_class='form-group col-md-4 mb-0'),
+                Column('is_staff', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('valider', 'valider', css_class='btn btn-primary'),
+            ),
+        )
 #         ,'entrepot','ville','extras'
 
 

@@ -307,16 +307,18 @@ def ajoututilisateurs(request):
 
 @login_required(login_url='login')
 def addUser(request):
+    if request.user.role_id != 1:
+        return JsonResponse({'success': False, 'errors': 'Unauthorized'}, status=403)
+        
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             form.save()
-            return JsonResponse({'success': True},status=200)
+            return JsonResponse({'success': True}, status=200)
         else:
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors}, status=400)
 
-    # Redirect for non-ajax requests or other HTTP methods
     return redirect('userslist')
 
 
@@ -338,7 +340,6 @@ def detailsaffectation(request,pk):
 
 
 @login_required(login_url='login')
-# Fonction pour editer les utilisateurs
 def editionutilisateurs(request, pk):
     user = request.user
     role = user.role_id
@@ -348,27 +349,20 @@ def editionutilisateurs(request, pk):
         template = 'accounts/profile.html'
         instance = get_object_or_404(MyUser, id=pk)
         table = DetailsAffectation(AffectationEntrepot.objects.filter(username_id=pk))
-        # table1 = DetailsVille(AffectationVille.objects.filter(username__id=pk))
         table.paginate(page=request.GET.get('page', 1), per_page=15)
-        # table1.paginate(page=request.GET.get('page', 1), per_page=15)
-        form = UserEdit(request.POST or None, instance=instance, prefix='user')
-        # form1 = Affectation_Entrepot()
-        # form2 = Affectation_Ville()
-        # form3 = SignatureForm(request.POST or None)
-        url = request.session['url']
+        
+        form = UserEdit(request.POST or None, instance=instance)
+        url = request.session.get('url', 'userslist')
 
-        if form.is_valid():
-            instance = form.save(commit=False)
-            instance.save()
-            return redirect(url)
+        if request.method == 'POST':
+            if form.is_valid():
+                form.save()
+                return redirect(url)
 
         args = {
             'form': form,
-            # 'form1': form1,
             'table': table,
-            # 'table1': table1,
-            # 'form2': form2,
-            # 'form3':form3,
+            'user_instance': instance,
         }
         return render(request, template, args)
     else:
