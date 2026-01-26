@@ -93,6 +93,7 @@ urlpatterns = [
 
     # KPI for validation
     path('validationKPIs/', views.laboValidationKPIs, name='laboValidationKPIs'),
+    path('managementReportKPIs/', views.laboManagementReportKPIs, name='laboManagementReportKPIs'),
     path('impressionKPIs/', views.laboImpressionKPIs, name='laboImpressionKPIs'),
 
     ###Second way of validation from the Chef Sce

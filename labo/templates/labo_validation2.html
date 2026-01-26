@@ -186,7 +186,49 @@
     height: 18px;
     cursor: pointer;
   }
+    /* Management Report Styles */
+    .report-card {
+        border: 1px solid var(--tf-bd);
+        border-radius: 16px;
+        background: #fff;
+        padding: 20px;
+        height: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .report-card:hover {
+        box-shadow: var(--tf-shadow);
+    }
+    .kpi-val {
+        font-size: 2rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 5px;
+    }
+    .kpi-label {
+        font-size: 0.85rem;
+        color: var(--tf-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .report-section-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin-bottom: 15px;
+        color: var(--tf-ink);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .filter-bar {
+        background: rgba(0,0,0,0.02);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid var(--tf-bd);
+    }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
 
 {% block content %}
@@ -211,6 +253,113 @@
 
 <section class="content">
   <div class="container-fluid">
+
+    <!-- Lab Management Report Section -->
+    <div class="tf-card mb-4">
+      <div class="tf-card-header" style="cursor: pointer;" data-toggle="collapse" data-target="#managementReportCollapse">
+        <div class="tf-card-left">
+          <div class="tf-icon" style="background:rgba(13,110,253,.1); color:var(--tf-primary);"><i class="fas fa-chart-line"></i></div>
+          <div class="tf-card-titles">
+            <h3>Rapport de Gestion du Laboratoire</h3>
+            <div class="tf-hint">Charge de travail opérationnelle, goulots d'étranglement et état de la production</div>
+          </div>
+        </div>
+        <div>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+      </div>
+      <div id="managementReportCollapse" class="collapse show">
+        <div class="card-body">
+          
+          <!-- Filters -->
+          <div class="filter-bar">
+            <div class="row">
+              <div class="col-md-3 mb-2 mb-md-0">
+                <label class="small font-weight-bold">Période</label>
+                <input type="text" id="report-date-range" class="form-control form-control-sm" placeholder="Sélectionner la période">
+              </div>
+              <div class="col-md-3 mb-2 mb-md-0">
+                <label class="small font-weight-bold">Laboratoire / Entrepôt</label>
+                <select id="report-entrepot" class="form-control form-control-sm">
+                  <option value="all">Tous les laboratoires</option>
+                  {% for ent in entrepots_list %}
+                    <option value="{{ ent.identrepot }}">{{ ent.nomentrepot }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-3 mb-2 mb-md-0">
+                <label class="small font-weight-bold">Produit</label>
+                <select id="report-produit" class="form-control form-control-sm">
+                  <option value="all">Tous les produits</option>
+                  {% for prod in produits_list %}
+                    <option value="{{ prod.idproduit }}">{{ prod.nomproduit }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary btn-sm btn-block font-weight-bold" id="refresh-report">
+                  <i class="fas fa-sync-alt mr-1"></i> ACTUALISER
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- KPIs -->
+            <div class="col-lg-12">
+              <div class="row mb-3">
+                <div class="col-md-3 mb-2">
+                  <div class="report-card text-center" style="border-top: 4px solid var(--tf-warning); padding: 15px;">
+                    <div class="kpi-val" id="mgmt-waiting-reception" style="font-size: 1.5rem;">0</div>
+                    <div class="kpi-label" style="font-size: 0.75rem;">Attente Réception</div>
+                  </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                  <div class="report-card text-center" style="border-top: 4px solid var(--tf-info); padding: 15px;">
+                    <div class="kpi-val" id="mgmt-received" style="font-size: 1.5rem;">0</div>
+                    <div class="kpi-label" style="font-size: 0.75rem;">Échantillons Reçus</div>
+                  </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                  <div class="report-card text-center" style="border-top: 4px solid var(--tf-primary); padding: 15px;">
+                    <div class="kpi-val" id="mgmt-produced" style="font-size: 1.5rem;">0</div>
+                    <div class="kpi-label" style="font-size: 0.75rem;">Certs. Générés</div>
+                  </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                  <div class="report-card text-center" style="border-top: 4px solid #20c997; padding: 15px;">
+                    <div class="kpi-val" id="mgmt-printed" style="font-size: 1.5rem;">0</div>
+                    <div class="kpi-label" style="font-size: 0.75rem;">Certs. Imprimés</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="col-lg-6">
+              <div class="report-section-title small">
+                <i class="fas fa-chart-pie text-secondary"></i> Répartition par Statut
+              </div>
+              <div class="report-card" style="padding: 10px;">
+                <div style="height: 180px;">
+                  <canvas id="statusChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="col-lg-6">
+              <div class="report-section-title small"><i class="fas fa-box text-muted"></i> Top 5 Produits</div>
+              <div class="report-card p-2">
+                <table class="table table-sm table-borderless mb-0" id="table-breakdown-produit">
+                  <tbody class="small"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- KPI Section -->
     <div class="row mb-3">
@@ -331,7 +480,136 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
+    let statusChart;
+
+    function initReport() {
+        flatpickr("#report-date-range", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            defaultDate: [new Date().setDate(new Date().getDate() - 30), new Date()]
+        });
+
+        fetchManagementReport();
+    }
+
+    function fetchManagementReport() {
+        const dateRange = $('#report-date-range').val();
+        const entrepotId = $('#report-entrepot').val();
+        const produitId = $('#report-produit').val();
+        const importateurId = 'all'; // Fixed to all since filter was removed for simplification
+
+        // Show loading state
+        $('#managementReportCollapse .kpi-val').html('<i class="fas fa-spinner fa-spin small"></i>');
+
+        $.ajax({
+            url: '{% url "laboManagementReportKPIs" %}',
+            type: 'POST',
+            data: JSON.stringify({
+                date_range: dateRange,
+                entrepot_id: entrepotId,
+                produit_id: produitId,
+                importateur_id: importateurId
+            }),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function(data) {
+                // Update KPIs
+                $('#mgmt-waiting-reception').text(data.pipeline.waiting_reception);
+                $('#mgmt-received').text(data.pipeline.received);
+                $('#mgmt-produced').text(data.certification.produced);
+                $('#mgmt-printed').text(data.certification.printed);
+
+                // Update Breakdowns (Top 5 only)
+                updateBreakdownTable('table-breakdown-produit', data.breakdowns.produit.slice(0, 5), 'nom_produit');
+
+                updateChart(data.status_breakdown);
+            }
+        });
+    }
+
+    function updateBreakdownTable(tableId, data, keyName) {
+        const tbody = $(`#${tableId} tbody`);
+        tbody.empty();
+        if (!data || data.length === 0) {
+            tbody.append('<tr><td class="text-muted italic">Aucune donnée</td></tr>');
+            return;
+        }
+        data.forEach(item => {
+            tbody.append(`
+                <tr>
+                    <td class="text-truncate" style="max-width: 250px;" title="${item[keyName] || 'Inconnu'}">
+                        ${item[keyName] || 'Inconnu'}
+                    </td>
+                    <td class="text-right font-weight-bold">${item.count}</td>
+                </tr>
+            `);
+        });
+    }
+
+    function updateChart(statusData) {
+        if (!statusData || statusData.length === 0) {
+            if (statusChart) statusChart.destroy();
+            return;
+        }
+
+        const labels = statusData.map(s => s.etat || 'N/A');
+        const values = statusData.map(s => s.count);
+        
+        const colors = [
+            '#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', 
+            '#6610f2', '#6f42c1', '#d63384', '#fd7e14', '#20c997'
+        ];
+
+        if (statusChart) {
+            statusChart.destroy();
+        }
+
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            font: { size: 10 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                label += context.raw;
+                                return label;
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    $(document).on('click', '#refresh-report', function() {
+        fetchManagementReport();
+    });
     function showLoadbar(){ $('#loadbar').show(); }
     function hideLoadbar(){ $('#loadbar').hide(); }
 
@@ -364,6 +642,7 @@
     }
 
     $(document).ready(function () {
+        initReport();
         fetchKPIs();
         const dataTable = $('#data-table').DataTable({
             lengthChange: false,

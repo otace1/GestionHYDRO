@@ -1902,8 +1902,17 @@ class GestionValidation():
     def affichagetableauvalidation2(request):
         user = request.user
         role = user.role_id
+        # Lists for report filters
+        entrepots_list = Entrepot.objects.filter(ville__affectationville__username_id=user.id).order_by('nomentrepot')
+        produits_list = Produit.objects.all().order_by('nomproduit')
+        importateurs_list = Importateur.objects.all().order_by('nomimportateur')
+
         if role in (5, 1, 6, 10):
-            return render(request, 'labo_validation2.html')
+            return render(request, 'labo_validation2.html', {
+                'entrepots_list': entrepots_list,
+                'produits_list': produits_list,
+                'importateurs_list': importateurs_list,
+            })
         else:
             return redirect('logout')
 
@@ -3054,6 +3063,138 @@ def validationResulat(request):
         return redirect('analyse')
 
 
+@login_required(login_url='login')
+@require_POST
+def laboManagementReportKPIs(request):
+    """
+    Vue optimisée pour le Rapport de Gestion du Laboratoire.
+    Basé sur les exigences strictes de la base de données actuelle.
+    """
+    user_id = request.user.id
+    role = request.user.role_id
+
+    # Accès restreint au management et labo (Roles 1: Admin, 6: Chef Sce, 10: Chef Labo, 5: Labo)
+    if role not in (1, 5, 6, 10):
+        return JsonResponse({"success": False, "error": "Accès refusé"}, status=403)
+    
+    # Payload for filters
+    def get_payload():
+        ct = (request.headers.get("Content-Type") or "").lower()
+        if "application/json" in ct:
+            try:
+                return json.loads(request.body.decode("utf-8") or "{}") or {}
+            except Exception:
+                return {}
+        return request.POST
+    
+    params = get_payload()
+    date_range = params.get('date_range')
+    entrepot_id = params.get('entrepot_id')
+    produit_id = params.get('produit_id')
+    importateur_id = params.get('importateur_id')
+
+    # Scoping par entrepôts autorisés
+    allowed_entrepot_ids = Entrepot.objects.filter(
+        ville__affectationville__username_id=user_id
+    ).values_list('identrepot', flat=True)
+    
+    base_qs = Cargaison.objects.filter(entrepot_id__in=allowed_entrepot_ids)
+
+    # Application des filtres
+    if date_range:
+        try:
+            if ' to ' in date_range:
+                start_str, end_str = date_range.split(' to ')
+                start_date = datetime.strptime(start_str, '%Y-%m-%d')
+                end_date = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)
+                # Utilisation de date_reception_labo pour la période comme demandé
+                base_qs = base_qs.filter(date_reception_labo__range=(start_date, end_date))
+            else:
+                day = datetime.strptime(date_range, '%Y-%m-%d')
+                base_qs = base_qs.filter(date_reception_labo__date=day.date())
+        except (ValueError, AttributeError):
+            pass
+
+    if entrepot_id and entrepot_id != 'all':
+        base_qs = base_qs.filter(entrepot_id=entrepot_id)
+    if produit_id and produit_id != 'all':
+        base_qs = base_qs.filter(produit_id=produit_id)
+    if importateur_id and importateur_id != 'all':
+        base_qs = base_qs.filter(importateur_id=importateur_id)
+
+    # 1) Suivi des Échantillons (Table Cargaison)
+    waiting_reception = base_qs.filter(date_reception_labo__isnull=True).count()
+    received = base_qs.filter(date_reception_labo__isnull=False).count()
+    conforming = base_qs.filter(etat="Conforme aux exigences").count()
+
+    # Répartitions
+    breakdown_produit = list(base_qs.values('nom_produit').annotate(count=Count('idcargaison')).order_by('-count')[:10])
+    breakdown_importateur = list(base_qs.values('nom_importateur').annotate(count=Count('idcargaison')).order_by('-count')[:10])
+    breakdown_entrepot = list(base_qs.values('nom_entrepot').annotate(count=Count('idcargaison')).order_by('-count')[:10])
+
+    # 2) Suivi des Certificats et de l'Impression (Table ImpressionResultat)
+    # On utilise Exists pour vérifier la présence d'une entrée dans ImpressionResultat
+    cert_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'))
+    
+    # Nombre de dossiers sans certificat généré
+    no_cert = base_qs.annotate(has_cert=Exists(cert_exists)).filter(has_cert=False).count()
+    
+    # Nombre de certificats générés
+    cert_generated = base_qs.annotate(has_cert=Exists(cert_exists)).filter(has_cert=True).count()
+    
+    # Détails Impression (uniquement pour ceux qui ont un certificat)
+    printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
+    waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False)
+    
+    cert_printed = base_qs.annotate(is_printed=Exists(printed_exists)).filter(is_printed=True).count()
+    cert_waiting_print = base_qs.annotate(is_waiting=Exists(waiting_print_exists)).filter(is_waiting=True).count()
+
+    # 3) Répartition par Statut (pour le graphique)
+    status_mapping = {
+        "Echantillonner": "En attente Réception",
+        "En attente Resultat": "Reçu / Attente Analyse",
+        "Analyse Labo en cours": "En cours d'Analyse",
+        "Validation en cours 1": "Validation Chef Sce",
+        "Validation en cours 2": "Validation Chef Labo",
+        "Conforme aux exigences": "Certifié Conforme",
+        "Non conforme aux exigences": "Certifié Non Conforme",
+        "Refaire": "A Refaire"
+    }
+    
+    raw_status_counts = base_qs.values('etat').annotate(count=Count('idcargaison'))
+    processed_status_counts = []
+    mapped_counts = {}
+    
+    for item in raw_status_counts:
+        etat_tech = item['etat']
+        label = status_mapping.get(etat_tech, etat_tech)
+        mapped_counts[label] = mapped_counts.get(label, 0) + item['count']
+    
+    for label, count in mapped_counts.items():
+        processed_status_counts.append({'etat': label, 'count': count})
+
+    return JsonResponse({
+        "success": True,
+        "pipeline": {
+            "waiting_reception": waiting_reception,
+            "received": received,
+            "conforming": conforming
+        },
+        "breakdowns": {
+            "produit": breakdown_produit,
+            "importateur": breakdown_importateur,
+            "entrepot": breakdown_entrepot
+        },
+        "certification": {
+            "no_cert": no_cert,
+            "produced": cert_generated,
+            "printed": cert_printed,
+            "waiting_print": cert_waiting_print
+        },
+        "status_breakdown": processed_status_counts
+    })
+
+
 # KPI details (Dashboard modal, POST-only JSON)
 @login_required(login_url='login')
 @require_POST
@@ -4199,7 +4340,6 @@ def nonconformeAjx2(request):
         return JsonResponse({'status': 'failure', 'message': 'Unauthorized'}, status=403)
 
 
-# Fonction pour affichage tableu impression des certificats
 @login_required(login_url='login')
 @require_POST
 def responseAffichagetableauimpression(request):
@@ -4209,7 +4349,7 @@ def responseAffichagetableauimpression(request):
     if role not in (1, 5):
         return JsonResponse({"error": "Forbidden"}, status=403)
 
-    # Payload reading
+    # Payload reading (unified for JSON and Form data)
     def get_payload():
         ct = (request.headers.get("Content-Type") or "").lower()
         if "application/json" in ct:
@@ -4222,9 +4362,10 @@ def responseAffichagetableauimpression(request):
     params = get_payload()
 
     # 1. Optimize allowed Entrepots (Denormalized scoping)
+    # Return distinct list to avoid duplicates in case of complex assignments
     allowed_entrepot_ids = Entrepot.objects.filter(
         ville__affectationville__username_id=user.id
-    ).values_list('identrepot', flat=True)
+    ).values_list('identrepot', flat=True).distinct()
 
     # 2. Base QuerySet with mandatory filters
     qs = Cargaison.objects.filter(
@@ -4232,31 +4373,31 @@ def responseAffichagetableauimpression(request):
         etat="Conforme aux exigences"
     )
 
-    # recordsTotal for DataTables (count before optional filters)
-    recordsTotal = qs.count()
-
     # 3. Optional Filters from toolbar
     date_start = params.get('date_start')
     date_end = params.get('date_end')
     printed_status = params.get('printed_status', 'not_printed')
 
+    # Consistent Date Filtering using the date part of the DateTimeField
     if date_start:
-        qs = qs.filter(date_reception_labo__gte=date_start)
+        qs = qs.filter(date_reception_labo__date__gte=date_start)
     if date_end:
         qs = qs.filter(date_reception_labo__date__lte=date_end)
 
-    # Printed status subquery - we only care about records where isPrinted is True
+    # Printed status subquery
+    # 'pk' in OuterRef correctly refers to Cargaison.idcargaison (Primary Key)
+    # Removed order_by as it's not needed for Exists check
     print_records = ImpressionResultat.objects.filter(
         idcargaison=OuterRef('pk'), 
         isPrinted=True
-    ).order_by('-idImpression')
+    )
 
     if printed_status == 'not_printed':
         qs = qs.filter(~Exists(print_records))
     elif printed_status == 'printed':
         qs = qs.filter(Exists(print_records))
 
-    # 4. Global search (leveraging denormalized fields and indexes)
+    # 4. Global search (leveraging denormalized fields)
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
     search_value = search_value or params.get('q')
     if search_value:
@@ -4273,10 +4414,16 @@ def responseAffichagetableauimpression(request):
             
         qs = qs.filter(search_q)
 
-    # recordsFiltered for DataTables
+    # Stability: Using a stable ordering to prevent pagination drift
+    # recordsTotal and recordsFiltered for DataTables
+    recordsTotal = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids,
+        etat="Conforme aux exigences"
+    ).count()
     recordsFiltered = qs.count()
 
     # 5. Final projection and pagination
+    # Added idcargaison to order_by for absolute stability
     qs = qs.values(
         'idcargaison',
         'date_reception_labo',
@@ -4286,7 +4433,7 @@ def responseAffichagetableauimpression(request):
         'nom_importateur',
         'nom_entrepot',
         'immatriculation'
-    ).order_by('date_reception_labo')
+    ).order_by('date_reception_labo', 'idcargaison')
 
     draw = int(params.get('draw', 1))
     start = int(params.get('start', 0))
@@ -4300,7 +4447,7 @@ def responseAffichagetableauimpression(request):
             'recordsFiltered': recordsFiltered,
         })
 
-    # Paging using direct slice for performance
+    # Paging using direct slice
     data = list(qs[start:start+length])
 
     # 6. Formatting result for legacy compatibility
@@ -4347,21 +4494,19 @@ def responseArchivesTableau(request):
     # 1. Optimize Scoping (Consistent with main printing table)
     allowed_entrepot_ids = Entrepot.objects.filter(
         ville__affectationville__username_id=user.id
-    ).values_list('identrepot', flat=True)
+    ).values_list('identrepot', flat=True).distinct()
 
     # 2. Base QuerySet: Only certificates that have been printed
     # Optimization: Use Exists on a restricted ImpressionResultat queryset
+    # Removed order_by inside Exists as it's redundant.
     print_records = ImpressionResultat.objects.filter(
         idcargaison=OuterRef('pk'), 
         isPrinted=True
-    ).order_by('-idImpression')
+    )
 
     qs = Cargaison.objects.filter(
         entrepot_id__in=allowed_entrepot_ids
     ).annotate(has_been_printed=Exists(print_records)).filter(has_been_printed=True)
-
-    # recordsTotal for DataTables (within user's scope)
-    recordsTotal = qs.count()
 
     # 3. Apply Filters
     code_labo = params.get('code_labo')
@@ -4375,15 +4520,17 @@ def responseArchivesTableau(request):
         qs = qs.filter(num_certificat_qualite=num_certificat)
 
     # Subquery for the latest print date (needed for range filtering and ordering)
-    latest_print_date = print_records.values('printDate')[:1]
+    # Correctly order here to get the LATEST print date if multiple exist (unlikely but safe)
+    latest_print_date = print_records.order_by('-idImpression').values('printDate')[:1]
     qs = qs.annotate(print_date_val=Subquery(latest_print_date))
 
+    # Date range filtering on printed date (ImpressionResultat.printDate is a DateField)
     if date_start:
         qs = qs.filter(print_date_val__gte=date_start)
     if date_end:
         qs = qs.filter(print_date_val__lte=date_end)
 
-    # Global search (leveraging denormalized fields and index-friendly queries)
+    # Global search (leveraging denormalized fields)
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
     search_value = search_value or params.get('q')
     if search_value:
@@ -4392,7 +4539,6 @@ def responseArchivesTableau(request):
                    Q(nom_produit__icontains=search_value) | \
                    Q(immatriculation__icontains=search_value)
         
-        # Numeric fields optimized
         if search_value.isdigit():
             val = int(search_value)
             search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
@@ -4401,10 +4547,14 @@ def responseArchivesTableau(request):
 
         qs = qs.filter(search_q)
 
-    # recordsFiltered after all filters applied
+    # Stability: Using stable ordering
+    recordsTotal = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids
+    ).annotate(has_been_printed=Exists(print_records)).filter(has_been_printed=True).count()
     recordsFiltered = qs.count()
 
     # 4. Final selection and Ordering
+    # Added idcargaison for absolute stability
     qs = qs.values(
         'idcargaison',
         'date_reception_labo',
@@ -4415,9 +4565,9 @@ def responseArchivesTableau(request):
         'nom_importateur',
         'nom_entrepot',
         'immatriculation'
-    ).order_by('-print_date_val')
+    ).order_by('-print_date_val', '-idcargaison')
 
-    # 5. Pagination (Direct slicing for performance)
+    # 5. Pagination
     draw = int(params.get('draw', 1))
     start = int(params.get('start', 0))
     length = int(params.get('length', 10))
