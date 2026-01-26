@@ -98,6 +98,7 @@ class MyUser(AbstractBaseUser):
 
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['role']

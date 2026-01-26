@@ -37,6 +37,20 @@
       </div>
     </div>
 
+    <!-- Tabs for User Type -->
+    <ul class="nav nav-pills mb-3" id="user-type-tabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" id="all-users-tab" data-toggle="pill" href="#all-users" role="tab" data-lab-only="false">
+          <i class="fas fa-users mr-1"></i> {% trans "Tous les utilisateurs" %}
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="lab-users-tab" data-toggle="pill" href="#lab-users" role="tab" data-lab-only="true">
+          <i class="fas fa-microscope mr-1"></i> {% trans "Utilisateurs Laboratoire" %}
+        </a>
+      </li>
+    </ul>
+
     <!-- Filters Card -->
     <div class="card card-outline card-secondary">
       <div class="card-body">
@@ -87,6 +101,7 @@
                 <th>{% trans "ID Utilisateur" %}</th>
                 <th>{% trans "Nom" %}</th>
                 <th>{% trans "Nom d'utilisateur" %}</th>
+                <th id="col-lab">{% trans "Laboratoire" %}</th>
                 <th>{% trans "Dernière connexion" %}</th>
                 <th class="text-center">{% trans "Actions" %}</th>
               </tr>
@@ -612,6 +627,7 @@
           data: function(d) {
             d.status = $('#statusFilter').val();
             d.role = $('#roleFilter').val();
+            d.lab_only = $('#user-type-tabs .nav-link.active').data('lab-only');
           },
           beforeSend: function() { $('#data-table-wrapper .loading-spinner').show(); },
           complete: function() { $('#data-table-wrapper .loading-spinner').hide(); },
@@ -626,23 +642,128 @@
             data: null,
             render: function(_, __, row){
               const name = ((row.first_name || '') + ' ' + (row.last_name || '')).trim();
-              return name || '-';
+              const activeBadge = row.is_active ? 
+                '<span class="badge badge-success ml-1" title="{% trans "Actif" %}"><i class="fas fa-check"></i></span>' : 
+                '<span class="badge badge-danger ml-1" title="{% trans "Inactif" %}"><i class="fas fa-times"></i></span>';
+              return (name || '-') + activeBadge;
             }
           },
           { data: 'username' },
+          { 
+            data: 'lab_name',
+            render: function(val) {
+              return val ? `<span class="badge badge-info"><i class="fas fa-microscope mr-1"></i>${val}</span>` : '-';
+            }
+          },
           { data: 'last_login' },
           {
             data: 'id',
             className: 'text-center',
-            render: function (id) {
-              return `
-                <button type="button" class="btn btn-sm btn-outline-primary btn-manage" data-id="${id}">
-                  <i class="fas fa-cog mr-1"></i> {% trans "Gérer" %}
+            render: function (id, _, row) {
+              const labPart = row.lab_name ? `
+                <button type="button" class="btn btn-sm btn-outline-info btn-manage-lab" data-id="${id}" title="{% trans "Changer laboratoire" %}">
+                  <i class="fas fa-exchange-alt"></i>
                 </button>
+              ` : `
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-manage-lab" data-id="${id}" title="{% trans "Affecter laboratoire" %}">
+                  <i class="fas fa-plus"></i>
+                </button>
+              `;
+
+              const activePart = row.is_active ? `
+                <button type="button" class="btn btn-sm btn-outline-danger btn-toggle-status" data-id="${id}" data-status="false" title="{% trans "Désactiver" %}">
+                  <i class="fas fa-user-slash"></i>
+                </button>
+              ` : `
+                <button type="button" class="btn btn-sm btn-outline-success btn-toggle-status" data-id="${id}" data-status="true" title="{% trans "Activer" %}">
+                  <i class="fas fa-user-check"></i>
+                </button>
+              `;
+
+              return `
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-manage" data-id="${id}" title="{% trans "Gérer utilisateur" %}">
+                    <i class="fas fa-user-cog"></i>
+                  </button>
+                  ${labPart}
+                  ${activePart}
+                </div>
               `;
             }
           }
         ]
+      });
+
+      // Tab switching
+      $('#user-type-tabs a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+        const isLabOnly = $(e.target).data('lab-only');
+        if (isLabOnly) {
+          table.column('#col-lab').visible(true);
+        } else {
+          table.column('#col-lab').visible(false);
+        }
+        table.ajax.reload();
+      });
+
+      // Initial visibility
+      table.column('#col-lab').visible(false);
+
+      // Open Manage Lab via quick action
+      $(document).on('click', '.btn-manage-lab', function(){
+        const id = $(this).data('id');
+        const tr = $(this).closest('tr');
+        selectedUserRow = table.row(tr).data();
+        selectedUserId = id;
+
+        $('#manageUserSubtitle').text('{% trans "ID Utilisateur" %}: ' + selectedUserId);
+        
+        // Open the Manage modal and switch to Assignments -> Laboratoire section
+        $('#modal-user-manage .nav-link[href="#tab-assignments"]').tab('show');
+        $('#modal-user-manage').modal('show');
+        
+        loadAssignments(selectedUserId);
+        loadSignature(selectedUserId);
+      });
+
+      // Toggle Status
+      $(document).on('click', '.btn-toggle-status', function(){
+        const id = $(this).data('id');
+        const status = $(this).data('status');
+        const actionText = status ? '{% trans "activer" %}' : '{% trans "désactiver" %}';
+
+        Swal.fire({
+          title: '{% trans "Êtes-vous sûr ?" %}',
+          text: `{% trans "Voulez-vous vraiment" %} ${actionText} {% trans "cet utilisateur ?" %}`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: status ? '#28a745' : '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: status ? '{% trans "Oui, activer !" %}' : '{% trans "Oui, désactiver !" %}',
+          cancelButtonText: '{% trans "Annuler" %}'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            $.ajax({
+              url: '{% url "toggle_user_status" %}',
+              type: 'POST',
+              headers: {'X-CSRFToken': '{{ csrf_token }}'},
+              data: {
+                user_id: id,
+                status: status
+              },
+              success: function(resp) {
+                if (resp.status === 'success') {
+                  Swal.fire('{% trans "Effectué !" %}', resp.message, 'success');
+                  table.ajax.reload(null, false);
+                } else {
+                  Swal.fire('{% trans "Erreur" %}', resp.message, 'error');
+                }
+              },
+              error: function() {
+                Swal.fire('{% trans "Erreur" %}', '{% trans "Une erreur est survenue." %}', 'error');
+              }
+            });
+          }
+        });
       });
 
       // Search

@@ -122,6 +122,34 @@ def logout_user(request):
 
 
 @login_required(login_url='login')
+@require_POST
+def toggle_user_status(request):
+    if request.user.role_id != 1:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+    
+    user_id = request.POST.get('user_id')
+    status = request.POST.get('status') == 'true'
+    
+    try:
+        user_to_toggle = MyUser.objects.get(id=user_id)
+        user_to_toggle.is_active = status
+        user_to_toggle.save(update_fields=['is_active'])
+        
+        action = "Activated" if status else "Deactivated"
+        UserActivityLog.objects.create(
+            user=request.user,
+            action=f"USER_{action.upper()}",
+            description=f"User {user_to_toggle.username} (ID: {user_id}) has been {action.lower()} by administrator."
+        )
+        
+        return JsonResponse({'status': 'success', 'message': f'User {action.lower()} successfully.'})
+    except MyUser.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'User not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required(login_url='login')
 # fonctions pour afficher la liste des utilisateurs
 def listeutilisateurs(request):
     user = request.user
@@ -173,8 +201,18 @@ def listeutilisateursResponse(request):
     search_value = request.POST.get('search[value]', '').strip()
     role_id = request.POST.get('role')
     status = request.POST.get('status')
+    lab_only = request.POST.get('lab_only') == 'true'
 
     qs = base_qs
+
+    if lab_only:
+        # Filter users who have a laboratory assignment
+        qs = qs.filter(affectationlaboratoire__isnull=False).distinct()
+
+    if status == 'active':
+        qs = qs.filter(is_active=True)
+    elif status == 'inactive':
+        qs = qs.filter(is_active=False)
 
     if role_id:
         qs = qs.filter(role_id=role_id)
@@ -189,9 +227,11 @@ def listeutilisateursResponse(request):
     records_filtered = qs.count()
 
     # Values to fetch
-    qs = qs.values(
+    qs = qs.annotate(
+        lab_name=F('affectationlaboratoire__idLaboratoire__denominationLaboratoire')
+    ).values(
         'id', 'first_name', 'last_name', 'username', 'role__role', 'last_login',
-        'fonction', 'poste', 'is_admin', 'is_staff'
+        'fonction', 'poste', 'is_admin', 'is_staff', 'lab_name', 'is_active'
     )
 
     # Export check
