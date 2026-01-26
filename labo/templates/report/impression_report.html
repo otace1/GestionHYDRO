@@ -87,9 +87,10 @@
         <thead>
             <tr>
                 <th width="8%">Réf.</th>
+                <th width="8%">Code Labo</th>
                 <th width="10%">Type</th>
-                <th width="15%">Bénéficiaire</th>
-                <th width="15%">Fournisseur</th>
+                <th width="13%">Bénéficiaire</th>
+                <th width="13%">Fournisseur</th>
                 <th width="12%">Entrepôt</th>
                 <th width="15%">Date/Heure Print</th>
                 <th width="12%">Imprimé par</th>
@@ -101,6 +102,7 @@
             {% for item in data %}
             <tr>
                 <td class="text-center">{{ item.reference }}</td>
+                <td class="text-center">{{ item.code_labo }}</td>
                 <td>{{ item.type }}</td>
                 <td>{{ item.beneficiary }}</td>
                 <td>{{ item.fournisseur }}</td>
@@ -116,7 +118,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" class="text-center">Aucun certificat imprimé trouvé.</td>
+                <td colspan="10" class="text-center">Aucun certificat imprimé trouvé.</td>
             </tr>
             {% endfor %}
         </tbody>

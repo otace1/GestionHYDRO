@@ -14,6 +14,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.conf import settings
+from django.core.cache import cache
 import boto3
 from django.core.files.storage import default_storage
 from django.views.decorators.http import require_POST
@@ -43,6 +44,19 @@ import tempfile
 #
 
 # Class de gestion pouir le laboratoire
+import logging
+logger = logging.getLogger(__name__)
+
+def idempotency_check(key, timeout=10):
+    """
+    Check if a key exists in cache. If not, set it and return True.
+    If it exists, return False.
+    """
+    if cache.get(key):
+        return False
+    cache.set(key, True, timeout)
+    return True
+
 # Methode d'affichage des echantillons a la reception
 @login_required(login_url='login')
 def affichageenchantillon(request):
@@ -1810,6 +1824,8 @@ class GestionValidation():
                 with transaction.atomic():
                     c = Cargaison.objects.select_for_update().get(idcargaison=pk)
 
+                    print('CERTIFICAT IMPRIMER :',c.idcargaison)
+
                     # Check if ImpressionResultat exists for the Cargaison
                     if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                         # Create and save ImpressionResultat
@@ -3101,16 +3117,18 @@ def laboImpressionKPIs(request):
         etat="Conforme aux exigences"
     )
 
-    # Robust printed status control using Exists to handle ForeignKey relationship correctly
+    # Robust printed status control using Exists
     printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
     base_qs = base_qs.annotate(has_been_printed=Exists(printed_exists))
 
-    not_printed = base_qs.filter(has_been_printed=False).count()
-    printed = base_qs.filter(has_been_printed=True).count()
+    total = base_qs.count()
+    completed = base_qs.filter(has_been_printed=True).count()
+    remaining = total - completed
 
     return JsonResponse({
-        'not_printed': not_printed,
-        'printed': printed
+        'total': total,
+        'completed': completed,
+        'remaining': remaining
     })
 
 
@@ -4600,11 +4618,19 @@ def confirm_print(request):
         if not selected_ids:
             return JsonResponse({"status": "failure", "message": "No IDs provided"}, status=400)
 
-        # Update status
-        updated_count = ImpressionResultat.objects.filter(idcargaison_id__in=selected_ids).update(isPrinted=True, printDate=timezone.now().date())
-
-        # Log activity for each
+        # Idempotency and logging
         for pk in selected_ids:
+            lock_key = f"print_lock_confirm_{pk}_{user.id}"
+            if not idempotency_check(lock_key):
+                logger.warning(f"Duplicate print confirmation request ignored: user={user.username}, pk={pk}")
+                continue
+
+            logger.info(f"Certificate print confirmation: user={user.username}, idcargaison={pk}")
+
+            # Update status
+            ImpressionResultat.objects.filter(idcargaison_id=pk).update(isPrinted=True, printDate=timezone.now().date())
+
+            # Log activity
             UserActivityLog.objects.create(
                 user=user,
                 action="Certificat Imprimé (Confirmé)",
@@ -4612,8 +4638,9 @@ def confirm_print(request):
                 description=f"Impression confirmée via l'interface par {user.get_full_name()}."
             )
 
-        return JsonResponse({"status": "success", "updated_count": updated_count})
+        return JsonResponse({"status": "success", "message": "Processed successfully"})
     except Exception as e:
+        logger.error(f"Error in confirm_print: {str(e)}", exc_info=True)
         return JsonResponse({"status": "failure", "message": str(e)}, status=500)
 
 
@@ -4653,6 +4680,14 @@ def impressioncertificat(request):
         dataJson = json.loads(request.body)
         pk = dataJson.get('idcargaison')
         
+        # Idempotency check for single print
+        lock_key = f"print_lock_gen_{pk}_{user.id}"
+        if not idempotency_check(lock_key):
+            logger.warning(f"Duplicate print generation request ignored: user={user.username}, pk={pk}")
+            return JsonResponse({'status': 'error', 'message': 'Request already in progress or completed.'})
+
+        logger.info(f"Certificate print generation: user={user.username}, idcargaison={pk}")
+
         try:
             # Use select_related and leverage denormalized fields
             cargaison = Cargaison.objects.select_related(
@@ -6349,6 +6384,12 @@ def impressionCertificatBulk(request):
             'first_name': signDroite.first_name,
             'last_name': signDroite.last_name,
         }
+
+        # Idempotency check for bulk
+        lock_key = f"print_lock_bulk_{user.id}"
+        if not idempotency_check(lock_key, timeout=30):
+            logger.warning(f"Duplicate bulk print request ignored: user={user.username}")
+            return JsonResponse({'status': 'error', 'message': 'A bulk print request is already in progress.'})
 
         # Start Celery task to export report asynchronously
         # We use the imported task and .delay() for robustness

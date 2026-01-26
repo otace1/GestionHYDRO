@@ -47,6 +47,40 @@
   .tf-title{ margin:0; font-weight:900; color:var(--tf-ink); font-size:1.45rem; line-height:1.1; letter-spacing:-.2px; }
   .tf-sub{ color:var(--tf-muted); margin-top:6px; font-size:.92rem; max-width:820px; }
 
+  .tf-kpi-row{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .tf-kpi-card{
+    background: var(--tf-surface);
+    border: 1px solid var(--tf-bd2);
+    border-radius: var(--tf-radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: var(--tf-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .tf-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(2,6,23,.12);
+  }
+  .tf-kpi-icon{
+    width: 54px; height: 54px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .tf-kpi-data h4{ margin: 0 0 4px 0; font-size: 0.85rem; color: var(--tf-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; }
+  .tf-kpi-data .tf-value{ margin: 0; font-size: 1.75rem; font-weight: 900; color: var(--tf-ink); line-height: 1; }
+
+  .bg-primary-soft{ background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(37,99,235,0.05)); color: var(--tf-primary); }
+  .bg-success-soft{ background: linear-gradient(135deg, rgba(22,163,74,0.15), rgba(22,163,74,0.05)); color: var(--tf-success); }
+  .bg-warning-soft{ background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); color: var(--tf-warning); }
+
   .tf-breadcrumb{ background:transparent; padding:0; margin:0; font-size:.9rem; }
   .tf-breadcrumb .breadcrumb-item a{ color:var(--tf-primary); font-weight:800; }
 
@@ -243,6 +277,37 @@
 
 <section class="content">
   <div class="container-fluid">
+
+    <!-- KPI Dashboard -->
+    <div class="tf-kpi-row">
+      <div class="tf-kpi-card">
+        <div class="tf-kpi-icon bg-primary-soft">
+          <i class="fas fa-file-contract"></i>
+        </div>
+        <div class="tf-kpi-data">
+          <h4>Total assignés</h4>
+          <p class="tf-value" id="kpi-total">--</p>
+        </div>
+      </div>
+      <div class="tf-kpi-card">
+        <div class="tf-kpi-icon bg-success-soft">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="tf-kpi-data">
+          <h4>Impressions terminées</h4>
+          <p class="tf-value" id="kpi-completed">--</p>
+        </div>
+      </div>
+      <div class="tf-kpi-card">
+        <div class="tf-kpi-icon bg-warning-soft">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="tf-kpi-data">
+          <h4>Restants à imprimer</h4>
+          <p class="tf-value" id="kpi-remaining">--</p>
+        </div>
+      </div>
+    </div>
 
     <div class="tf-card">
       <div class="tf-card-header">
@@ -503,6 +568,21 @@
     $('#bulkPrint').prop('disabled', count === 0);
   }
 
+  function fetchKPIs() {
+    $.ajax({
+      url: "{% url 'laboImpressionKPIs' %}",
+      type: "POST",
+      headers: {'X-CSRFToken': csrfToken},
+      success: function(resp) {
+        if (resp) {
+          $('#kpi-total').text(resp.total);
+          $('#kpi-completed').text(resp.completed);
+          $('#kpi-remaining').text(resp.remaining);
+        }
+      }
+    });
+  }
+
   function base64ToBlob(base64, mime){
     const byteChars = atob(base64);
     const byteNumbers = new Array(byteChars.length);
@@ -514,6 +594,7 @@
   let dataTable = null;
 
   $(document).ready(function () {
+    fetchKPIs();
 
     dataTable = $('#data-table').DataTable({
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' },
@@ -614,11 +695,17 @@
     });
 
     $(document).on('click', '.btn-print', function(){
-      const id = $(this).data('row-id');
-      singlePrint(id, {label: 'Impression', markAsPrinted: true});
+      const $btn = $(this);
+      if ($btn.prop('disabled')) return;
+      
+      const id = $btn.data('row-id');
+      singlePrint(id, {label: 'Impression', markAsPrinted: true, $btn: $btn});
     });
 
     function singlePrint(idcargaison, opts){
+      const $btn = opts.$btn || null;
+      if ($btn) $btn.prop('disabled', true).addClass('loading');
+
       Swal.fire({
         title: opts.label,
         text: 'Génération du PDF...',
@@ -634,6 +721,7 @@
         headers: {'X-CSRFToken': csrfToken},
         success: function(resp){
           Swal.close();
+          if ($btn) $btn.prop('disabled', false).removeClass('loading');
 
           if(!resp || !resp.pdf_base64){
             Swal.fire({icon:'error', title:'Erreur', text:'PDF non disponible.'});
@@ -645,17 +733,22 @@
           window.open(url, '_blank');
 
           dataTable.ajax.reload(null, false);
+          fetchKPIs();
         },
         error: function(){
           Swal.close();
+          if ($btn) $btn.prop('disabled', false).removeClass('loading');
           Swal.fire({icon:'error', title:'Erreur', text:"Impossible de générer le PDF."});
           dataTable.ajax.reload(null, false);
+          fetchKPIs();
         }
       });
     }
 
     $('#bulkPrint').on('click', function(e){
       e.preventDefault();
+      const $btn = $(this);
+      if ($btn.prop('disabled')) return;
 
       if(selectedIds.size === 0){
         Swal.fire({icon:'warning', title:'Aucune sélection', text:'Veuillez sélectionner au moins un certificat.'});
@@ -672,6 +765,7 @@
       }).then((r) => {
         if(!r.isConfirmed) return;
 
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Traitement...');
         $('#progress-bar-inner').css('width','0%').attr('aria-valuenow',0);
         $('#progress-bar-label').text('Préparation...');
         $('#progressModal').modal('show');
@@ -682,6 +776,7 @@
           data: { selectedRowIds: Array.from(selectedIds) },
           headers: { 'X-CSRFToken': csrfToken },
           success: function(resp){
+            $btn.prop('disabled', false).html('<i class="fa fa-print"></i> Tout imprimer');
             if(resp && resp.task_id){
               pollTask(resp.task_id);
               selectedIds.clear();
@@ -693,6 +788,7 @@
             dataTable.ajax.reload(null, false);
           },
           error: function(){
+            $btn.prop('disabled', false).html('<i class="fa fa-print"></i> Tout imprimer');
             $('#progressModal').modal('hide');
             Swal.fire({icon:'error', title:'Erreur', text:"Erreur lors du lancement de l’impression groupée."});
           }
@@ -721,13 +817,16 @@
             }
             setTimeout(() => $('#progressModal').modal('hide'), 850);
             dataTable.ajax.reload(null, false);
+            fetchKPIs();
             return;
           }
 
           $('#progress-bar-label').text('Échec du traitement.');
+          fetchKPIs();
         })
         .catch(() => {
           $('#progress-bar-label').text('Erreur de suivi de tâche.');
+          fetchKPIs();
         });
     }
 
@@ -835,8 +934,10 @@
     });
 
     $(document).on('click', '.btn-reprint', function(){
-      const id = $(this).data('row-id');
-      singlePrint(id, {label: 'Réimpression', markAsPrinted: false});
+      const $btn = $(this);
+      if ($btn.prop('disabled')) return;
+      const id = $btn.data('row-id');
+      singlePrint(id, {label: 'Réimpression', markAsPrinted: false, $btn: $btn});
     });
 
   });
