@@ -28,6 +28,7 @@ except Exception:  # django_tables2 may be unavailable on some workers
     LazyPaginator = None  # type: ignore
 from openpyxl import Workbook
 from django.utils import timezone
+from ads.utils import get_current_year
 
 from accounts.models import *
 from enreg.models import Entrepot   # for per-user entrepôt scoping
@@ -75,7 +76,7 @@ def affichageTableau(request):
                 c=Count('idcargaison'),
                 e=Count('idcargaison', filter=Q(etat="En attente d'echantillonage")),
                 l=Count('idcargaison', filter=Q(etat="Analyse Labo en cours")),
-                i=Count('idcargaison', filter=Q(etatInspection=1))
+                i=Count('idcargaison', filter=Q(etatInspection=True))
             )
             
             # Counts for ImpressionResultat (related to user's assigned cargo)
@@ -4262,7 +4263,7 @@ def gestionGoResponse(request):
 @login_required(login_url='login')
 def tableaudeBordHydro(request):
     user_id = request.user.id
-    current_year = date.today().year
+    current_year = get_current_year()
 
     # Cache dashboard metrics for 5 minutes per user
     cache_key = f"hydro_dashboard_metrics_{user_id}_{current_year}"
@@ -4361,7 +4362,7 @@ def kpi_details_hydro(request):
         page = 1
 
     user_id = request.user.id
-    current_year = date.today().year
+    current_year = get_current_year()
 
     base = (
         Cargaison.objects
@@ -4472,7 +4473,7 @@ def lastrecordShydro(request):
 @require_POST
 def topImportersShydro(request):
     user_id = request.user.id
-    current_year = date.today().year
+    current_year = get_current_year()
     
     cache_key = f"hydro_top_importers_{user_id}_{current_year}"
     data = cache.get(cache_key)
@@ -4496,7 +4497,7 @@ def topImportersShydro(request):
 @require_POST
 def productCountShydro(request):
     user_id = request.user.id
-    current_year = date.today().year
+    current_year = get_current_year()
 
     cache_key = f"hydro_product_counts_{user_id}_{current_year}"
     data = cache.get(cache_key)
@@ -4547,7 +4548,7 @@ def startKpiExportHydro(request):
         # Dispatch Celery task
         from shydro.tasks import export_kpi_details_to_excel
         user_id = request.user.id
-        year = date.today().year
+        year = get_current_year()
         
         # We don't need to pass the whole user object, just the ID
         res = export_kpi_details_to_excel.delay(user_id, kpi, year)

@@ -35,12 +35,12 @@ from hydrocarbures.celery import app
 from labo.utils import render_to_pdf
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat
+from .utils import get_current_year, get_current_year_range_filter
 from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
     ProductionTable, EncaissementTable, StatistiquesJour, SyntheseImportation, \
     SyntheseProduction, SyntheseEncaissement, RapportBrut
 
 
-@login_required(login_url='login')
 # Fonction pour affichage page dashboard
 class Dashboard():
     @login_required(login_url='login')
@@ -52,7 +52,7 @@ class Dashboard():
             return redirect('logout')
 
         # Get the current year
-        current_year = date.today().year
+        current_year = get_current_year()
         template = 'admin.html'
 
         # Cache key for dashboard metrics
@@ -61,19 +61,20 @@ class Dashboard():
 
         if data is None:
             # Consolidate all counts and sums into a single database hit
-            agg = Cargaison.objects.aggregate(
+            year_filter = get_current_year_range_filter()
+            agg = Cargaison.objects.filter(**year_filter).aggregate(
                 j=Count('idcargaison', filter=Q(etat="En attente requisition")),
                 k=Count('idcargaison', filter=Q(etat="En attente d'echantillonage")),
                 l=Count('idcargaison', filter=Q(etat="Analyse Labo en cours")),
-                m=Count('idcargaison', filter=Q(etatInspection=1)),
+                m=Count('idcargaison', filter=Q(etatInspection=True)),
                 i=Count('idcargaison', filter=Q(etat="Echantillonner")),
                 d=Count('idcargaison', filter=Q(etat="Conforme aux exigences")),
 
-                totalVolume=Coalesce(Sum('volume'), Value(0.0)),
-                gasoilVolume=Coalesce(Sum('volume', filter=Q(produit_id=2)), Value(0.0)),
-                mogasVolume=Coalesce(Sum('volume', filter=Q(produit_id=1)), Value(0.0)),
-                jetVolume=Coalesce(Sum('volume', filter=Q(produit_id=3)), Value(0.0)),
-                petroleVolume=Coalesce(Sum('volume', filter=Q(produit_id=4)), Value(0.0)),
+                totalVolume=Coalesce(Sum('volume'), Value(0.0, output_field=FloatField())),
+                gasoilVolume=Coalesce(Sum('volume', filter=Q(produit_id=2)), Value(0.0, output_field=FloatField())),
+                mogasVolume=Coalesce(Sum('volume', filter=Q(produit_id=1)), Value(0.0, output_field=FloatField())),
+                jetVolume=Coalesce(Sum('volume', filter=Q(produit_id=3)), Value(0.0, output_field=FloatField())),
+                petroleVolume=Coalesce(Sum('volume', filter=Q(produit_id=4)), Value(0.0, output_field=FloatField())),
             )
 
             tv = float(agg['totalVolume'] or 0.0)
@@ -20382,14 +20383,15 @@ def chartJsGraph(request):
     Returns aggregated volume and certified data for Chart.js.
     Cached for performance on large datasets.
     """
-    current_year = date.today().year
+    current_year = get_current_year()
     cache_key = f"ads:chartjs_graph_{current_year}"
     data_list = cache.get(cache_key)
 
     if data_list is None:
         try:
+            year_filter = get_current_year_range_filter('idinspection__idcargaison__dateheurecargaison')
             volumeData = Compartiment.objects.filter(
-                idinspection__idcargaison__dateheurecargaison__year=current_year
+                **year_filter
             ).values(
                 'idinspection__idcargaison__produit__nomproduit'
             ).annotate(
@@ -20409,11 +20411,12 @@ def chartJsGraph(request):
 @require_POST
 def lastRecords(request):
     """
-    Returns the last 5 records in 'En attente requisition' state.
+    Returns the last 5 records in 'En attente requisition' state for the current year.
     Optimized with .values() for speed.
     """
+    year_filter = get_current_year_range_filter()
     latest_cargaisons = list(
-        Cargaison.objects.filter(etat="En attente requisition")
+        Cargaison.objects.filter(etat="En attente requisition", **year_filter)
         .select_related('frontiere', 'importateur', 'entrepot', 'produit')
         .values(
             'dateheurecargaison', 'frontiere__nomville', 'importateur__nomimportateur',
@@ -20428,15 +20431,17 @@ def lastRecords(request):
 @require_POST
 def productCount(request):
     """
-    Returns counts for different products.
+    Returns counts for different products for the current year.
     Consolidated into a single query and cached.
     """
-    cache_key = "ads:product_counts"
+    current_year = get_current_year()
+    cache_key = f"ads:product_counts_{current_year}"
     data = cache.get(cache_key)
 
     if data is None:
         try:
-            agg = Cargaison.objects.aggregate(
+            year_filter = get_current_year_range_filter()
+            agg = Cargaison.objects.filter(**year_filter).aggregate(
                 gasoilCount=Count('idcargaison', filter=Q(produit_id=2)),
                 mogasCount=Count('idcargaison', filter=Q(produit_id=1)),
                 jetCount=Count('idcargaison', filter=Q(produit_id=3)),
@@ -20455,47 +20460,25 @@ def productCount(request):
 @require_POST
 def topImporters(request):
     """
-    Returns top 10 importers by volume.
-    Cached for performance.
+    Returns top 10 importers by volume for the current year (YTD).
+    Uses centralized year-range filtering and caching.
     """
-    cache_key = "ads:top_importers"
+    current_year = get_current_year()
+    cache_key = f"ads:top_importers_ytd_{current_year}"
     data = cache.get(cache_key)
 
     if data is None:
         try:
+            # Apply strict current calendar year range filter
+            year_filter = get_current_year_range_filter()
             top_importers = list(
-                Cargaison.objects.values('importateur__nomimportateur')
-                .annotate(total_volume=Round(Sum('volume'), 2))
+                Cargaison.objects.filter(**year_filter)
+                .values('importateur__nomimportateur')
+                .annotate(total_volume=Round(Coalesce(Sum('volume'), Value(0.0)), 2))
                 .order_by('-total_volume')[:10]
             )
             data = top_importers
-            # Cache for 30 minutes
-            cache.set(cache_key, data, 30 * 60)
-        except Exception:
-            data = []
-
-    return JsonResponse({'data': data})
-
-
-@login_required(login_url='login')
-@require_POST
-def topImportersDiffVol(request):
-    """
-    Returns top 10 importers (alias for topImporters if same logic).
-    Cached for performance.
-    """
-    # Reuse or similar logic
-    cache_key = "ads:top_importers_diff"
-    data = cache.get(cache_key)
-
-    if data is None:
-        try:
-            top_importers = list(
-                Cargaison.objects.values('importateur__nomimportateur')
-                .annotate(total_volume=Round(Sum('volume'), 2))
-                .order_by('-total_volume')[:10]
-            )
-            data = top_importers
+            # Cache for 30 minutes to optimize dashboard performance
             cache.set(cache_key, data, 30 * 60)
         except Exception:
             data = []

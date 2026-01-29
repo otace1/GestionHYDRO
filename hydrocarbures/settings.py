@@ -264,6 +264,7 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "fr-FR"
 
 TIME_ZONE = "Africa/Lubumbashi"
+USE_TZ = True
 USE_L10N = True
 
 STATIC_URL = "/static/"
