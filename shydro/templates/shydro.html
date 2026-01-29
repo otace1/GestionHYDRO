@@ -676,7 +676,7 @@
                              oninput="this.value=this.value.toUpperCase()" />
                       <div class="input-group-append">
                         <button class="btn btn-primary" type="button"
-                                onclick="envoyerNumreq('${id}','${inputId}',this, '${escapeHtml(row.importateur__nomimportateur)}')">Envoyer</button>
+                                onclick="envoyerNumreq('${id}','${inputId}',this, this.getAttribute('data-importateur'))" data-importateur="${escapeHtml(row.importateur__nomimportateur)}">Envoyer</button>
                       </div>
                     </div>
                   `;
