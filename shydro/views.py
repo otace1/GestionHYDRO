@@ -4396,13 +4396,13 @@ def kpi_details_hydro(request):
         page_obj = paginator.page(1)
         page = 1
 
-    rows = list(qs.values(
+    rows = list(qs.annotate(vol_val=F('volume')).values(
         "dateheurecargaison",
         "frontiere__nomville",
         "importateur__nomimportateur",
         "entrepot__nomentrepot",
         "produit__nomproduit",
-        "volume"
+        "vol_val"
     )[(page - 1) * 15:page * 15])
 
     # Format for response
@@ -4414,7 +4414,7 @@ def kpi_details_hydro(request):
             "importateur": c["importateur__nomimportateur"] or "",
             "entrepot": c["entrepot__nomentrepot"] or "",
             "produit": c["produit__nomproduit"] or "",
-            "volume": float(c["volume"]) if c["volume"] is not None else None,
+            "volume": float(c["vol_val"]) if c["vol_val"] is not None else None,
         })
 
     return JsonResponse({
@@ -4442,13 +4442,14 @@ def lastrecordShydro(request):
             entrepot__ville__affectationville__username_id=user_id,
         )
         .order_by("-dateheurecargaison")[:5]
+        .annotate(vol_val=F('volume'))
         .values(
             "dateheurecargaison",
             "frontiere__nomville",
             "importateur__nomimportateur",
             "entrepot__nomentrepot",
             "produit__nomproduit",
-            "volume"
+            "vol_val"
         )
     )
 
@@ -4461,7 +4462,7 @@ def lastrecordShydro(request):
             "importateur__nomimportateur": c["importateur__nomimportateur"] or "",
             "entrepot__nomentrepot": c["entrepot__nomentrepot"] or "",
             "produit__nomproduit": c["produit__nomproduit"] or "",
-            "volume": float(c["volume"]) if c["volume"] is not None else None,
+            "volume": float(c["vol_val"]) if c["vol_val"] is not None else None,
         }
         for c in qs
     ]

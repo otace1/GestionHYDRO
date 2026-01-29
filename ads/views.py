@@ -80,7 +80,7 @@ class Dashboard():
             tv = float(agg['totalVolume'] or 0.0)
             def pct(x):
                 x = float(x or 0.0)
-                return round((x / tv) * 100) if tv else 0
+                return round((x / tv) * 100, 1) if tv else 0
 
             data = {
                 "j": agg['j'],
@@ -89,11 +89,11 @@ class Dashboard():
                 "l": agg['l'],
                 "m": agg['m'],
                 "d": agg['d'],
-                'gasoilVolume': float(agg['gasoilVolume'] or 0.0),
-                'mogasVolume': float(agg['mogasVolume'] or 0.0),
-                'jetVolume': float(agg['jetVolume'] or 0.0),
-                'petroleVolume': float(agg['petroleVolume'] or 0.0),
-                'totalVolume': float(agg['totalVolume'] or 0.0),
+                'gasoilVolume': round(float(agg['gasoilVolume'] or 0.0), 1),
+                'mogasVolume': round(float(agg['mogasVolume'] or 0.0), 1),
+                'jetVolume': round(float(agg['jetVolume'] or 0.0), 1),
+                'petroleVolume': round(float(agg['petroleVolume'] or 0.0), 1),
+                'totalVolume': round(float(agg['totalVolume'] or 0.0), 1),
                 'gasoilPercentage': pct(agg['gasoilVolume']),
                 'mogasPercentage': pct(agg['mogasVolume']),
                 'jetPercentage': pct(agg['jetVolume']),
@@ -20418,11 +20418,17 @@ def lastRecords(request):
     latest_cargaisons = list(
         Cargaison.objects.filter(etat="En attente requisition", **year_filter)
         .select_related('frontiere', 'importateur', 'entrepot', 'produit')
+        .annotate(vol_val=F('volume'))
         .values(
             'dateheurecargaison', 'frontiere__nomville', 'importateur__nomimportateur',
-            'entrepot__nomentrepot', 'produit__nomproduit', 'volume'
+            'entrepot__nomentrepot', 'produit__nomproduit', 'vol_val'
         ).order_by('-dateheurecargaison')[:5]
     )
+
+    # Rename vol_val to volume and round to 1 decimal place
+    for row in latest_cargaisons:
+        val = row.pop('vol_val', 0.0)
+        row['volume'] = round(float(val or 0.0), 1)
 
     return JsonResponse({'data': latest_cargaisons})
 
@@ -20474,7 +20480,7 @@ def topImporters(request):
             top_importers = list(
                 Cargaison.objects.filter(**year_filter)
                 .values('importateur__nomimportateur')
-                .annotate(total_volume=Round(Coalesce(Sum('volume'), Value(0.0)), 2))
+                .annotate(total_volume=Round(Coalesce(Sum('volume'), Value(0.0)), 1))
                 .order_by('-total_volume')[:10]
             )
             data = top_importers
@@ -20501,7 +20507,7 @@ def responseRapportattenteReception(request):
     # 1. Base QuerySet with efficient joins
     qs = Cargaison.objects.filter(etat="Echantillonner").select_related(
         'frontiere', 'importateur', 'entrepot', 'produit'
-    ).values(
+    ).annotate(vol_val=F('volume')).values(
         'dateheurecargaison__date',
         'frontiere__nomville',
         'declaration',
@@ -20509,7 +20515,7 @@ def responseRapportattenteReception(request):
         'entrepot__nomentrepot',
         'immatriculation',
         'produit__nomproduit',
-        'volume',
+        'vol_val',
         'requisitiondackdate',
         'entrepot_echantillon__dateechantillonage__date',
         'entrepot_echantillon__laboreception__datereceptionlabo__date',
@@ -20534,7 +20540,7 @@ def responseRapportattenteReception(request):
                 row['entrepot__nomentrepot'],
                 row['immatriculation'],
                 row['produit__nomproduit'],
-                row['volume'],
+                row['vol_val'],
                 row['requisitiondackdate'],
                 row['entrepot_echantillon__dateechantillonage__date'],
             ])
@@ -20560,6 +20566,11 @@ def responseRapportattenteReception(request):
 
     # Slice the queryset for the current page
     data = list(qs[start:start + length])
+
+    # Rename vol_val to volume for DataTables compatibility
+    for row in data:
+        if 'vol_val' in row:
+            row['volume'] = row.pop('vol_val')
 
     # 4. Total Count (Cached briefly to speed up repeated DataTables calls)
     cache_key = "ads:count_attente_reception"

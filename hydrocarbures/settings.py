@@ -335,11 +335,17 @@ _csrf_from_env = env_list("CSRF_TRUSTED_ORIGINS")
 if _csrf_from_env:
     CSRF_TRUSTED_ORIGINS = _csrf_from_env
 else:
-    # Fallback: assume HTTPS for all hosts that don’t already have a scheme
-    CSRF_TRUSTED_ORIGINS = [
-        host if host.startswith(("http://", "https://")) else f"https://{host}"
-        for host in ALLOWED_HOSTS
-    ]
+    # Build trusted origins from ALLOWED_HOSTS supporting both http and https
+    CSRF_TRUSTED_ORIGINS = []
+    for host in ALLOWED_HOSTS:
+        if host.startswith(("http://", "https://")):
+            CSRF_TRUSTED_ORIGINS.append(host)
+        else:
+            CSRF_TRUSTED_ORIGINS.append(f"http://{host}")
+            CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
+            # Support common development port
+            if host in ["localhost", "127.0.0.1"]:
+                CSRF_TRUSTED_ORIGINS.append(f"http://{host}:8000")
 
 # CELERY SETTINGS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")

@@ -11,6 +11,7 @@ from django.contrib.auth import (
     logout,
 )
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
 from django.db.models import Q, F
@@ -33,6 +34,8 @@ from .tables import ListeUtilisateurs, DetailsAffectation, DetailsVille, Signatu
 
 
 # Fonction pour authemntifier les utilisateurs
+@ensure_csrf_cookie
+@csrf_protect
 def login_user(request):
     template = 'accounts/login.html'
     next = request.GET.get('next')

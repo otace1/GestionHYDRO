@@ -217,44 +217,44 @@
       <div class="col-lg-3 col-md-6">
         <div class="small-box bg-primary">
           <div class="inner">
-            <h3 class="mb-0">{{ gasoilVolume }}</h3>
+            <h3 class="mb-0">{{ gasoilVolume|floatformat:1 }}</h3>
             <p class="mb-0">Volume GASOIL (m³) <small class="badge badge-light ml-1" title="Année {{ current_year }} (YTD)">YTD</small></p>
           </div>
           <div class="icon"><i class="fas fa-gas-pump"></i></div>
-          <div class="small-box-footer"><span>{{ gasoilPercentage }}%</span> du total</div>
+          <div class="small-box-footer"><span>{{ gasoilPercentage|floatformat:1 }}%</span> du total</div>
         </div>
       </div>
 
       <div class="col-lg-3 col-md-6">
         <div class="small-box bg-danger">
           <div class="inner">
-            <h3 class="mb-0">{{ mogasVolume }}</h3>
+            <h3 class="mb-0">{{ mogasVolume|floatformat:1 }}</h3>
             <p class="mb-0">Volume MOGAS (m³) <small class="badge badge-light ml-1" title="Année {{ current_year }} (YTD)">YTD</small></p>
           </div>
           <div class="icon"><i class="fas fa-tint"></i></div>
-          <div class="small-box-footer"><span>{{ mogasPercentage }}%</span> du total</div>
+          <div class="small-box-footer"><span>{{ mogasPercentage|floatformat:1 }}%</span> du total</div>
         </div>
       </div>
 
       <div class="col-lg-3 col-md-6">
         <div class="small-box bg-success">
           <div class="inner">
-            <h3 class="mb-0">{{ jetVolume }}</h3>
+            <h3 class="mb-0">{{ jetVolume|floatformat:1 }}</h3>
             <p class="mb-0">Volume JET A1 (m³) <small class="badge badge-light ml-1" title="Année {{ current_year }} (YTD)">YTD</small></p>
           </div>
           <div class="icon"><i class="fas fa-plane"></i></div>
-          <div class="small-box-footer"><span>{{ jetPercentage }}%</span> du total</div>
+          <div class="small-box-footer"><span>{{ jetPercentage|floatformat:1 }}%</span> du total</div>
         </div>
       </div>
 
       <div class="col-lg-3 col-md-6">
         <div class="small-box bg-warning">
           <div class="inner">
-            <h3 class="mb-0">{{ petroleVolume }}</h3>
+            <h3 class="mb-0">{{ petroleVolume|floatformat:1 }}</h3>
             <p class="mb-0">Volume Pétrole lampant (m³) <small class="badge badge-light ml-1" title="Année {{ current_year }} (YTD)">YTD</small></p>
           </div>
           <div class="icon"><i class="fas fa-fire"></i></div>
-          <div class="small-box-footer"><span>{{ petrolePercentage }}%</span> du total</div>
+          <div class="small-box-footer"><span>{{ petrolePercentage|floatformat:1 }}%</span> du total</div>
         </div>
       </div>
     </div>
@@ -350,7 +350,7 @@
           </div>
 
           <div class="card-footer text-muted small">
-            Total volume déclaré: <b>{{ totalVolume }}</b> m³
+            Total volume déclaré: <b>{{ totalVolume|floatformat:1 }}</b> m³
           </div>
         </div>
       </div>
@@ -367,7 +367,7 @@
             <div class="mb-3">
               <div class="d-flex justify-content-between">
                 <span class="font-weight-bold">GASOIL</span>
-                <span><b>{{ gasoilVolume }}</b> / {{ totalVolume }}</span>
+                <span><b>{{ gasoilVolume|floatformat:1 }}</b> / {{ totalVolume|floatformat:1 }}</span>
               </div>
               <div class="progress progress-sm">
                 <div class="progress-bar bg-primary" id="progress-gasoil"></div>
@@ -377,7 +377,7 @@
             <div class="mb-3">
               <div class="d-flex justify-content-between">
                 <span class="font-weight-bold">MOGAS</span>
-                <span><b>{{ mogasVolume }}</b> / {{ totalVolume }}</span>
+                <span><b>{{ mogasVolume|floatformat:1 }}</b> / {{ totalVolume|floatformat:1 }}</span>
               </div>
               <div class="progress progress-sm">
                 <div class="progress-bar bg-danger" id="progress-mogas"></div>
@@ -387,7 +387,7 @@
             <div class="mb-3">
               <div class="d-flex justify-content-between">
                 <span class="font-weight-bold">JET A1</span>
-                <span><b>{{ jetVolume }}</b> / {{ totalVolume }}</span>
+                <span><b>{{ jetVolume|floatformat:1 }}</b> / {{ totalVolume|floatformat:1 }}</span>
               </div>
               <div class="progress progress-sm">
                 <div class="progress-bar bg-success" id="progress-jet"></div>
@@ -397,7 +397,7 @@
             <div class="mb-0">
               <div class="d-flex justify-content-between">
                 <span class="font-weight-bold">PÉTROLE LAMPANT</span>
-                <span><b>{{ petroleVolume }}</b> / {{ totalVolume }}</span>
+                <span><b>{{ petroleVolume|floatformat:1 }}</b> / {{ totalVolume|floatformat:1 }}</span>
               </div>
               <div class="progress progress-sm">
                 <div class="progress-bar bg-warning" id="progress-petrole"></div>
@@ -626,7 +626,16 @@
         { data: "frontiere__nomville" },
         { data: "importateur__nomimportateur" },
         { data: "produit__nomproduit" },
-        { data: "volume", className: "text-right" }
+        { 
+          data: "volume", 
+          className: "text-right",
+          render: function(data){
+            return parseFloat(data || 0).toLocaleString(undefined, {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1
+            });
+          }
+        }
       ]
     });
 
@@ -656,7 +665,7 @@
           '<div class="mb-3">' +
             '<div class="d-flex justify-content-between">' +
               '<span class="font-weight-bold">' + (importer.importateur__nomimportateur || '-') + '</span>' +
-              '<span><b>' + vol + '</b></span>' +
+              '<span><b>' + vol.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '</b></span>' +
             '</div>' +
             '<div class="progress progress-sm">' +
               '<div class="progress-bar bg-primary" style="width: ' + percentage + '%"></div>' +
