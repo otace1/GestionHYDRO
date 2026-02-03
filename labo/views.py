@@ -1907,11 +1907,39 @@ class GestionValidation():
         produits_list = Produit.objects.all().order_by('nomproduit')
         importateurs_list = Importateur.objects.all().order_by('nomimportateur')
 
+        # KPI: Attente Réception (échantillonnés mais pas encore reçus au labo)
+        # We use a robust filter including both the status and the controlled flag
+        allowed_entrepot_ids = entrepots_list.values_list('identrepot', flat=True)
+        attente_reception_count = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids,
+            date_reception_labo__isnull=True
+        ).filter(Q(etat="Echantillonner") | Q(rapechctrl=1) | Q(date_echantillon__isnull=False)).count()
+
+        # New KPIs: En cours Analyse & Attente Val 2
+        # - En cours Analyse: Reçus, non encore en Val 1, non terminés
+        # - Attente Val 2: Spécifiquement en attente de validation finale
+        en_cours_analyse_count = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids,
+            date_reception_labo__isnull=False
+        ).filter(
+            # Q(etat="En attente Resultat") |
+            Q(etat="Analyse Labo en cours") | 
+            Q(etat="Refaire")
+        ).count()
+
+        attente_val2_count = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids,
+            etat="Validation en cours 2"
+        ).count()
+
         if role in (5, 1, 6, 10):
             return render(request, 'labo_validation2.html', {
                 'entrepots_list': entrepots_list,
                 'produits_list': produits_list,
                 'importateurs_list': importateurs_list,
+                'attente_reception_count': attente_reception_count,
+                'en_cours_analyse_count': en_cours_analyse_count,
+                'attente_val2_count': attente_val2_count,
             })
         else:
             return redirect('logout')
@@ -3123,8 +3151,36 @@ def laboManagementReportKPIs(request):
         base_qs = base_qs.filter(importateur_id=importateur_id)
 
     # 1) Suivi des Échantillons (Table Cargaison)
-    waiting_reception = base_qs.filter(date_reception_labo__isnull=True).count()
+    # Robust calculation: samples sampled but not yet received (date_reception_labo is null)
+    # We include etat="Echantillonner", rapechctrl=1 and date_echantillon to be super robust.
+    # We NO LONGER filter waiting samples by date_range to show the full current backlog
+    # as requested by users who want to see everything awaiting lab reception.
+    waiting_reception_qs = Cargaison.objects.filter(
+        entrepot_id__in=allowed_entrepot_ids,
+        date_reception_labo__isnull=True
+    ).filter(Q(etat="Echantillonner") | Q(rapechctrl=1) | Q(date_echantillon__isnull=False))
+    
+    if entrepot_id and entrepot_id != 'all':
+        waiting_reception_qs = waiting_reception_qs.filter(entrepot_id=entrepot_id)
+    if produit_id and produit_id != 'all':
+        waiting_reception_qs = waiting_reception_qs.filter(produit_id=produit_id)
+    if importateur_id and importateur_id != 'all':
+        waiting_reception_qs = waiting_reception_qs.filter(importateur_id=importateur_id)
+
+    waiting_reception = waiting_reception_qs.count()
     received = base_qs.filter(date_reception_labo__isnull=False).count()
+
+    # New KPIs for Lab Pipeline
+    en_cours_analyse = base_qs.filter(
+        date_reception_labo__isnull=False
+    ).filter(
+        Q(etat="En attente Resultat") | 
+        Q(etat="Analyse Labo en cours") | 
+        Q(etat="Refaire")
+    ).count()
+
+    attente_val2 = base_qs.filter(etat="Validation en cours 2").count()
+
     conforming = base_qs.filter(etat="Conforme aux exigences").count()
 
     # Répartitions
@@ -3178,6 +3234,8 @@ def laboManagementReportKPIs(request):
         "pipeline": {
             "waiting_reception": waiting_reception,
             "received": received,
+            "en_cours_analyse": en_cours_analyse,
+            "attente_val2": attente_val2,
             "conforming": conforming
         },
         "breakdowns": {
