@@ -2010,8 +2010,9 @@ class GestionImpressionLabo():
                 qs = Cargaison.objects.filter(
                     entrepot_id__in=allowed_entrepot_ids,
                     code_labo=numcode,
-                    impressionresultat__isPrinted=False
                 ).annotate(
+                    has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True))
+                ).filter(has_been_printed=False).annotate(
                     idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
                     codelabo=F('code_labo'),
@@ -4457,7 +4458,7 @@ def responseAffichagetableauimpression(request):
 
     # 4. Global search (leveraging denormalized fields)
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
-    search_value = search_value or params.get('q')
+    search_value = (search_value or params.get('q') or "").strip()
     if search_value:
         search_q = Q(code_labo__icontains=search_value) | \
                    Q(num_certificat_qualite__icontains=search_value) | \
@@ -4466,6 +4467,7 @@ def responseAffichagetableauimpression(request):
                    Q(nom_produit__icontains=search_value) | \
                    Q(immatriculation__icontains=search_value)
         
+        # Also try exact match for numeric fields if it's a number
         if search_value.isdigit():
             val = int(search_value)
             search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
@@ -4590,12 +4592,14 @@ def responseArchivesTableau(request):
 
     # Global search (leveraging denormalized fields)
     search_value = params.get('search', {}).get('value') if isinstance(params.get('search'), dict) else params.get('search[value]')
-    search_value = search_value or params.get('q')
+    search_value = (search_value or params.get('q') or "").strip()
     if search_value:
         search_q = Q(nom_importateur__icontains=search_value) | \
                    Q(nom_entrepot__icontains=search_value) | \
                    Q(nom_produit__icontains=search_value) | \
-                   Q(immatriculation__icontains=search_value)
+                   Q(immatriculation__icontains=search_value) | \
+                   Q(code_labo__icontains=search_value) | \
+                   Q(num_certificat_qualite__icontains=search_value)
         
         if search_value.isdigit():
             val = int(search_value)
