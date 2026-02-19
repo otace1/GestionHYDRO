@@ -1830,7 +1830,6 @@ class GestionValidation():
                     if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                         # Create and save ImpressionResultat
                         ImpressionResultat.objects.create(
-                            printDate=now.date(),
                             isConforme=True,
                             isPrinted=False,
                             idcargaison=c
@@ -1873,7 +1872,6 @@ class GestionValidation():
                     if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                         # Create and save ImpressionResultat
                         ImpressionResultat.objects.create(
-                            printDate=now.date(),
                             isConforme=False,
                             isPrinted=False,
                             idcargaison=c
@@ -1965,14 +1963,17 @@ class GestionImpressionLabo():
 
         base_qs = Cargaison.objects.filter(
             entrepot_id__in=allowed_entrepot_ids,
-            etat="Conforme aux exigences"
         )
 
         # Robust printed status control using Exists
         printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
-        base_qs = base_qs.annotate(has_been_printed=Exists(printed_exists))
+        waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False)
+        base_qs = base_qs.annotate(
+            has_been_printed=Exists(printed_exists),
+            is_waiting_print=Exists(waiting_print_exists)
+        )
 
-        cqNotPrinted = base_qs.filter(has_been_printed=False).count()
+        cqNotPrinted = base_qs.filter(is_waiting_print=True).count()
         cqPrinted = base_qs.filter(has_been_printed=True).count()
 
         # Lists for report filters
@@ -2011,8 +2012,9 @@ class GestionImpressionLabo():
                     entrepot_id__in=allowed_entrepot_ids,
                     code_labo=numcode,
                 ).annotate(
-                    has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True))
-                ).filter(has_been_printed=False).annotate(
+                    has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)),
+                    is_ready_to_print=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False))
+                ).filter(is_ready_to_print=True).annotate(
                     idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
                     codelabo=F('code_labo'),
@@ -2047,8 +2049,9 @@ class GestionImpressionLabo():
                 qs = Cargaison.objects.filter(
                     entrepot_id__in=allowed_entrepot_ids,
                     code_labo=numcode,
-                    impressionresultat__isPrinted=True
                 ).annotate(
+                    has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True))
+                ).filter(has_been_printed=True).annotate(
                     idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
                     codelabo=F('code_labo'),
@@ -3314,16 +3317,16 @@ def laboImpressionKPIs(request):
 
     base_qs = Cargaison.objects.filter(
         entrepot_id__in=allowed_entrepot_ids,
-        etat="Conforme aux exigences"
-    )
+        impressionresultat__isnull=False
+    ).distinct()
 
     # Robust printed status control using Exists
     printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
-    base_qs = base_qs.annotate(has_been_printed=Exists(printed_exists))
-
+    waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False)
+    
     total = base_qs.count()
-    completed = base_qs.filter(has_been_printed=True).count()
-    remaining = total - completed
+    completed = base_qs.filter(Exists(printed_exists)).count()
+    remaining = base_qs.filter(Exists(waiting_print_exists)).count()
 
     return JsonResponse({
         'total': total,
@@ -4324,7 +4327,6 @@ def conformeAjx2(request):
                 if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                     now = timezone.now()
                     ImpressionResultat.objects.create(
-                        printDate=now.date(),
                         isConforme=True,
                         isPrinted=False,
                         idcargaison=c
@@ -4370,7 +4372,6 @@ def nonconformeAjx2(request):
                 if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                     now = timezone.now()
                     ImpressionResultat.objects.create(
-                        printDate=now.date(),
                         isConforme=False,
                         isPrinted=False,
                         idcargaison=c
@@ -4428,8 +4429,7 @@ def responseAffichagetableauimpression(request):
 
     # 2. Base QuerySet with mandatory filters
     qs = Cargaison.objects.filter(
-        entrepot_id__in=allowed_entrepot_ids,
-        etat="Conforme aux exigences"
+        entrepot_id__in=allowed_entrepot_ids
     )
 
     # 3. Optional Filters from toolbar
@@ -4450,9 +4450,13 @@ def responseAffichagetableauimpression(request):
         idcargaison=OuterRef('pk'), 
         isPrinted=True
     )
+    waiting_print_records = ImpressionResultat.objects.filter(
+        idcargaison=OuterRef('pk'), 
+        isPrinted=False
+    )
 
     if printed_status == 'not_printed':
-        qs = qs.filter(~Exists(print_records))
+        qs = qs.filter(Exists(waiting_print_records))
     elif printed_status == 'printed':
         qs = qs.filter(Exists(print_records))
 
@@ -4476,9 +4480,8 @@ def responseAffichagetableauimpression(request):
 
     # Stability: Using a stable ordering to prevent pagination drift
     # recordsTotal and recordsFiltered for DataTables
-    recordsTotal = Cargaison.objects.filter(
-        entrepot_id__in=allowed_entrepot_ids,
-        etat="Conforme aux exigences"
+    recordsTotal = ImpressionResultat.objects.filter(
+        idcargaison__entrepot_id__in=allowed_entrepot_ids
     ).count()
     recordsFiltered = qs.count()
 
@@ -6442,7 +6445,6 @@ def bulkConforme2(request):
                 for c in cargaisons:
                     if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                         ImpressionResultat.objects.create(
-                            printDate=now.date(),
                             isConforme=True,
                             isPrinted=False,
                             idcargaison=c
@@ -6490,7 +6492,6 @@ def bulkNonConforme2(request):
                 for c in cargaisons:
                     if not ImpressionResultat.objects.filter(idcargaison=c).exists():
                         ImpressionResultat.objects.create(
-                            printDate=now.date(),
                             isConforme=False,
                             isPrinted=False,
                             idcargaison=c
