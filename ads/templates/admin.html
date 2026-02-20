@@ -1,5 +1,6 @@
 {% extends 'base_template/base_template.html' %}
 {% load django_tables2 %}
+{% load l10n %}
 
 {% block content %}
 
@@ -525,6 +526,9 @@
   </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
 <!-- Chart.js (load once) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -560,10 +564,10 @@
       const el = document.getElementById('myChart');
       if(!el || !window.Chart) return;
 
-      const gasoil  = Number("{{ gasoilVolume|default:0 }}")  || 0;
-      const mogas   = Number("{{ mogasVolume|default:0 }}")   || 0;
-      const jet     = Number("{{ jetVolume|default:0 }}")     || 0;
-      const petrole = Number("{{ petroleVolume|default:0 }}") || 0;
+      const gasoil  = Number("{{ gasoilVolume|unlocalize|default:0 }}")  || 0;
+      const mogas   = Number("{{ mogasVolume|unlocalize|default:0 }}")   || 0;
+      const jet     = Number("{{ jetVolume|unlocalize|default:0 }}")     || 0;
+      const petrole = Number("{{ petroleVolume|unlocalize|default:0 }}") || 0;
 
       new Chart(el, {
         type: 'bar',
@@ -591,10 +595,10 @@
       });
 
       // Progress bars
-      const gasoilPct  = Number("{{ gasoilPercentage|default:0 }}")  || 0;
-      const mogasPct   = Number("{{ mogasPercentage|default:0 }}")   || 0;
-      const jetPct     = Number("{{ jetPercentage|default:0 }}")     || 0;
-      const petrolePct = Number("{{ petrolePercentage|default:0 }}") || 0;
+      const gasoilPct  = Number("{{ gasoilPercentage|unlocalize|default:0 }}")  || 0;
+      const mogasPct   = Number("{{ mogasPercentage|unlocalize|default:0 }}")   || 0;
+      const jetPct     = Number("{{ jetPercentage|unlocalize|default:0 }}")     || 0;
+      const petrolePct = Number("{{ petrolePercentage|unlocalize|default:0 }}") || 0;
 
       $('#progress-gasoil').css('width', gasoilPct + '%');
       $('#progress-mogas').css('width', mogasPct + '%');
@@ -965,5 +969,4 @@
 
   });
 </script>
-
 {% endblock %}
