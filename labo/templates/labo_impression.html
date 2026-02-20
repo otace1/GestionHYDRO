@@ -203,23 +203,52 @@
 
   #tick-all, .tick-box{ width:16px; height:16px; accent-color: var(--tf-primary); cursor:pointer; }
 
-  .dataTables_info{
-    padding: 12px 16px !important;
+  /* Simplified Pagination Footer */
+  .dataTables_wrapper .row:last-child {
+    background: #fdfdfd;
+    border-top: 1px solid var(--tf-bd2);
+    margin: 0;
+    padding: 0.85rem 1.25rem;
+    align-items: center;
+  }
+  .dataTables_info {
+    padding: 0 !important;
+    font-size: 0.84rem;
     color: var(--tf-muted) !important;
-    font-weight: 800;
+    font-weight: 600;
   }
-  .dataTables_paginate{ padding: 10px 16px 14px !important; }
-  .paginate_button{
-    border-radius:999px !important;
-    font-weight:900 !important;
-    border:1px solid var(--tf-bd2) !important;
-    background: var(--tf-surface) !important;
-    padding: .34rem .7rem !important;
-    margin: 0 .15rem !important;
+  .dataTables_paginate {
+    padding: 0 !important;
   }
-  .paginate_button.current{
-    border-color: rgba(37,99,235,.35) !important;
-    box-shadow: 0 0 0 .18rem rgba(37,99,235,.12);
+  .pagination {
+    margin: 0 !important;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .page-link {
+    border-radius: 6px !important;
+    border: 1px solid #dee2e6 !important;
+    color: #475569 !important;
+    font-weight: 600;
+    font-size: 0.84rem;
+    padding: 0.38rem 0.75rem !important;
+    transition: all 0.15s;
+  }
+  .page-item.active .page-link {
+    background-color: var(--tf-primary) !important;
+    border-color: var(--tf-primary) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18);
+  }
+  .page-item.disabled .page-link {
+    background-color: transparent !important;
+    color: #94a3b8 !important;
+    border-color: #e2e8f0 !important;
+  }
+  .page-item:not(.active):not(.disabled) .page-link:hover {
+    background-color: #f1f5f9;
+    color: var(--tf-primary);
+    border-color: #cbd5e1 !important;
   }
 
   .modal-content{
@@ -597,6 +626,8 @@
     fetchKPIs();
 
     dataTable = $('#data-table').DataTable({
+      dom: "<'row'<'col-sm-12'tr>>" +
+           "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' },
       lengthChange: false,
       processing: true,
@@ -856,6 +887,8 @@
 
     function initArchivesTable() {
       archivesTable = $('#archives-table').DataTable({
+        dom: "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
         language: { 
           url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json',
           emptyTable: "Veuillez appliquer un filtre pour afficher les résultats."

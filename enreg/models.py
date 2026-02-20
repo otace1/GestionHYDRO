@@ -643,7 +643,7 @@ class ResultatAnalyse(models.Model):
 class ImpressionResultat(models.Model):
     idImpression = models.AutoField(primary_key=True, auto_created=True)
     idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
-    printDate = models.DateField(auto_now_add=True, blank=True, null=True)
+    printDate = models.DateField(blank=True, null=True)
     isConforme = models.BooleanField(null=True, blank=True)
     isPrinted = models.BooleanField(null=True, blank=True)
     control = models.BooleanField(default=0)

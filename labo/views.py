@@ -1967,7 +1967,7 @@ class GestionImpressionLabo():
 
         # Robust printed status control using Exists
         printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
-        waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False)
+        waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk')).exclude(isPrinted=True)
         base_qs = base_qs.annotate(
             has_been_printed=Exists(printed_exists),
             is_waiting_print=Exists(waiting_print_exists)
@@ -2001,19 +2001,29 @@ class GestionImpressionLabo():
         request.session['url'] = request.get_full_path()
         template = 'labo_impression.html'
         if role == 5 or role == 1 or role == 6 or role == "v2":
-            numcode = request.GET.get('codelabo')
+            numcode = (request.GET.get('codelabo') or "").strip()
             if numcode != "":
                 # Leverage denormalized scoping (Consistent with optimized DataTables view)
                 allowed_entrepot_ids = Entrepot.objects.filter(
                     ville__affectationville__username_id=user.id
                 ).values_list('identrepot', flat=True)
 
+                search_q = Q(code_labo__icontains=numcode) | \
+                           Q(num_certificat_qualite__icontains=numcode) | \
+                           Q(nom_importateur__icontains=numcode) | \
+                           Q(nom_entrepot__icontains=numcode) | \
+                           Q(nom_produit__icontains=numcode) | \
+                           Q(immatriculation__icontains=numcode)
+
+                if numcode.isdigit():
+                    val = int(numcode)
+                    search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
+
                 qs = Cargaison.objects.filter(
                     entrepot_id__in=allowed_entrepot_ids,
-                    code_labo=numcode,
-                ).annotate(
+                ).filter(search_q).annotate(
                     has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)),
-                    is_ready_to_print=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False))
+                    is_ready_to_print=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk')).exclude(isPrinted=True))
                 ).filter(is_ready_to_print=True).annotate(
                     idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
@@ -2039,17 +2049,27 @@ class GestionImpressionLabo():
         role = user.role_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1 or role == "v1" or role == "v2":
-            numcode = request.GET.get('codelabo')
+            numcode = (request.GET.get('codelabo') or "").strip()
             if numcode != "":
                 # Leverage denormalized scoping (Consistent with optimized DataTables view)
                 allowed_entrepot_ids = Entrepot.objects.filter(
                     ville__affectationville__username_id=user.id
                 ).values_list('identrepot', flat=True)
 
+                search_q = Q(code_labo__icontains=numcode) | \
+                           Q(num_certificat_qualite__icontains=numcode) | \
+                           Q(nom_importateur__icontains=numcode) | \
+                           Q(nom_entrepot__icontains=numcode) | \
+                           Q(nom_produit__icontains=numcode) | \
+                           Q(immatriculation__icontains=numcode)
+
+                if numcode.isdigit():
+                    val = int(numcode)
+                    search_q |= Q(code_labo=val) | Q(num_certificat_qualite=val)
+
                 qs = Cargaison.objects.filter(
                     entrepot_id__in=allowed_entrepot_ids,
-                    code_labo=numcode,
-                ).annotate(
+                ).filter(search_q).annotate(
                     has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True))
                 ).filter(has_been_printed=True).annotate(
                     idImpression=F('impressionresultat__idImpression'),
@@ -3322,7 +3342,7 @@ def laboImpressionKPIs(request):
 
     # Robust printed status control using Exists
     printed_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)
-    waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=False)
+    waiting_print_exists = ImpressionResultat.objects.filter(idcargaison=OuterRef('pk')).exclude(isPrinted=True)
     
     total = base_qs.count()
     completed = base_qs.filter(Exists(printed_exists)).count()
@@ -4451,9 +4471,8 @@ def responseAffichagetableauimpression(request):
         isPrinted=True
     )
     waiting_print_records = ImpressionResultat.objects.filter(
-        idcargaison=OuterRef('pk'), 
-        isPrinted=False
-    )
+        idcargaison=OuterRef('pk')
+    ).exclude(isPrinted=True)
 
     if printed_status == 'not_printed':
         qs = qs.filter(Exists(waiting_print_records))
@@ -4469,7 +4488,8 @@ def responseAffichagetableauimpression(request):
                    Q(nom_importateur__icontains=search_value) | \
                    Q(nom_entrepot__icontains=search_value) | \
                    Q(nom_produit__icontains=search_value) | \
-                   Q(immatriculation__icontains=search_value)
+                   Q(immatriculation__icontains=search_value) | \
+                   Q(nom_frontiere__icontains=search_value)
         
         # Also try exact match for numeric fields if it's a number
         if search_value.isdigit():
@@ -4480,9 +4500,21 @@ def responseAffichagetableauimpression(request):
 
     # Stability: Using a stable ordering to prevent pagination drift
     # recordsTotal and recordsFiltered for DataTables
-    recordsTotal = ImpressionResultat.objects.filter(
-        idcargaison__entrepot_id__in=allowed_entrepot_ids
-    ).count()
+    # recordsTotal represents the base set (restricted by permissions and printed status)
+    if printed_status == 'not_printed':
+        recordsTotal = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids
+        ).filter(Exists(waiting_print_records)).count()
+    elif printed_status == 'printed':
+        recordsTotal = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids
+        ).filter(Exists(print_records)).count()
+    else:
+        # Fallback if no specific status is requested
+        recordsTotal = Cargaison.objects.filter(
+            entrepot_id__in=allowed_entrepot_ids
+        ).count()
+
     recordsFiltered = qs.count()
 
     # 5. Final projection and pagination
@@ -4502,16 +4534,12 @@ def responseAffichagetableauimpression(request):
     start = int(params.get('start', 0))
     length = int(params.get('length', 10))
 
-    if length <= 0:
-        return JsonResponse({
-            'data': [],
-            'draw': draw,
-            'recordsTotal': recordsTotal,
-            'recordsFiltered': recordsFiltered,
-        })
-
-    # Paging using direct slice
-    data = list(qs[start:start+length])
+    if length > 0:
+        # Paging using direct slice
+        data = list(qs[start:start+length])
+    else:
+        # Return all records (handles length=-1 for "All")
+        data = list(qs[start:])
 
     # 6. Formatting result for legacy compatibility
     for r in data:
@@ -4572,15 +4600,21 @@ def responseArchivesTableau(request):
     ).annotate(has_been_printed=Exists(print_records)).filter(has_been_printed=True)
 
     # 3. Apply Filters
-    code_labo = params.get('code_labo')
-    num_certificat = params.get('num_certificat')
+    code_labo = (params.get('code_labo') or "").strip()
+    num_certificat = (params.get('num_certificat') or "").strip()
     date_start = params.get('date_start')
     date_end = params.get('date_end')
 
     if code_labo:
-        qs = qs.filter(code_labo=code_labo)
+        if code_labo.isdigit():
+            qs = qs.filter(code_labo=int(code_labo))
+        else:
+            qs = qs.filter(code_labo__icontains=code_labo)
     if num_certificat:
-        qs = qs.filter(num_certificat_qualite=num_certificat)
+        if num_certificat.isdigit():
+            qs = qs.filter(num_certificat_qualite=int(num_certificat))
+        else:
+            qs = qs.filter(num_certificat_qualite__icontains=num_certificat)
 
     # Subquery for the latest print date (needed for range filtering and ordering)
     # Correctly order here to get the LATEST print date if multiple exist (unlikely but safe)
