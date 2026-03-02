@@ -812,16 +812,24 @@
               pollTask(resp.task_id);
               selectedIds.clear();
               updateSelectedUI();
+            }else if(resp && resp.status === 'error'){
+              $('#progressModal').modal('hide');
+              Swal.fire({icon:'info', title:'Information', text: resp.message});
             }else{
               $('#progressModal').modal('hide');
-              Swal.fire({icon:'error', title:'Erreur', text:"Task ID manquant."});
+              const msg = (resp && resp.message) ? resp.message : "Erreur inconnue (Task ID manquant).";
+              Swal.fire({icon:'error', title:'Erreur', text: msg});
             }
             dataTable.ajax.reload(null, false);
           },
-          error: function(){
+          error: function(xhr){
             $btn.prop('disabled', false).html('<i class="fa fa-print"></i> Tout imprimer');
             $('#progressModal').modal('hide');
-            Swal.fire({icon:'error', title:'Erreur', text:"Erreur lors du lancement de l’impression groupée."});
+            let errorMsg = "Erreur lors du lancement de l’impression groupée.";
+            if(xhr.responseJSON && xhr.responseJSON.message){
+              errorMsg = xhr.responseJSON.message;
+            }
+            Swal.fire({icon:'error', title:'Erreur', text: errorMsg});
           }
         });
       });
@@ -841,10 +849,15 @@
 
           if(data.state === 'SUCCESS'){
             $('#progress-bar-inner').css('width','100%').attr('aria-valuenow', 100);
-            $('#progress-bar-label').text('Terminé. Téléchargement...');
+            $('#progress-bar-label').text('Terminé. Ouverture...');
 
             if(data.result && data.result.file_url){
-              downloadFile(data.result.file_url, data.result.file_name || 'certificats.pdf');
+              const link = document.createElement('a');
+              link.href = data.result.file_url;
+              link.target = '_blank';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
             }
             setTimeout(() => $('#progressModal').modal('hide'), 850);
             dataTable.ajax.reload(null, false);

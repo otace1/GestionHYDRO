@@ -4920,9 +4920,12 @@ def impressioncertificat(request):
             signDroite = aff.userId
             laboratoireData = aff.idLaboratoire
 
-    if not signGauche or not signDroite or not laboratoireData:
-        # Handle missing configuration if necessary
-        pass
+    if not signGauche:
+        return JsonResponse({'status': 'failure', 'message': f'Signataire GAUCHE non configuré pour la ville {aff_ville.ville.nomville}.'}, status=400)
+    if not signDroite:
+        return JsonResponse({'status': 'failure', 'message': f'Signataire DROIT non configuré pour la ville {aff_ville.ville.nomville}.'}, status=400)
+    if not laboratoireData:
+        return JsonResponse({'status': 'failure', 'message': f'Données de laboratoire non configurées pour la ville {aff_ville.ville.nomville}.'}, status=400)
 
     # Recuperation des donnees liees a l'Impression
     if request.method == 'POST':
@@ -6610,26 +6613,41 @@ def impressionCertificatBulk(request):
 
         # Get signers and lab data
         try:
-            affect1 = AffectationLaboratoire.objects.get(ville_id=ville_id, signGauche=False)
-            affect2 = AffectationLaboratoire.objects.get(ville_id=ville_id, signGauche=True)
+            # Check for multiple or missing assignments
+            aff_gauche = AffectationLaboratoire.objects.filter(ville_id=ville_id, signGauche=True)
+            aff_droite = AffectationLaboratoire.objects.filter(ville_id=ville_id, signGauche=False)
+
+            if not aff_gauche.exists():
+                return JsonResponse({'status': 'failure', 'message': f'Signataire GAUCHE non configuré pour la ville {ville_obj.nomville}.'}, status=400)
+            if not aff_droite.exists():
+                return JsonResponse({'status': 'failure', 'message': f'Signataire DROIT non configuré pour la ville {ville_obj.nomville}.'}, status=400)
+
+            affect2 = aff_gauche.first()
+            affect1 = aff_droite.first()
             
             signDroite = affect1.userId
             signGauche = affect2.userId
+
+            print('SIGNATAIRE TESTS')
+            print(f"Signataires configurés: Droite={signDroite}, Gauche={signGauche}")
             
             lab_data = affect1.idLaboratoire
             lab_name = lab_data.denominationLaboratoire
-        except AffectationLaboratoire.DoesNotExist:
-            return JsonResponse({'status': 'failure', 'message': 'Laboratory signatories not configured for this city.'}, status=400)
         except Exception as e:
-            return JsonResponse({'status': 'failure', 'message': f'Config error: {str(e)}'}, status=400)
+            logger.error(f"Config error in impressionCertificatBulk: {str(e)}")
+            return JsonResponse({'status': 'failure', 'message': f'Erreur de configuration: {str(e)}'}, status=400)
 
         sign_gauche_payload = {
             'first_name': signGauche.first_name,
             'last_name': signGauche.last_name,
+            'poste': signGauche.poste,
+            'fonction': signGauche.fonction,
         }
         sign_droite_payload = {
             'first_name': signDroite.first_name,
             'last_name': signDroite.last_name,
+            'poste': signDroite.poste,
+            'fonction': signDroite.fonction,
         }
 
         # Idempotency check for bulk
@@ -6640,14 +6658,20 @@ def impressionCertificatBulk(request):
 
         # Start Celery task to export report asynchronously
         # We use the imported task and .delay() for robustness
-        result = generate_certificates_pdf_task.delay(
-            selected_ids, 
-            province, 
-            sign_gauche_payload, 
-            sign_droite_payload, 
-            lab_name,
-            user_id=user.id
-        )
+        logger.info(f"Starting bulk print task for user {user.username} with {len(selected_ids)} certificates")
+        try:
+            result = generate_certificates_pdf_task.delay(
+                selected_ids, 
+                province, 
+                sign_gauche_payload, 
+                sign_droite_payload, 
+                lab_name,
+                user_id=user.id
+            )
+            logger.info(f"Task started: {result.id}")
+        except Exception as celery_err:
+            logger.error(f"Celery task delay failed: {str(celery_err)}")
+            return JsonResponse({'status': 'failure', 'message': f'Celery error: {str(celery_err)}'}, status=500)
 
         return JsonResponse({'task_id': result.id})
 
