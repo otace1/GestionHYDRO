@@ -2022,10 +2022,8 @@ class GestionImpressionLabo():
                 qs = Cargaison.objects.filter(
                     entrepot_id__in=allowed_entrepot_ids,
                 ).filter(search_q).annotate(
-                    has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True)),
                     is_ready_to_print=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk')).exclude(isPrinted=True))
                 ).filter(is_ready_to_print=True).annotate(
-                    idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
                     codelabo=F('code_labo'),
                     nomproduit=F('nom_produit'),
@@ -2072,7 +2070,6 @@ class GestionImpressionLabo():
                 ).filter(search_q).annotate(
                     has_been_printed=Exists(ImpressionResultat.objects.filter(idcargaison=OuterRef('pk'), isPrinted=True))
                 ).filter(has_been_printed=True).annotate(
-                    idImpression=F('impressionresultat__idImpression'),
                     numcertificatqualite=F('num_certificat_qualite'),
                     codelabo=F('code_labo'),
                     nomproduit=F('nom_produit'),
@@ -6677,3 +6674,76 @@ def impressionCertificatBulk(request):
 
     except Exception as e:
         return JsonResponse({'status': 'failure', 'message': str(e)}, status=500)
+
+
+@login_required(login_url='login')
+def bulkPrintStatus(request, task_id):
+    """
+    Poll the status of a bulk print Celery task.
+    """
+    task = AsyncResult(task_id, app=app)
+    state = task.state
+    
+    response_data = {
+        'state': state,
+        'current': 0,
+        'total': 0,
+        'percent': 0,
+        'message': '',
+        'result': None
+    }
+
+    if state == 'PROGRESS':
+        meta = task.info
+        response_data.update({
+            'current': meta.get('done', 0),
+            'total': meta.get('total', 0),
+            'percent': meta.get('percent', 0),
+            'message': 'Génération des certificats...'
+        })
+    elif state == 'SUCCESS':
+        result = task.result
+        response_data.update({
+            'percent': 100,
+            'current': result.get('done', 0),
+            'total': result.get('total', 0),
+            'message': 'Document prêt.',
+            'result': result,
+            'download_url': reverse('downloadCertificatesBulk', kwargs={'task_id': task_id})
+        })
+    elif state == 'FAILURE':
+        response_data['message'] = 'Échec de génération. Veuillez réessayer.'
+
+    return JsonResponse(response_data)
+
+
+@login_required(login_url='login')
+def downloadCertificatesBulk(request, task_id):
+    """
+    Download the generated bulk PDF.
+    """
+    user = request.user
+    if user.role_id not in (1, 5):
+        return HttpResponse("Non autorisé", status=403)
+
+    task = AsyncResult(task_id, app=app)
+    if task.state != 'SUCCESS':
+        return HttpResponse("Le document n'est pas encore prêt ou a échoué.", status=400)
+
+    result = task.result
+    if not result or 'storage_key' not in result:
+        return HttpResponse("Fichier introuvable.", status=404)
+
+    storage_key = result['storage_key']
+    file_name = result.get('file_name', f"certificats_bulk_{timezone.now().strftime('%Y%m%d')}.pdf")
+
+    if not default_storage.exists(storage_key):
+        return HttpResponse("Le fichier n'existe plus.", status=404)
+
+    try:
+        file_content = default_storage.open(storage_key).read()
+        response = HttpResponse(file_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        return response
+    except Exception as e:
+        return HttpResponse(f"Erreur: {str(e)}", status=500)

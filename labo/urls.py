@@ -158,5 +158,7 @@ urlpatterns = [
     path('bulkRefaire2/', views.bulkRefaire2, name='bulkRefaire2'),
 
     path('impressionCertificatBulk/', views.impressionCertificatBulk, name='impressionCertificatBulk'),
+    path('tasks/<str:task_id>/status/', views.bulkPrintStatus, name='bulkPrintStatus'),
+    path('impressionCertificatBulk/download/<str:task_id>/', views.downloadCertificatesBulk, name='downloadCertificatesBulk'),
 
 ]
