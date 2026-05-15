@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django_countries.fields import CountryField
@@ -193,8 +194,12 @@ class Cargaison(models.Model):
     # Denormalized Labo fields
     num_certificat_qualite = models.IntegerField(null=True, blank=True, db_index=True)
     code_labo = models.IntegerField(null=True, blank=True, db_index=True)
+    date_resultat = models.DateTimeField(null=True, blank=True, db_index=True)
 
     def save(self, *args, **kwargs):
+        if self.typeunitetransport and self.volume:
+            if self.typeunitetransport.unitetransport.strip().upper() == "CAMION CITERNE" and self.volume > 40:
+                raise ValidationError("Pour un Camion citerne, le volume ne peut pas dépasser 40.")
         if self.importateur_id:
             self.nom_importateur = self.importateur.nomimportateur
         if self.entrepot_id:

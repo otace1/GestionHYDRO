@@ -82,6 +82,18 @@ class Ajoutcargaison(forms.Form):
         widget=forms.NumberInput(attrs={'placeholder': '0.00', 'class': 'form-control'})
     )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        typeunitetransport = cleaned_data.get('typeunitetransport')
+        volume = cleaned_data.get('volume')
+
+        if typeunitetransport and volume is not None:
+            if typeunitetransport.unitetransport.strip().upper() == "CAMION CITERNE" and volume > 40:
+                raise forms.ValidationError(
+                    _("Pour un Camion citerne, le volume ne peut pas dépasser 40.")
+                )
+        return cleaned_data
+
     def __init__(self, *args, **kwargs):
         super(Ajoutcargaison, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
