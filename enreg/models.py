@@ -198,8 +198,8 @@ class Cargaison(models.Model):
 
     def save(self, *args, **kwargs):
         if self.typeunitetransport and self.volume:
-            if self.typeunitetransport.unitetransport.strip().upper() == "CAMION CITERNE" and self.volume > 40:
-                raise ValidationError("Pour un Camion citerne, le volume ne peut pas dépasser 40.")
+            if self.typeunitetransport.unitetransport.strip().upper() == "CAMION CITERNE" and self.volume > 50:
+                raise ValidationError("Pour un Camion citerne, le volume ne peut pas dépasser 50.")
         if self.importateur_id:
             self.nom_importateur = self.importateur.nomimportateur
         if self.entrepot_id:
