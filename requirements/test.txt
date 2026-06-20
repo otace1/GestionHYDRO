@@ -1,0 +1,34 @@
+# =============================================================================
+# TEST REQUIREMENTS
+# =============================================================================
+# Dependencies for running tests (CI/CD)
+# Install with: pip install -r requirements/test.txt
+# =============================================================================
+
+# Include base requirements
+-r base.txt
+
+# Testing frameworks
+pytest==8.0.0
+pytest-django==4.8.0
+pytest-cov==4.1.0
+pytest-xdist==3.5.0  # Parallel test execution
+
+# Coverage
+coverage==7.4.1
+
+# Test factories
+factory-boy==3.3.0
+faker==22.6.0
+
+# Mocking
+responses==0.24.1
+freezegun==1.4.0
+
+# Security scanning
+bandit==1.7.7
+safety==3.0.1
+
+# Static analysis (optional for CI)
+# semgrep==1.60.0
+

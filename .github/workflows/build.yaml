@@ -1,4 +1,15 @@
-name: Build Docker Container & Push to DO registry
+name: Build & Test (Staging/Dev)
+
+# =============================================================================
+# STAGING/DEVELOPMENT BUILD WORKFLOW
+# =============================================================================
+# This workflow runs on:
+# - Push to Dockerized branch (staging/dev)
+# - Pull requests to Dockerized
+#
+# It does NOT deploy to production.
+# For production deployment, merge to 'main' branch.
+# =============================================================================
 
 on:
   workflow_call:
@@ -9,12 +20,12 @@ on:
     branches: ["Dockerized"]
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: staging-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test_django_job:
-    uses: otace1/GestionHYDRO/.github/workflows/test-django.yaml@Dockerized
+    uses: ./.github/workflows/test-django.yaml
 
   build:
     needs: [test_django_job]
@@ -41,71 +52,25 @@ jobs:
         run: |
           set -euo pipefail
           docker build --platform linux/amd64 -f Dockerfile \
-            -t $REGISTRY/$IMAGE_NAME:latest \
-            -t $REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7} \
+            -t $REGISTRY/$IMAGE_NAME:staging-latest \
+            -t $REGISTRY/$IMAGE_NAME:staging-${GITHUB_SHA::7} \
             .
 
-      - name: Push image to DO
+      - name: Push image to DO (staging tags only)
         run: |
           set -euo pipefail
-          docker push $REGISTRY/$IMAGE_NAME --all-tags
+          docker push $REGISTRY/$IMAGE_NAME:staging-latest
+          docker push $REGISTRY/$IMAGE_NAME:staging-${GITHUB_SHA::7}
 
-      - name: Fetch kubeconfig (short-lived)
+      - name: Build summary
         run: |
-          set -euo pipefail
-          doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ env.CLUSTER_NAME }}
-
-      # ============================================================
-      # ✅ Secret update: match your Kubernetes Secret stringData keys
-      # ============================================================
-      - name: Apply deployment secret (django-deploy-env)
-        run: |
-          set -euo pipefail
-
-          kubectl create secret generic django-deploy-env \
-            --from-literal=DEBUG="0" \
-            --from-literal=DEVELOPMENT_MODE="0" \
-            --from-literal=DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
-            --from-literal=ALLOWED_HOSTS="trackflow.plus" \
-            --from-literal=CELERY_BROKER="${{ secrets.CELERY_BROKER }}" \
-            --from-literal=DATABASE_HOST="${{ secrets.DATABASE_HOST }}" \
-            --from-literal=DATABASE_NAME="${{ secrets.DATABASE_NAME }}" \
-            --from-literal=DATABASE_USER="${{ secrets.DATABASE_USER }}" \
-            --from-literal=DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
-            --from-literal=DATABASE_PORT="25060" \
-            --from-literal=DB_IGNORE_SSL="True" \
-            --from-literal=CSRF_TRUSTED_ORIGINS="https://trackflow.plus" \
-            --from-literal=SPACE_SECRET="${{ secrets.SPACE_SECRET }}" \
-            --from-literal=SPACE_ACCESS_KEY="${{ secrets.SPACE_ACCESS_KEY }}" \
-            --from-literal=SPACE_REGION="sfo3" \
-            --from-literal=SPACE_ENDPOINT="digitaloceanspaces.com" \
-            --from-literal=SERVICE_NAME="s3" \
-            --from-literal=SPACE_NAME="gestionhydro" \
-            --from-literal=AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            --from-literal=AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            --from-literal=DELETE_CONFIRMATION_CODE="${{ secrets.DELETE_CONFIRMATION_CODE }}" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Update deployment image (django-server)
-        run: |
-          set -euo pipefail
-          kubectl set image deployment/gestionhydro-deployment \
-            django-server=$REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}
-
-      - name: Update deployment image (celery-worker)
-        run: |
-          set -euo pipefail
-          kubectl set image deployment/gestionhydro-celery \
-            celery-worker=$REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}
-
-      - name: Wait for rollout to finish
-        run: |
-          set -euo pipefail
-          kubectl rollout status deployment/gestionhydro-deployment --timeout=300s
-          kubectl rollout status deployment/gestionhydro-celery --timeout=300s
-
-      - name: Run migrate inside one pod
-        run: |
-          set -euo pipefail
-          POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}")
-          kubectl exec "$POD_NAME" -- bash /app/scripts/migration.sh
+          echo "=============================================="
+          echo "✅ STAGING BUILD SUCCESSFUL"
+          echo "=============================================="
+          echo "Image: $REGISTRY/$IMAGE_NAME:staging-${GITHUB_SHA::7}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo ""
+          echo "⚠️  This is a STAGING build. NOT deployed to production."
+          echo "To deploy to production, merge to 'main' branch."
+          echo "=============================================="

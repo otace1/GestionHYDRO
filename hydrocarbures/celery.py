@@ -1,9 +1,14 @@
 import os
-
+from pathlib import Path
+from dotenv import load_dotenv
 from celery import Celery
 
-# Set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hydrocarbures.settings')
+# Load .env file
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
+
+# Dynamically select settings based on DJANGO_ENV
+from hydrocarbures.settings import get_settings_module
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', get_settings_module())
 
 app = Celery('hydrocarbures')
 
